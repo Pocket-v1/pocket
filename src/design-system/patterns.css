@@ -30,3 +30,16 @@
 .ds-repeat-unit em{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-style:normal;font-size:var(--ds-fs-sm);color:var(--ds-text-muted);pointer-events:none}
 .ds-repeat-add{justify-self:start}
 @media(max-width:640px){.ds-repeat-row{grid-template-columns:1fr 1fr}.ds-repeat-row .ds-repeat-unit{grid-column:1}.ds-repeat-row .icon-btn{grid-column:2;justify-self:end}}
+
+/* 3) Icons: one stroke weight for every lucide icon in the app. */
+svg.lucide{stroke-width:var(--ds-icon-stroke)}
+
+/* 4) Month picker: we draw the label ourselves ("Nov 2026") so it never wraps or clips; the native input sits invisibly on top and still opens the picker. */
+.month-picker-label{white-space:nowrap;font-weight:700;font-size:var(--ds-fs-lg)}
+.month-picker input{position:absolute!important;inset:0;width:100%!important;height:100%;opacity:0;cursor:pointer}
+@media(max-width:680px){
+ .month-picker{flex:1 1 0;min-width:124px;padding:0 10px;gap:6px;justify-content:space-between}
+ .month-picker-label{font-size:var(--ds-fs-md)}
+ .month-picker::after{margin-left:0}
+ .page-heading-actions .btn-primary,.heading-actions .btn-primary{flex:0 1 auto;padding-inline:12px;min-width:0}
+}

@@ -80,7 +80,7 @@
 
 /* ===== Dark palette v2 =====
    page #151a24 > sidebar/topbar #181e2a > card #1c2230 > nested #222a3a > control #262f41
-   brand fill #3157f6 (white text), brand text/icons on dark #9db2ff, tinted chips use translucent colour */
+   brand fill var(--ds-brand) (white text), brand text/icons on dark #9db2ff, tinted chips use translucent colour */
 :root[data-theme="dark"] .metric-icon.blue,:root[data-theme="dark"] .goal-tone-0,:root[data-theme="dark"] .goal-icon,
 :root[data-theme="dark"] .upcoming-icon,:root[data-theme="dark"] .insight-icon,:root[data-theme="dark"] .settings-icon,
 :root[data-theme="dark"] .empty-icon{background:rgba(120,148,255,.16)!important;color:#9db2ff!important}

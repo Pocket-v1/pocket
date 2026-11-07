@@ -111,6 +111,9 @@
   --ds-secondary-text: #e4e8f2;
 }
 
+/* ---- Icons ---- */
+:root { --ds-icon-stroke: 2; }
+
 /* ---- Fuel kinds (fuel log cards, chips, gauges) ---- */
 :root {
   --ds-fuel-80: #8f96a8; --ds-fuel-92: #3157f6; --ds-fuel-95: #8f7bff; --ds-fuel-98: #cb4756;

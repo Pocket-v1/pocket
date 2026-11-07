@@ -60,11 +60,11 @@
 .ftc-top{display:flex;align-items:center;gap:8px;font-size:12px}
 .ftc-top i{width:10px;height:10px;border-radius:50%;background:var(--fc)}
 .ftc-top b{font-size:13px}.ftc-top span{margin-left:auto;color:var(--muted,#6c7182);font-size:11px}
-.fuel-type-card strong{font-family:Sora,Manrope,sans-serif;font-size:22px;letter-spacing:-.03em;color:var(--fc)}
+.fuel-type-card strong{font-family:var(--ds-font-display);font-size:22px;letter-spacing:-.03em;color:var(--fc)}
 .fuel-type-card small{color:var(--muted,#6c7182);font-size:11.5px;line-height:1.4}
 :root[data-theme="dark"] .fuel-type-card{background:linear-gradient(180deg,color-mix(in srgb,var(--fc) 22%,#1d2432),#1d2432 80%);border-color:color-mix(in srgb,var(--fc) 45%,#30384a)}
 .fuel-card{border-top:3px solid var(--fc,transparent)}
-.fuel-card .vehicle-record-icon{background:color-mix(in srgb,var(--fc,#32b98a) 16%,transparent)!important;color:var(--fc,#32b98a)!important}
+.fuel-card .vehicle-record-icon{background:color-mix(in srgb,var(--fc,var(--ds-success)) 16%,transparent)!important;color:var(--fc,var(--ds-success))!important}
 
 /* Fuel card: tank gauge design */
 .fuel-gauge-card{padding:16px 18px!important;border-top:0!important;display:flex;flex-direction:column;gap:12px}
@@ -80,6 +80,6 @@
 .fg-sub{font-size:12.5px;color:var(--muted,#6c7182)}
 .fg-stats{display:flex;gap:22px;flex-wrap:wrap;margin-top:4px}
 .fg-stats span{display:block;font-size:11px;color:var(--muted,#6c7182);font-weight:600}
-.fg-stats b{font-family:Sora,Manrope,sans-serif;font-size:16px;letter-spacing:-.02em}
+.fg-stats b{font-family:var(--ds-font-display);font-size:16px;letter-spacing:-.02em}
 :root[data-theme="dark"] .fg-tank{background:color-mix(in srgb,var(--fc) 14%,#1d2432);border-color:color-mix(in srgb,var(--fc) 45%,#30384a)}
 @media (prefers-reduced-motion:reduce){.fg-tank i{animation:none}}

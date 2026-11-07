@@ -43,9 +43,9 @@
 :root[data-theme="dark"] .sidebar-collapse-btn{background:transparent;border-color:#262e3c;color:#9aa4ba}
 
 /* default-account star */
-.default-star.is-default{color:var(--warning,#f2a64b)}
+.default-star.is-default{color:var(--warning,var(--ds-warning))}
 .default-star.is-default svg{fill:currentColor}
-.default-chip{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;color:var(--brand,#3157f6);background:var(--brand-soft,#eaf0ff);vertical-align:middle}
+.default-chip{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;color:var(--brand,var(--ds-brand));background:var(--brand-soft,#eaf0ff);vertical-align:middle}
 
 /* Collapse button lives in its own row under the logo so it stays in the same place when collapsed/expanded */
 .sidebar-collapse-row{display:none}

@@ -3,7 +3,7 @@
 .cc-chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;line-height:1;padding:6px 10px;border-radius:99px;white-space:nowrap;background:var(--cc-pri-soft);color:var(--blue)}
 .cc-chip.ok{background:var(--cc-ok-soft);color:var(--cc-ok)}.cc-chip.warn{background:var(--cc-warn-soft);color:var(--cc-warn)}.cc-chip.bad{background:var(--cc-bad-soft);color:var(--cc-bad)}
 
-.cc-visual{--cc-a:#3157f6;border-radius:18px;padding:18px;color:#fff;min-height:150px;display:flex;flex-direction:column;justify-content:space-between;gap:18px;background:linear-gradient(135deg,color-mix(in srgb,var(--cc-a) 62%,#0b1033),var(--cc-a));position:relative;overflow:hidden}
+.cc-visual{--cc-a:var(--ds-brand);border-radius:18px;padding:18px;color:#fff;min-height:150px;display:flex;flex-direction:column;justify-content:space-between;gap:18px;background:linear-gradient(135deg,color-mix(in srgb,var(--cc-a) 62%,#0b1033),var(--cc-a));position:relative;overflow:hidden}
 .cc-visual:after{content:"";position:absolute;right:-40px;top:-40px;width:150px;height:150px;border-radius:50%;background:#ffffff1c}
 .cc-visual small{opacity:.82;font-size:12px;display:block}.cc-visual strong{font-size:19px;letter-spacing:-.01em;display:block}.cc-visual .cc-v-icon{width:34px;height:34px;border-radius:11px;background:#ffffff26;display:grid;place-items:center}
 .cc-visual > *{position:relative;z-index:1}
@@ -102,7 +102,7 @@
 
 /* The "Other amount" input in the pay modals */
 .cc-option input{width:100%;margin-top:10px;height:44px;padding:0 12px;border:1px solid var(--ds-control-border,#e0e5ee);border-radius:var(--ds-radius-md,10px);background:var(--ds-control-bg,#fff);color:var(--ds-control-text,inherit)}
-.cc-option input:focus{outline:none;border-color:var(--ds-brand,#3157f6);box-shadow:0 0 0 3px var(--ds-focus-ring,#3157f633)}
+.cc-option input:focus{outline:none;border-color:var(--ds-brand,var(--ds-brand));box-shadow:0 0 0 3px var(--ds-focus-ring,color-mix(in srgb,var(--ds-brand) 20%,transparent))}
 
 /* Distinct layouts per debt category */
 /* Credit cards: card-shaped tiles in a 2-column grid */
@@ -123,7 +123,7 @@
 
 /* ---- Visa-sized payment cards (credit cards + installment apps) ---- */
 .pc-wrap{display:grid;gap:10px;width:100%;max-width:400px;min-width:0}
-.pc-face{--pc-a:#3157f6;--pc-b:#0b1033;position:relative;aspect-ratio:1.586/1;border-radius:20px;padding:20px 22px;color:#fff;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;background:linear-gradient(135deg,var(--pc-a),var(--pc-b));box-shadow:0 10px 26px rgba(15,23,60,.22)}
+.pc-face{--pc-a:var(--ds-brand);--pc-b:#0b1033;position:relative;aspect-ratio:1.586/1;border-radius:20px;padding:20px 22px;color:#fff;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;background:linear-gradient(135deg,var(--pc-a),var(--pc-b));box-shadow:0 10px 26px rgba(15,23,60,.22)}
 .pc-face:before{content:"";position:absolute;right:-60px;top:-70px;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,.12)}
 .pc-face:after{content:"";position:absolute;left:-50px;bottom:-90px;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.07)}
 .pc-face>*{position:relative;z-index:1}
