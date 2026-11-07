@@ -144,3 +144,17 @@ svg.lucide{stroke-width:var(--ds-icon-stroke)}
 .sms-sheet .smi-card h4,.sms-sheet .smi-card small{text-transform:none}
 @media (max-width:640px){.sms-actions .menu-wrap .menu-popover{left:auto;right:0}}
 .sms-main>.period-switch{margin:0}
+
+/* status row: tabs + icon-only export */
+.sms-statusrow{display:flex;gap:8px;align-items:center}
+.sms-statusrow .period-switch{flex:1 1 auto;min-width:0;margin:0}
+.sms-statusrow .period-seg{width:100%}
+.sms-statusrow .period-seg button{flex:1 1 0;padding-left:8px;padding-right:8px;white-space:nowrap}
+.sms-exp{width:42px;height:42px;padding:0;justify-content:center}
+.sms-exp>svg:first-child{width:18px!important;height:18px!important;min-width:18px;flex:none}
+.sms-exp span,.sms-exp .menu-caret{display:none}
+.sms-statusrow .menu-wrap{flex:0 0 auto}
+.sms-statusrow .menu-popover{left:auto;right:0}
+.sms-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ds-warn);margin-left:2px;box-shadow:0 0 0 2px rgba(255,255,255,.55)}
+.sms-dot.ok{background:var(--ds-ok)}
+.sms-page .page-heading{margin-bottom:0}
