@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { PAGE_TIPS } from './pageTips.js';
 
-function TipButton({ tips }) {
+export function TipButton({ tips }) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState(null);
   const btn = useRef(null);

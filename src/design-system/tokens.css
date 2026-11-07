@@ -30,6 +30,7 @@
   --ds-border-strong: #d9deea;        /* dividers that must stand out */
   --ds-text-subtle: #8b92a5;          /* hints, placeholders */
   --ds-on-brand: #ffffff;             /* text on brand / danger fills */
+  --ds-hero-from: #3f63f6; --ds-hero-mid: #667af7; --ds-hero-to: #8b7df5;  /* welcome card gradient */
 
   /* ---- Surfaces + text ---- */
   --ds-page: #f7f8fa;
@@ -107,6 +108,7 @@
   --ds-soft: #202837;
   --ds-surface-raised: #1d2432;
   --ds-hover: #262f40;
+  --ds-hero-from: #2a47cf; --ds-hero-mid: #3f4fc4; --ds-hero-to: #6a5bd0;
   --ds-border-strong: #30384a;
   --ds-text-subtle: #8b92a5;
   --ds-page: #0c1017;

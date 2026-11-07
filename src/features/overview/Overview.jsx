@@ -4,6 +4,7 @@ import { EmptyState } from '../../components/ui/EmptyState.jsx';
 import { MetricCard } from '../../components/ui/MetricCard.jsx';
 import { MonthPicker } from '../../components/ui/MonthPicker.jsx';
 import { PageHeading } from '../../components/ui/PageHeading.jsx';
+import { WelcomeCard } from '../../components/ui/WelcomeCard.jsx';
 import { ProfileAvatar } from '../../components/ui/ProfileAvatar.jsx';
 import { VehicleOverviewSummary } from '../admin/VehicleOverviewSummary.jsx';
 import { TransactionTable } from '../transactions/TransactionTable.jsx';
@@ -24,7 +25,7 @@ export function Overview(p){
  const maxSpend=Math.max(1,...categoryData.map(x=>x.value));
  const insight=expenses===0?'Add your first expense to start seeing your spending patterns.':savingsRate>=20?`Great work — you're keeping ${Math.round(savingsRate)}% of this month's income.`:net<0?'Your expenses are higher than income this month. Review flexible spending first.':`Your top spending category is ${categoryData[0]?.name||'—'}. Keep an eye on it as the month continues.`;
  return <>
-  <PageHeading className="greeting-heading" title={<><span className="greeting-avatar-wrap"><ProfileAvatar value={profileAvatar} className="greeting-avatar-image"/></span><span className="greeting-copy"><span className="greeting-time">{greeting},</span><span className="greeting-name">{displayName}</span></span></>} subtitle="Let’s make it a productive day" actions={<><MonthPicker month={month} setMonth={setMonth}/><button className="btn btn-primary" onClick={()=>{if(!accounts.length){setToast('Add an account or wallet first. Go to Accounts → Add account, then come back to add your transaction.');setPage('Accounts');return;}setEditing(null);setModal('transaction')}}><Plus size={17}/> Add transaction</button></>}/>
+  <WelcomeCard avatar={profileAvatar} greeting={greeting} name={displayName} subtitle="Let’s make it a productive day" month={month} setMonth={setMonth} onAdd={()=>{if(!accounts.length){setToast('Add an account or wallet first. Go to Accounts → Add account, then come back to add your transaction.');setPage('Accounts');return;}setEditing(null);setModal('transaction')}}/>
   {onboardingSteps&&<OnboardingChecklist storageKey={onboardingKey} steps={onboardingSteps}/>}
   <div className="today-row">
    <button type="button" className={`today-strip ${dueOverdue?'bad':dueItems.length?'warn':'ok'}`} onClick={()=>setPage('Cash flow calendar')}><span className="today-icon"><CalendarClock size={18}/></span><span className="today-copy"><b>{dueItems.length?`${dueItems.length} payment${dueItems.length>1?'s':''} due in the next 7 days`:'Nothing due this week'}</b><small>{dueItems.length?`${fmt(dueTotal)} in total${dueOverdue?` · ${dueOverdue} overdue`:''} · ${dueItems.slice(0,2).map(x=>x.name).join(', ')}${dueItems.length>2?` +${dueItems.length-2}`:''}`:'You’re clear for now.'}</small></span><ArrowUpRight size={16}/></button>

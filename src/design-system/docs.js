@@ -14,7 +14,8 @@ const COLORS = [
   ['Status', [['--ds-success','Success / income'],['--ds-warning','Warning'],['--ds-danger','Danger'],['--ds-ok','Chip OK'],['--ds-warn','Chip warning'],['--ds-bad','Chip late']]],
   ['Surfaces', [['--ds-page','Page'],['--ds-surface','Card / panel'],['--ds-surface-raised','Raised card, popover'],['--ds-soft','Soft fill'],['--ds-hover','Hover fill'],['--ds-border','Border'],['--ds-border-strong','Strong border']]],
   ['Text', [['--ds-text','Text'],['--ds-text-muted','Muted text'],['--ds-text-subtle','Hints, placeholders'],['--ds-on-brand','Text on brand fill'],['--ds-secondary-text','Secondary button text']]],
-  ['Fuel kinds', [['--ds-fuel-80','80 Octane'],['--ds-fuel-92','92 Octane'],['--ds-fuel-95','95 Octane'],['--ds-fuel-98','98 Octane'],['--ds-fuel-diesel','Diesel'],['--ds-fuel-gas','Gas'],['--ds-fuel-electric','Electric']]],
+  ['Hero (welcome card)', [['--ds-hero-from','Gradient start'],['--ds-hero-mid','Gradient middle'],['--ds-hero-to','Gradient end']]],
+ ['Fuel kinds', [['--ds-fuel-80','80 Octane'],['--ds-fuel-92','92 Octane'],['--ds-fuel-95','95 Octane'],['--ds-fuel-98','98 Octane'],['--ds-fuel-diesel','Diesel'],['--ds-fuel-gas','Gas'],['--ds-fuel-electric','Electric']]],
  ['Form controls', [['--ds-control-bg','Input background'],['--ds-control-border','Input border'],['--ds-control-text','Input text']]],
 ];
 const SCALE = [['--ds-fs-3xl','Page title'],['--ds-fs-2xl','Big number'],['--ds-fs-xl','Section title'],['--ds-fs-lg','Card title'],['--ds-fs-md','Body'],['--ds-fs-sm','Label'],['--ds-fs-xs','Small'],['--ds-fs-2xs','Micro']];
@@ -67,6 +68,9 @@ document.getElementById('ds-root').innerHTML = `<div class="ds-doc">
  <div class="ds-card-demo"><div class="modal-actions"><button class="btn btn-secondary">Back</button><button class="btn btn-primary">Continue</button></div></div>
  <h3>Repeatable rows</h3><p class="lede">A list the user can add to and remove from, like tanks and batteries of a vehicle.</p>
  <div class="ds-repeat"><div class="ds-repeat-head"><b>Tanks &amp; batteries</b><small>Gas is in m³ and batteries in kWh.</small></div><div class="ds-repeat-row"><select><option>Petrol</option><option>Gas</option></select><input placeholder="Name (optional)"/><span class="ds-repeat-unit"><input type="number" placeholder="Capacity" value="50"/><em>L</em></span><button type="button" class="icon-btn" aria-label="Remove">✕</button></div><button type="button" class="btn btn-secondary ds-repeat-add">Add tank or battery</button></div>
+
+ <h3>Welcome card</h3><p class="lede">The home greeting. Gradient comes from <code>--ds-hero-from / mid / to</code>, so change it in tokens.css only.</p>
+ <section class="welcome-card" style="margin:0"><div class="welcome-top"><span class="welcome-avatar"><span class="welcome-avatar-img" style="background:#fff3"></span></span><div class="welcome-copy"><span class="welcome-hi">Good afternoon,</span><h1 class="welcome-name">Nora Amr</h1></div></div><p class="welcome-sub">Let's make it a productive day</p><div class="welcome-actions"><div class="month-picker"><span class="month-picker-label">Nov 2026</span></div><button class="btn welcome-add">Add transaction</button></div></section>
 
  <h2 id="credit">Credit card</h2><p class="lede">The card and limit bar used in Debts &amp; installments.</p>
  <div class="ds-grid"><div class="cc-visual"><span class="cc-v-icon">${icon}</span><div><small>Credit card</small><strong>CIB Mastercard</strong><small>Statement on the 25th · Pay within 25 days</small></div></div>
