@@ -1,0 +1,32 @@
+/* ==========================================================================
+   POCKET DESIGN SYSTEM · PATTERNS
+   Reusable multi-part patterns. Colors, radii and sizes come from tokens.css.
+   1) Wizard action row   2) Repeatable-row editor
+   ========================================================================== */
+
+/* One look for the action row of every popup, wizard and form: secondary on the left, primary on the right. */
+.tx-wizard-actions,.modal-actions,.category-wizard-actions,.admin-wizard-actions,.vehicle-form-actions,.category-create-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:nowrap}
+.tx-wizard-actions>:only-child,.modal-actions>:only-child,.category-wizard-actions>:only-child,.admin-wizard-actions>:only-child,.vehicle-form-actions>:only-child{margin-left:auto}
+.tx-wizard-actions .btn,.modal-actions .btn,.category-wizard-actions .btn,.admin-wizard-actions .btn,.vehicle-form-actions .btn{flex:0 0 auto;min-width:112px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+@media (max-width:640px){
+ .tx-wizard-actions .btn,.modal-actions .btn,.category-wizard-actions .btn,.admin-wizard-actions .btn,.vehicle-form-actions .btn{flex:1 1 0;min-width:0}
+ .tx-wizard-actions .btn-primary,.modal-actions .btn-primary{flex-grow:1.5}
+}
+
+/* Accounts list view: rows carry their account color, cards and apps look like their grid cards. */
+
+.tx-wizard-actions .btn:hover,.tx-wizard-actions .btn:active,.modal-actions .btn:hover,.modal-actions .btn:active{transform:none;translate:none}
+.tx-wizard-actions .btn svg,.modal-actions .btn svg{rotate:none!important}
+
+/* 2) Repeatable-row editor: a list of rows the user can add to and remove from
+   (tanks & batteries, and any future "add another" list). */
+.ds-repeat{display:grid;gap:10px;margin:14px 0;padding:14px;border:1px solid var(--ds-border);border-radius:var(--ds-radius-lg);background:var(--ds-surface)}
+.ds-repeat-head{display:grid;gap:2px}
+.ds-repeat-head small{color:var(--ds-text-muted);font-size:var(--ds-fs-sm);line-height:1.4}
+.ds-repeat-row{display:grid;grid-template-columns:110px 1fr 130px 38px;gap:8px;align-items:center}
+.ds-repeat-row select,.ds-repeat-row input{min-width:0;width:100%}
+.ds-repeat-unit{position:relative;display:block}
+.ds-repeat-unit input{padding-right:44px}
+.ds-repeat-unit em{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-style:normal;font-size:var(--ds-fs-sm);color:var(--ds-text-muted);pointer-events:none}
+.ds-repeat-add{justify-self:start}
+@media(max-width:640px){.ds-repeat-row{grid-template-columns:1fr 1fr}.ds-repeat-row .ds-repeat-unit{grid-column:1}.ds-repeat-row .icon-btn{grid-column:2;justify-self:end}}

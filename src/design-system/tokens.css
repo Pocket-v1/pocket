@@ -111,6 +111,12 @@
   --ds-secondary-text: #e4e8f2;
 }
 
+/* ---- Fuel kinds (fuel log cards, chips, gauges) ---- */
+:root {
+  --ds-fuel-80: #8f96a8; --ds-fuel-92: #3157f6; --ds-fuel-95: #8f7bff; --ds-fuel-98: #cb4756;
+  --ds-fuel-diesel: #f2a64b; --ds-fuel-gas: #32b98a; --ds-fuel-electric: #1fb5c9;
+}
+
 /* ---- Optional accent themes (set data-design on <html>) ---- */
 :root[data-design="lavender"] { --ds-brand: #9a75e8; --ds-brand-hover: #8661d6; --ds-success: #5bbba7; --ds-warning: #edb36b; --ds-brand-soft: #f1eafd; }
 :root[data-design="ocean"]    { --ds-brand: #168aad; --ds-brand-hover: #117592; --ds-success: #2a9d8f; --ds-warning: #e9a23b; --ds-brand-soft: #e1f3f8; }

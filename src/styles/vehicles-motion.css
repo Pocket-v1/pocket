@@ -83,14 +83,3 @@
 .fg-stats b{font-family:Sora,Manrope,sans-serif;font-size:16px;letter-spacing:-.02em}
 :root[data-theme="dark"] .fg-tank{background:color-mix(in srgb,var(--fc) 14%,#1d2432);border-color:color-mix(in srgb,var(--fc) 45%,#30384a)}
 @media (prefers-reduced-motion:reduce){.fg-tank i{animation:none}}
-
-/* Tanks & batteries editor */
-.tank-editor{display:grid;gap:10px;margin:14px 0;padding:14px;border:1px solid var(--border,#e5e8f0);border-radius:16px;background:var(--surface,#fff)}
-.tank-editor-head{display:grid;gap:2px}.tank-editor-head small{color:var(--muted,#6c7182);font-size:12px;line-height:1.4}
-.tank-row{display:grid;grid-template-columns:110px 1fr 130px 38px;gap:8px;align-items:center}
-.tank-row select,.tank-row input{min-width:0;width:100%}
-.tank-cap{position:relative;display:block}.tank-cap input{padding-right:44px}
-.tank-cap em{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-style:normal;font-size:12px;color:var(--muted,#6c7182);pointer-events:none}
-.tank-add{justify-self:start}
-@media(max-width:640px){.tank-row{grid-template-columns:1fr 1fr;}.tank-row .tank-cap{grid-column:1}.tank-row .icon-btn{grid-column:2;justify-self:end}}
-:root[data-theme="dark"] .tank-editor{background:#1d2432;border-color:#30384a}

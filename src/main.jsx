@@ -7,6 +7,7 @@ import './styles/sheets.css';
 import './styles/credit.css';
 import './design-system/tokens.css';
 import './design-system/components.css';
+import './design-system/patterns.css';
 import './styles/sidebar-collapse.css'
 import './styles/fuel-card.css'
 import './styles/auth-responsive.css';
