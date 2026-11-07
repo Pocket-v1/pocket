@@ -132,7 +132,9 @@ function SmsCard({ conf, sug, onAutoRule, xfer, onTransfer, cur, x, usable, expC
 
 export function SmsPage({ accounts, transactions = [], session, supabase, currency = 'EGP', gender = '', onApprove, onUndoTx, onPendingChange, setToast }) {
   const userId = session?.user?.id;
-  const [tab, setTab] = useState('inbox');
+  const [tab, setTabRaw] = useState('inbox');
+  const [main, setMain] = useState('inbox');
+  const setTab = k => { if (['inbox', 'insights', 'history'].includes(k)) setMain(k); setTabRaw(k); };
   const [items, setItems] = useState([]);
   const [hist, setHist] = useState([]);
   const [configs, setConfigs] = useState([]);
@@ -376,27 +378,23 @@ export function SmsPage({ accounts, transactions = [], session, supabase, curren
   }, [test, configs, accounts]);
 
   const jsonBody = `{"token":"${token || 'YOUR_TOKEN'}","sender":"<Sender>","body":"<Message>"}`;
-  const inSettings = ['banks', 'connect', 'test', 'devices', 'rules'].includes(tab);
+  const inSettings = ['banks', 'connect', 'test', 'devices', 'rules', 'setup'].includes(tab);
+  const cur = inSettings ? main : tab;
   const isTab = k => ['inbox', 'insights', 'history'].includes(k) ? tab === k : inSettings;
   const tabs = [['inbox', 'Inbox', Inbox, items.length], ['insights', 'Insights', BarChart3], ['history', 'History', History], [inSettings ? tab : 'connect', 'Settings', Settings2]];
   const subnav = <div className="sms-seg sms-sub" role="tablist">{[['connect', 'Phone'], ['banks', 'Banks'], ['devices', 'Devices'], ['rules', 'Learned rules'], ['test', 'Try an SMS']].map(([k, l]) => <button type="button" key={k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{l}</button>)}</div>;
   const filters = <div className="smx-filters">
     <label className="smx-search"><Search size={15} /><input value={q} onChange={e => setQ(e.target.value)} placeholder="Search merchant or message" aria-label="Search SMS" /></label>
-    <select value={fAcc} onChange={e => setFAcc(e.target.value)} aria-label="Filter by account"><option value="">All accounts</option>{tab === 'inbox' && <option value="none">No account</option>}{usable.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select>
-    {tab === 'history' && <><select value={hStatus} onChange={e => setHStatus(e.target.value)} aria-label="Filter by status"><option value="all">Approved + dismissed</option><option value="approved">Approved</option><option value="dismissed">Dismissed</option></select><input type="date" value={hFrom} onChange={e => setHFrom(e.target.value)} aria-label="From date" /></>}
+    <select value={fAcc} onChange={e => setFAcc(e.target.value)} aria-label="Filter by account"><option value="">All accounts</option>{cur === 'inbox' && <option value="none">No account</option>}{usable.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select>
+    {cur === 'history' && <><input type="date" value={hFrom} onChange={e => setHFrom(e.target.value)} aria-label="From date" /></>}
   </div>;
 
   return <div className="sms-page">
-    <PageHeading eyebrow="AUTOMATIC TRACKING" title="Bank SMS" subtitle="Bank messages land here first. You review them before they become transactions." actions={<><span className={`sms-conn ${lastSms ? 'on' : ''}`}>{lastSms ? `Connected · last SMS ${ago(lastSms)}` : 'Not connected yet'}</span><button type="button" className="btn" onClick={load}><RefreshCw size={15} /> Refresh</button></>} />
-    <div className="smx-summary">
-      <div><span className="smx-sico"><Inbox size={16} /></span><b>{items.length}</b><small>Pending</small></div>
-      <div><span className="smx-sico"><Clock size={16} /></span><b>{lastSms ? ago(lastSms) : '—'}</b><small>Last SMS</small></div>
-      <div><span className="smx-sico"><CheckCircle2 size={16} /></span><b>{approvedMonth}</b><small>Approved this month</small></div>
-    </div>
+    <PageHeading eyebrow="AUTOMATIC TRACKING" title="Bank SMS" subtitle="Bank messages land here first. You review them before they become transactions." actions={<><span className={`sms-conn ${lastSms ? 'on' : ''}`}>{lastSms ? `Connected · last SMS ${ago(lastSms)}` : 'Not connected yet'}</span><button type="button" className="btn" onClick={load}><RefreshCw size={15} /> Refresh</button><button type="button" className={`btn ${inSettings ? 'btn-primary' : ''}`} onClick={() => setTab(inSettings ? main : 'connect')}><Settings2 size={15} /> Setup</button></>} />
     <div className="panel sms-panel">
-    <div className="sms-tabs" role="tablist">{tabs.map(([k, l, I, n]) => <button type="button" role="tab" aria-selected={isTab(k)} key={l} className={isTab(k) ? 'on' : ''} onClick={() => setTab(k)}><I size={15} />{l}{n ? <em>{n}</em> : null}</button>)}</div>
+    <div className="smx-chips2 sms-box" role="tablist" aria-label="Messages">{[['inbox', `To review ${items.length}`, () => setTab('inbox'), cur === 'inbox'], ['approved', `Approved ${hist.filter(h => h.status === 'approved').length}`, () => { setHStatus('approved'); setTab('history'); }, cur === 'history' && hStatus === 'approved'], ['dismissed', `Dismissed ${hist.filter(h => h.status === 'dismissed').length}`, () => { setHStatus('dismissed'); setTab('history'); }, cur === 'history' && hStatus === 'dismissed'], ['insights', 'Insights', () => setTab('insights'), cur === 'insights']].map(([k, l, fn, on]) => <button type="button" role="tab" aria-selected={on} key={k} className={`sms-chipbtn ${on ? 'on' : ''}`} onClick={fn}>{l}</button>)}</div>
 
-    {tab === 'inbox' && <section className="sms-pane">
+    {cur === 'inbox' && <section className="sms-pane">
       {filters}
       <div className="smx-chips2" role="group" aria-label="Quick filters">
         {[['all', `All ${payments.length}`], ['check', `Needs review ${needsReview}`], ['ready', `Ready ${readyCount}`]].map(([k, l]) => <button type="button" key={k} className={`sms-chipbtn ${view === k ? 'on' : ''}`} onClick={() => setView(k)}>{l}</button>)}
@@ -420,24 +418,9 @@ export function SmsPage({ accounts, transactions = [], session, supabase, curren
         <div className="sms-actions"><button type="button" className="btn btn-sm" onClick={async () => { for (const x of noise) await dismiss(x); }}>Dismiss all</button></div></details>}
     </section>}
 
-    {tab === 'insights' && <SmsInsights items={items} hist={hist} configs={configs} usable={usable} accounts={accounts} transactions={transactions} fmt={fmt} flagged={flagged} />}
+    {cur === 'insights' && <SmsInsights items={items} hist={hist} configs={configs} usable={usable} accounts={accounts} transactions={transactions} fmt={fmt} flagged={flagged} />}
 
-    {tab === 'devices' && <section className="sms-pane">
-      {subnav}
-      <SmsDevices devices={devices} setDevices={setDevices} token={token} lastSms={lastSms} userId={userId} supabase={supabase} setToast={setToast} copy={copy} makeToken={makeToken} quiet={quiet} setQuiet={setQuiet} exportHist={exportHist} histCount={histShown.length} />
-    </section>}
-
-    {tab === 'rules' && <section className="sms-pane">
-      {subnav}
-      <p className="sms-hint">What Pocket learned from your corrections, and your auto-approve rules.</p>
-      {configs.flatMap(c => (c.learned || []).map((l, i) => ({ c, l, i }))).map(({ c, l, i }) => <div className="smd-row" key={`${c.account_id}-${i}`}><span className="smd-ic"><RefreshCw size={15} /></span><div><b>{l.bank || 'Bank'}: amount pattern</b><small>{usable.find(a => a.id === c.account_id)?.name || 'Account'} · learned {ago(l.at)} · <code>{l.pattern}</code></small></div><button type="button" className="btn btn-sm" onClick={async () => { const row = { ...c, learned: (c.learned || []).filter((_, j) => j !== i), amount_pattern: c.amount_pattern === l.pattern ? null : c.amount_pattern, updated_at: new Date().toISOString() }; const { data, error } = await supabase.from('account_sms_config').upsert(row, { onConflict: 'account_id' }).select().single(); if (error) { setToast(error.message); return; } setConfigs(o => [...o.filter(z => z.account_id !== data.account_id), data]); }}>Remove</button></div>)}
-      {!configs.some(c => (c.learned || []).length) && <div className="sms-empty"><b>Nothing learned yet</b><small>When you fix an amount before approving, Pocket remembers how that bank writes it.</small></div>}
-      {configs.flatMap(c => (c.auto_rules || []).map((r, i) => ({ c, r, i }))).length > 0 && <><h4 className="smd-sub">Auto-approve rules</h4>{configs.flatMap(c => (c.auto_rules || []).map((r, i) => ({ c, r, i }))).map(({ c, r, i }) => <div className="smd-row" key={`${c.account_id}-r${i}`}><span className="smd-ic"><Check size={15} /></span><div><b>{r.merchant}</b><small>{usable.find(a => a.id === c.account_id)?.name} · up to {fmt(r.max)}</small></div><button type="button" className="btn btn-sm" onClick={async () => { const row = { ...c, auto_rules: (c.auto_rules || []).filter((_, j) => j !== i), updated_at: new Date().toISOString() }; const { data, error } = await supabase.from('account_sms_config').upsert(row, { onConflict: 'account_id' }).select().single(); if (error) { setToast(error.message); return; } setConfigs(o => [...o.filter(z => z.account_id !== data.account_id), data]); }}>Remove</button></div>)}</>}
-      <h4 className="smd-sub">Backup</h4>
-      <SmsRulesBackup configs={configs} accounts={accounts} userId={userId} supabase={supabase} setToast={setToast} onImported={row => setConfigs(o => [...o.filter(z => z.account_id !== row.account_id), row])} />
-    </section>}
-
-    {tab === 'history' && <section className="sms-pane">
+    {cur === 'history' && <section className="sms-pane">
       {filters}
       <div className="sms-actions"><MenuButton label="Export" icon={Download} items={[{ label: 'CSV', description: 'Plain text, opens anywhere', icon: FileText, onClick: () => exportHist('csv') }, { label: 'Excel', description: '.xlsx spreadsheet', icon: FileSpreadsheet, onClick: () => exportHist('xlsx') }]} disabled={!histShown.length} /></div>
       {!histShown.length ? <div className="sms-empty"><History size={26} /><b>Nothing here</b><small>Approved and dismissed messages appear here.</small></div> :
@@ -449,16 +432,14 @@ export function SmsPage({ accounts, transactions = [], session, supabase, curren
         </article>)}</div>}
     </section>}
 
-    {tab === 'banks' && <section className="sms-pane">
-      {subnav}
-      <p className="sms-hint">For each account, tell Pocket which bank sender and card digits belong to it. Matching messages are linked to that account automatically.</p>
-      {usable.length ? usable.map(a => <AccountConfig key={a.id + (configs.find(c => c.account_id === a.id)?.updated_at || '')} account={a} cfg={configs.find(c => c.account_id === a.id)} userId={userId} supabase={supabase} categories={expCats} setToast={setToast} open={String(openAcc) === String(a.id)} onToggle={() => setOpenAcc(o => String(o) === String(a.id) ? null : a.id)} onSaved={row => setConfigs(o => [...o.filter(c => c.account_id !== row.account_id), row])} />) : <div className="sms-empty"><b>No accounts yet</b><small>Add an account first.</small></div>}
-      <div className="sms-actions"><button type="button" className="btn btn-sm" disabled={testing} onClick={sendTest}>{testing ? 'Sending…' : 'Send test SMS'}</button></div>
-    </section>}
-
-    {tab === 'connect' && <section className="sms-pane">
-      {subnav}
-      {(() => { const bankDone = configs.some(c => (c.senders || []).length || (c.card_last4 || []).length); const steps = [['Token', !!token], ['Phone', !!lastSms], ['Banks', bankDone]]; return <div className="sms-steps" role="tablist">{steps.map(([l, done], i) => <button type="button" key={l} className={`${cstep === i + 1 ? 'on' : ''} ${done ? 'done' : ''}`} onClick={() => setCstep(i + 1)}><i>{done ? <Check size={12} /> : i + 1}</i>{l}</button>)}</div>; })()}
+    {inSettings && <div className="sms-sheet-wrap"><div className="sms-scrim" onClick={() => setTab(main)} />
+    <aside className="sms-sheet" role="dialog" aria-label="SMS setup">
+      <div className="sms-sheet-top"><h3>SMS setup</h3><button type="button" className="icon-btn" aria-label="Close setup" onClick={() => setTab(main)}><X size={18} /></button></div>
+      <div className={`sms-acc ${tab === 'connect' ? 'open' : ''}`}>
+        <button type="button" className="sms-acc-h" aria-expanded={tab === 'connect'} onClick={() => setTab(tab === 'connect' ? 'setup' : 'connect')}><span><b>Phone</b><small>{lastSms ? `Connected · last SMS ${ago(lastSms)}` : 'Token and shortcut'}</small></span><ChevronDown size={16} /></button>
+        {tab === 'connect' && <>
+<div className="sms-sec-body">
+      {(() => { const bankDone = configs.some(c => (c.senders || []).length || (c.card_last4 || []).length); const steps = [['Token', !!token], ['Shortcut', !!lastSms], ['Link banks', bankDone]]; return <div className="sms-steps" role="tablist">{steps.map(([l, done], i) => <button type="button" key={l} className={`${cstep === i + 1 ? 'on' : ''} ${done ? 'done' : ''}`} onClick={() => setCstep(i + 1)}><i>{done ? <Check size={12} /> : i + 1}</i>{l}</button>)}</div>; })()}
       {cstep === 1 && <div className="sms-card"><h4>Your private token</h4><p>Created for you automatically. It tells Pocket the SMS is yours. Never share it.</p>
         <div className="sms-copy"><code>{token ? (showTok ? token : `${token.slice(0, 4)}••••••••••••${token.slice(-4)}`) : 'Creating…'}</code><button type="button" className="icon-btn" aria-label={showTok ? 'Hide token' : 'Show token'} onClick={() => setShowTok(v => !v)}>{showTok ? <EyeOff size={15} /> : <Eye size={15} />}</button><button type="button" className="icon-btn" aria-label="Copy token" disabled={!token} onClick={() => copy(token, setToast)}><Copy size={15} /></button></div>
         <div className="sms-actions"><button type="button" className="btn btn-sm" onClick={() => { if (!token || window.confirm('Make a new token? Your phone will stop working until you paste the new token into the Shortcut.')) makeToken(); }}><RefreshCw size={14} /> New token</button><button type="button" className="btn btn-primary btn-sm" disabled={!token} onClick={() => setCstep(2)}>Next</button></div></div>}
@@ -495,14 +476,51 @@ export function SmsPage({ accounts, transactions = [], session, supabase, curren
           </ol>}</details></>}
       {cstep === 3 && <div className="sms-card"><h4>Link each bank to an account</h4><p>{configs.filter(c => (c.senders || []).length || (c.card_last4 || []).length).length ? `${configs.filter(c => (c.senders || []).length || (c.card_last4 || []).length).length} account(s) set up.` : 'You can skip this. The first time an SMS arrives, tap “Remember” on its card and Pocket links that bank for you.'}</p>
         <div className="sms-actions"><button type="button" className="btn btn-sm" onClick={() => setCstep(2)}>Back</button><button type="button" className="btn btn-sm" onClick={() => setTab('banks')}><Settings2 size={14} /> Set up accounts</button><button type="button" className="btn btn-primary btn-sm" onClick={() => setTab('inbox')}>Done</button></div></div>}
-    </section>}
-
-    {tab === 'test' && <section className="sms-pane">
-      {subnav}
+    </div>
+        </>}
+      </div>
+      <div className={`sms-acc ${tab === 'banks' ? 'open' : ''}`}>
+        <button type="button" className="sms-acc-h" aria-expanded={tab === 'banks'} onClick={() => setTab(tab === 'banks' ? 'setup' : 'banks')}><span><b>Banks</b><small>Link each bank to an account</small></span><ChevronDown size={16} /></button>
+        {tab === 'banks' && <>
+<div className="sms-sec-body">
+      <p className="sms-hint">For each account, tell Pocket which bank sender and card digits belong to it. Matching messages are linked to that account automatically.</p>
+      {usable.length ? usable.map(a => <AccountConfig key={a.id + (configs.find(c => c.account_id === a.id)?.updated_at || '')} account={a} cfg={configs.find(c => c.account_id === a.id)} userId={userId} supabase={supabase} categories={expCats} setToast={setToast} open={String(openAcc) === String(a.id)} onToggle={() => setOpenAcc(o => String(o) === String(a.id) ? null : a.id)} onSaved={row => setConfigs(o => [...o.filter(c => c.account_id !== row.account_id), row])} />) : <div className="sms-empty"><b>No accounts yet</b><small>Add an account first.</small></div>}
+      <div className="sms-actions"><button type="button" className="btn btn-sm" disabled={testing} onClick={sendTest}>{testing ? 'Sending…' : 'Send test SMS'}</button></div>
+    </div>
+        </>}
+      </div>
+      <div className={`sms-acc ${tab === 'devices' ? 'open' : ''}`}>
+        <button type="button" className="sms-acc-h" aria-expanded={tab === 'devices'} onClick={() => setTab(tab === 'devices' ? 'setup' : 'devices')}><span><b>Devices</b><small>{devices.length} connected</small></span><ChevronDown size={16} /></button>
+        {tab === 'devices' && <>
+<div className="sms-sec-body">
+      <SmsDevices devices={devices} setDevices={setDevices} token={token} lastSms={lastSms} userId={userId} supabase={supabase} setToast={setToast} copy={copy} makeToken={makeToken} quiet={quiet} setQuiet={setQuiet} exportHist={exportHist} histCount={histShown.length} />
+    </div>
+        </>}
+      </div>
+      <div className={`sms-acc ${tab === 'rules' ? 'open' : ''}`}>
+        <button type="button" className="sms-acc-h" aria-expanded={tab === 'rules'} onClick={() => setTab(tab === 'rules' ? 'setup' : 'rules')}><span><b>Learned rules</b><small>What Pocket remembers</small></span><ChevronDown size={16} /></button>
+        {tab === 'rules' && <>
+<div className="sms-sec-body">
+      <p className="sms-hint">What Pocket learned from your corrections, and your auto-approve rules.</p>
+      {configs.flatMap(c => (c.learned || []).map((l, i) => ({ c, l, i }))).map(({ c, l, i }) => <div className="smd-row" key={`${c.account_id}-${i}`}><span className="smd-ic"><RefreshCw size={15} /></span><div><b>{l.bank || 'Bank'}: amount pattern</b><small>{usable.find(a => a.id === c.account_id)?.name || 'Account'} · learned {ago(l.at)} · <code>{l.pattern}</code></small></div><button type="button" className="btn btn-sm" onClick={async () => { const row = { ...c, learned: (c.learned || []).filter((_, j) => j !== i), amount_pattern: c.amount_pattern === l.pattern ? null : c.amount_pattern, updated_at: new Date().toISOString() }; const { data, error } = await supabase.from('account_sms_config').upsert(row, { onConflict: 'account_id' }).select().single(); if (error) { setToast(error.message); return; } setConfigs(o => [...o.filter(z => z.account_id !== data.account_id), data]); }}>Remove</button></div>)}
+      {!configs.some(c => (c.learned || []).length) && <div className="sms-empty"><b>Nothing learned yet</b><small>When you fix an amount before approving, Pocket remembers how that bank writes it.</small></div>}
+      {configs.flatMap(c => (c.auto_rules || []).map((r, i) => ({ c, r, i }))).length > 0 && <><h4 className="smd-sub">Auto-approve rules</h4>{configs.flatMap(c => (c.auto_rules || []).map((r, i) => ({ c, r, i }))).map(({ c, r, i }) => <div className="smd-row" key={`${c.account_id}-r${i}`}><span className="smd-ic"><Check size={15} /></span><div><b>{r.merchant}</b><small>{usable.find(a => a.id === c.account_id)?.name} · up to {fmt(r.max)}</small></div><button type="button" className="btn btn-sm" onClick={async () => { const row = { ...c, auto_rules: (c.auto_rules || []).filter((_, j) => j !== i), updated_at: new Date().toISOString() }; const { data, error } = await supabase.from('account_sms_config').upsert(row, { onConflict: 'account_id' }).select().single(); if (error) { setToast(error.message); return; } setConfigs(o => [...o.filter(z => z.account_id !== data.account_id), data]); }}>Remove</button></div>)}</>}
+      <h4 className="smd-sub">Backup</h4>
+      <SmsRulesBackup configs={configs} accounts={accounts} userId={userId} supabase={supabase} setToast={setToast} onImported={row => setConfigs(o => [...o.filter(z => z.account_id !== row.account_id), row])} />
+    </div>
+        </>}
+      </div>
+      <div className={`sms-acc ${tab === 'test' ? 'open' : ''}`}>
+        <button type="button" className="sms-acc-h" aria-expanded={tab === 'test'} onClick={() => setTab(tab === 'test' ? 'setup' : 'test')}><span><b>Try an SMS</b><small>Paste a message to see how it is read</small></span><ChevronDown size={16} /></button>
+        {tab === 'test' && <>
+<div className="sms-sec-body">
       <p className="sms-hint">Paste a bank SMS to see how Pocket reads it. Nothing is saved.</p>
       <div className="form-grid"><Field label="Sender (optional)"><input value={test.sender} onChange={e => setTest(o => ({ ...o, sender: e.target.value }))} placeholder="CIB" /></Field><Field label="Message" wide><textarea rows={4} dir="auto" value={test.body} onChange={e => setTest(o => ({ ...o, body: e.target.value }))} placeholder="Paste the SMS here" /></Field></div>
       {testResult && <div className="sms-result"><div><small>Type</small><b>{testResult.type === 'Income' ? 'Money in' : testResult.type === 'Expense' ? 'Money out' : 'Not detected'}</b></div><div><small>Amount</small><b>{testResult.amount ?? 'Not detected'}</b></div><div><small>Merchant</small><b>{testResult.merchant || '—'}</b></div><div><small>Account</small><b>{testResult.account || 'No match'}</b></div></div>}
-    </section>}
+    </div>
+        </>}
+      </div>
+    </aside></div>}
     </div>
     {undo && <div className="smx-undo" role="status"><span>Approved {undo.label}</span><button type="button" onClick={doUndo}>Undo</button></div>}
   </div>;
