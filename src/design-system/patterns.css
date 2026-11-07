@@ -59,7 +59,7 @@ svg.lucide{stroke-width:var(--ds-icon-stroke)}
 .welcome-card .tip-wrap{margin-left:auto;align-self:flex-start}
 .welcome-card .tip-btn{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.45);color:var(--ds-on-brand)}
 .welcome-card .tip-btn:hover,.welcome-card .tip-btn[aria-expanded="true"]{background:rgba(255,255,255,.28);border-color:rgba(255,255,255,.8);color:var(--ds-on-brand)}
-.welcome-sub{margin:14px 0 0;font-size:var(--ds-fs-md);color:rgba(255,255,255,.86);text-transform:none}
+.welcome-sub{margin:6px 0 0;font-size:var(--ds-fs-md);color:rgba(255,255,255,.86);text-transform:none}
 .welcome-actions{display:flex;align-items:center;gap:10px;margin-top:18px}
 .welcome-card .month-picker{flex:0 0 auto;min-width:168px;height:44px;border-radius:12px;background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.4);color:var(--ds-on-brand);box-shadow:none}
 .welcome-card .month-picker:hover{background:rgba(255,255,255,.26);border-color:rgba(255,255,255,.7)}
@@ -67,8 +67,8 @@ svg.lucide{stroke-width:var(--ds-icon-stroke)}
 .welcome-card .month-picker .month-picker-label{color:var(--ds-on-brand)}
 .welcome-add{height:44px;min-height:44px;padding:0 18px;border-radius:12px;background:#fff;color:var(--ds-brand);border:0;font-weight:800;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;box-shadow:0 6px 16px rgba(20,30,90,.18)}
 .welcome-add:hover{background:#f1f4ff;transform:none}
-@media(min-width:760px){.welcome-card{display:grid;grid-template-columns:1fr auto;grid-template-areas:"top top" "sub actions";align-items:end;column-gap:20px}.welcome-top{grid-area:top}.welcome-sub{grid-area:sub;margin:0;align-self:end}.welcome-actions{grid-area:actions;margin-top:0}}
-@media(max-width:759px){.welcome-card{padding:18px 16px;border-radius:20px}.welcome-avatar{flex-basis:56px;width:56px;height:56px}.welcome-actions .month-picker{flex:1 1 0;min-width:0}.welcome-add{flex:1 1 0;padding:0 12px}}
+@media(min-width:1100px){.welcome-card{display:flex;align-items:center;gap:24px;padding:20px 28px}.welcome-top{flex:1 1 auto;min-width:0}.welcome-actions{margin-top:0;flex:0 0 auto}.welcome-card .tip-wrap{position:absolute;top:12px;right:14px;margin:0}.welcome-sub{margin:4px 0 0}}
+@media(max-width:1099px){.welcome-card{padding:18px 20px;border-radius:20px}.welcome-avatar{flex-basis:56px;width:56px;height:56px}.welcome-actions .month-picker{flex:1 1 0;min-width:0}.welcome-add{flex:1 1 0;padding:0 12px}}
 /* Keep the welcome card controls light-on-brand in dark mode too (beats the generic dark control rules). */
 :root[data-theme="dark"] .welcome-card .month-picker{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.36);color:var(--ds-on-brand);box-shadow:none}
 :root[data-theme="dark"] .welcome-card .month-picker:hover{background:rgba(255,255,255,.24);border-color:rgba(255,255,255,.7)}
