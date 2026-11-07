@@ -142,3 +142,5 @@ svg.lucide{stroke-width:var(--ds-icon-stroke)}
 .sms-sheet .smi-grid{display:flex;flex-direction:column}
 .sms-sheet .smi-card:last-child{order:-1}
 .sms-sheet .smi-card h4,.sms-sheet .smi-card small{text-transform:none}
+@media (max-width:640px){.sms-actions .menu-wrap .menu-popover{left:auto;right:0}}
+.sms-main>.period-switch{margin:0}
