@@ -988,7 +988,7 @@ body .btn.btn-sm{font-size:13px!important;min-height:34px!important}
 
 /* Page tips + app tour */
 .tip-wrap{position:relative;display:inline-flex;vertical-align:middle;margin-left:8px}
-.tip-btn{width:28px;height:28px;border-radius:99px;border:1px solid var(--border,#e5e8f0);background:var(--surface,var(--ds-surface));color:var(--muted,#6c7182);display:grid;place-items:center;cursor:pointer;transition:color .2s,border-color .2s,background .2s}
+.tip-btn{width:28px;height:28px;padding:0;line-height:0;flex:none;border-radius:99px;border:1px solid var(--border,#e5e8f0);background:var(--surface,var(--ds-surface));color:var(--muted,#6c7182);display:grid;place-items:center;cursor:pointer;transition:color .2s,border-color .2s,background .2s}
 .tip-btn:hover,.tip-btn[aria-expanded="true"]{color:var(--ds-brand);border-color:var(--ds-brand);background:var(--brand-soft,var(--ds-brand-soft))}
 .tip-pop{position:fixed;z-index:200;max-width:calc(100vw - 32px);padding:14px;border-radius:16px;background:var(--surface,#fff);border:1px solid var(--border,var(--ds-border));box-shadow:0 18px 40px rgba(24,32,57,.14);font-size:13px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--text,var(--ds-text));animation:tipIn .22s ease both}
 .tip-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
