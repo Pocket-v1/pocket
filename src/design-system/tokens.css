@@ -30,7 +30,7 @@
   --ds-border-strong: #d9deea;        /* dividers that must stand out */
   --ds-text-subtle: #8b92a5;          /* hints, placeholders */
   --ds-on-brand: #ffffff;             /* text on brand / danger fills */
-  --ds-hero-from: #3f63f6; --ds-hero-mid: #667af7; --ds-hero-to: #8b7df5;  /* welcome card gradient */
+  --ds-hero-from: #2c4fe6; --ds-hero-mid: #4a5fec; --ds-hero-to: #7468e6;  /* welcome card gradient */
 
   /* ---- Surfaces + text ---- */
   --ds-page: #f7f8fa;

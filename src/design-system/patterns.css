@@ -46,7 +46,7 @@ svg.lucide{stroke-width:var(--ds-icon-stroke)}
 
 /* 5) Welcome card (home greeting): brand gradient, the person, month switch, main action.
    Gradient comes from --ds-hero-* so light and dark are set in tokens.css. */
-.welcome-card{position:relative;isolation:isolate;overflow:hidden;margin:0 0 22px;padding:22px 26px;border-radius:24px;color:var(--ds-on-brand);background:linear-gradient(145deg,var(--ds-hero-from),var(--ds-hero-mid) 55%,var(--ds-hero-to));box-shadow:0 14px 34px color-mix(in srgb,var(--ds-hero-from) 28%,transparent)}
+.welcome-card{position:relative;isolation:isolate;overflow:hidden;margin:0 0 22px;padding:22px 26px;border-radius:24px;color:var(--ds-on-brand);background:linear-gradient(145deg,var(--ds-hero-from),var(--ds-hero-mid) 55%,var(--ds-hero-to));box-shadow:0 6px 16px color-mix(in srgb,var(--ds-hero-from) 14%,transparent)}
 .welcome-card:before,.welcome-card:after{content:"";position:absolute;z-index:-1;border-radius:50%;background:rgba(255,255,255,.12)}
 .welcome-card:before{right:-70px;top:-80px;width:240px;height:240px}
 .welcome-card:after{right:18%;bottom:-110px;width:200px;height:200px;background:rgba(255,255,255,.07)}
