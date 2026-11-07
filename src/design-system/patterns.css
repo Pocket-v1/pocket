@@ -125,3 +125,5 @@ svg.lucide{stroke-width:var(--ds-icon-stroke)}
 .smi-kpis b{line-height:1.2}
 .smi-rec>div{min-width:0;flex:1}.smi-rec>.sms-pill{flex:none;white-space:nowrap}
 @media(max-width:760px){.smi-rec{flex-wrap:wrap}.smi-rec>.sms-pill{margin-left:auto}}
+.sms-sheet-top{border-bottom:1px solid var(--ds-border);margin-bottom:12px}
+.sms-pane>.sms-actions{justify-content:flex-end;margin:0}

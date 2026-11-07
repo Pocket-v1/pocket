@@ -391,7 +391,6 @@ export function SmsPage({ accounts, transactions = [], session, supabase, curren
     <select value={fAcc} onChange={e => setFAcc(e.target.value)} aria-label="Filter by account"><option value="">All accounts</option>{cur === 'inbox' && <option value="none">No account</option>}{usable.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select>
     <select value={range} onChange={e => setRange(e.target.value)} aria-label="Date range"><option value="all">Any date</option><option value="today">Today</option><option value="week">Last 7 days</option><option value="month">This month</option></select>
     {cur === 'inbox' && <select value={view} onChange={e => setView(e.target.value)} aria-label="Review status"><option value="all">All messages</option><option value="check">{`Needs review (${needsReview})`}</option><option value="ready">{`Ready (${readyCount})`}</option></select>}
-    {cur === 'history' && <><input type="date" value={hFrom} onChange={e => setHFrom(e.target.value)} aria-label="From date" /></>}
   </div>;
 
   return <div className="sms-page">
@@ -492,7 +491,7 @@ export function SmsPage({ accounts, transactions = [], session, supabase, curren
         </>}
       </div>
       <div className={`sms-acc ${tab === 'devices' ? 'open' : ''}`}>
-        <button type="button" className="sms-acc-h" aria-expanded={tab === 'devices'} onClick={() => setTab(tab === 'devices' ? 'setup' : 'devices')}><span><b>Devices</b><small>{devices.length} connected</small></span><ChevronDown size={16} /></button>
+        <button type="button" className="sms-acc-h" aria-expanded={tab === 'devices'} onClick={() => setTab(tab === 'devices' ? 'setup' : 'devices')}><span><b>Devices</b><small>{devices.filter(d => !d.revoked).length + 1} connected</small></span><ChevronDown size={16} /></button>
         {tab === 'devices' && <>
 <div className="sms-sec-body">
       <SmsDevices devices={devices} setDevices={setDevices} token={token} lastSms={lastSms} userId={userId} supabase={supabase} setToast={setToast} copy={copy} makeToken={makeToken} quiet={quiet} setQuiet={setQuiet} exportHist={exportHist} histCount={histShown.length} />
