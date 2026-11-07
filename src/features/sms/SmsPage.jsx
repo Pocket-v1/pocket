@@ -1,3 +1,4 @@
+import { MetricCard } from '../../components/ui/MetricCard.jsx';
 import { ArrowLeftRight, BarChart3, Check, ChevronDown, Copy, Inbox, History, MessageSquare, Pencil, RefreshCw, RotateCcw, Search, Settings2, X, Clock, CheckCircle2, Download, Eye, EyeOff, FileSpreadsheet, FileText, Plus, Scissors, Trash2, TriangleAlert } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Field } from '../../components/ui/Field.jsx';
@@ -390,8 +391,10 @@ export function SmsPage({ accounts, transactions = [], session, supabase, curren
   </div>;
 
   return <div className="sms-page">
-    <PageHeading eyebrow="AUTOMATIC TRACKING" title="Bank SMS" subtitle="Bank messages land here first. You review them before they become transactions." actions={<><span className={`sms-conn ${lastSms ? 'on' : ''}`}>{lastSms ? `Connected · last SMS ${ago(lastSms)}` : 'Not connected yet'}</span><button type="button" className="btn" onClick={load}><RefreshCw size={15} /> Refresh</button><button type="button" className={`btn ${inSettings ? 'btn-primary' : ''}`} onClick={() => setTab(inSettings ? main : 'connect')}><Settings2 size={15} /> Setup</button></>} />
-    <div className="panel sms-panel">
+    <PageHeading eyebrow="AUTOMATIC TRACKING" title="Bank SMS" subtitle="Bank messages land here first. You review them before they become transactions." actions={<><button type="button" className="btn btn-secondary" onClick={load}><RefreshCw size={17} /> Refresh</button><button type="button" className="btn btn-primary" onClick={() => setTab(inSettings ? main : 'connect')}><Settings2 size={17} /> Setup</button></>}/>
+    <div className="metric-grid three"><MetricCard label="To review" value={items.length} icon={Inbox} tone="blue" note="waiting for you" /><MetricCard label="Connection" value={lastSms ? 'Connected' : 'Not connected'} icon={Clock} tone="purple" note={lastSms ? `last SMS ${ago(lastSms)}` : 'open Setup to connect your phone'} /><MetricCard label="Approved" value={approvedMonth} icon={CheckCircle2} tone="green" note="this month" /></div>
+    <section className="panel sms-panel"><div className="panel-header section-header"><div><h2>Messages</h2><p>Review each bank SMS before it becomes a transaction.</p></div></div>
+
     <div className="smx-chips2 sms-box" role="tablist" aria-label="Messages">{[['inbox', `To review ${items.length}`, () => setTab('inbox'), cur === 'inbox'], ['approved', `Approved ${hist.filter(h => h.status === 'approved').length}`, () => { setHStatus('approved'); setTab('history'); }, cur === 'history' && hStatus === 'approved'], ['dismissed', `Dismissed ${hist.filter(h => h.status === 'dismissed').length}`, () => { setHStatus('dismissed'); setTab('history'); }, cur === 'history' && hStatus === 'dismissed'], ['insights', 'Insights', () => setTab('insights'), cur === 'insights']].map(([k, l, fn, on]) => <button type="button" role="tab" aria-selected={on} key={k} className={`sms-chipbtn ${on ? 'on' : ''}`} onClick={fn}>{l}</button>)}</div>
 
     {cur === 'inbox' && <section className="sms-pane">
@@ -404,7 +407,8 @@ export function SmsPage({ accounts, transactions = [], session, supabase, curren
       </div>
       {groups.length > 0 && shown.length > 1 && <div className="smx-groups"><span>Quick groups</span>{groups.map(g => <button type="button" key={g.key} className="sms-chipbtn" onClick={() => approveGroup(g)}>{g.label} ×{g.ids.length} · Approve</button>)}</div>}
       <div className="sms-pane-top"><p>{loading ? 'Loading…' : shown.length ? `${shown.length} waiting for review` : 'Nothing waiting'}</p><button type="button" className="btn btn-sm" onClick={() => { setSelectMode(m => !m); setSel([]); }}>{selectMode ? 'Done selecting' : 'Select'}</button>{shown.filter(x => x._acc && Number(x._amount) > 0).length > 1 && <button type="button" className="btn btn-primary btn-sm" onClick={approveAll}><Check size={14} /> Approve all ready ({shown.filter(x => x._acc && Number(x._amount) > 0).length})</button>}</div>
-      {!loading && !payments.length && <div className="sms-empty"><MessageSquare size={26} /><b>No SMS yet</b><small>Connect your phone, then new bank messages show up here.</small><button type="button" className="btn btn-primary btn-sm" onClick={() => setTab('connect')}>Connect phone</button></div>}
+      {!loading && !payments.length && hist.length > 0 && <div className="sms-empty"><CheckCircle2 size={26} /><b>All caught up</b><small>New bank messages will show up here.</small></div>}
+      {!loading && !payments.length && !hist.length && <div className="sms-empty"><MessageSquare size={26} /><b>No SMS yet</b><small>Connect your phone, then new bank messages show up here.</small><button type="button" className="btn btn-primary btn-sm" onClick={() => setTab('connect')}>Connect phone</button></div>}
       {selectMode && <div className="smx-bulk"><label className="smx-bulk-all"><input type="checkbox" checked={shown.length > 0 && picked.length === shown.length} onChange={e => setSel(e.target.checked ? shown.map(x => x.id) : [])} /> {picked.length} selected</label>
         <select value={bulk.cat} onChange={e => setBulk(o => ({ ...o, cat: e.target.value }))} aria-label="Set category"><option value="">Category…</option>{[...new Set([...expCats, ...incomeCategories])].map(c => <option key={c}>{c}</option>)}</select>
         <select value={bulk.acc} onChange={e => setBulk(o => ({ ...o, acc: e.target.value }))} aria-label="Set account"><option value="">Account…</option>{usable.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select>
@@ -521,7 +525,7 @@ export function SmsPage({ accounts, transactions = [], session, supabase, curren
         </>}
       </div>
     </aside></div>}
-    </div>
+    </section>
     {undo && <div className="smx-undo" role="status"><span>Approved {undo.label}</span><button type="button" onClick={doUndo}>Undo</button></div>}
   </div>;
 }
