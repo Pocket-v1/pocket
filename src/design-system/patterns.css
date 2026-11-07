@@ -148,3 +148,16 @@ svg.lucide{stroke-width:var(--ds-icon-stroke)}
 /* connection pill next to the title */
 .page-heading h1 .sms-conn{margin:0 0 0 10px;letter-spacing:0;font-family:var(--ds-font-body,inherit);padding:4px 10px;font-size:11.5px;vertical-align:middle;white-space:nowrap}
 .page-heading h1 .sms-conn::before{width:7px;height:7px;border-radius:50%;background:currentColor;opacity:1}
+
+/* needs attention rows */
+.smi-att{display:grid;gap:8px}
+.smi-at{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;background:var(--ds-warn-soft)}
+.smi-at.bad{background:color-mix(in srgb,var(--ds-danger) 9%,transparent)}
+.smi-at-ic{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;flex:none;background:#fff;color:var(--ds-warn)}
+.smi-at.bad .smi-at-ic{color:var(--ds-danger)}
+.smi-at-ic svg{width:18px;height:18px}
+.smi-at-t{flex:1;min-width:0}
+.smi-at-t b{display:block;font-size:14px;text-transform:none}
+.smi-at-t small{display:block;margin-top:2px;color:var(--ds-text-muted);text-transform:none}
+.smi-at-tag{flex:none;font-size:11.5px;font-weight:700;color:var(--ds-warn);background:#fff;border-radius:99px;padding:4px 10px;white-space:nowrap;text-transform:none}
+.smi-at-amt{flex:none;font-family:var(--ds-font-display);font-weight:800;font-size:14px;color:var(--ds-danger)}
