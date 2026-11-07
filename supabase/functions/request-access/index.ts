@@ -11,6 +11,15 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
   headers: { ...corsHeaders, 'Content-Type': 'application/json' },
 });
 
+// ---- Rate limiting (fixed window, stored in public.rate_limits via check_rate_limit) ----
+const clientIp = (req: Request) => (req.headers.get('cf-connecting-ip') || (req.headers.get('x-forwarded-for') || '').split(',')[0] || 'unknown').trim();
+async function allow(service: any, key: string, max: number, windowSeconds: number, failOpen = true) {
+  const { data, error } = await service.rpc('check_rate_limit', { p_key: key, p_max: max, p_window_seconds: windowSeconds });
+  if (error) { console.error('rate limit check failed', error.message); return failOpen; }
+  return data === true;
+}
+const TOO_MANY = 'Too many attempts. Please wait a little and try again.';
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST') return json({ ok: false, error: 'Method not allowed' }, 405);
@@ -29,6 +38,7 @@ Deno.serve(async (req) => {
   if (userError || !user) return json({ ok: false, error: 'Sign in is required.' }, 401);
 
   const service = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false } });
+  if (!(await allow(service, `access:${user.id}`, 3, 3600))) return json({ ok: false, error: TOO_MANY }, 429);
   // Admins can turn access requests off from the Access requests page.
   const { data: intake } = await service.from('app_settings').select('value').eq('key', 'access_requests_enabled').maybeSingle();
   if (intake?.value === false) return json({ ok: false, error: 'Access requests are turned off right now. Please contact the administrator.' }, 403);

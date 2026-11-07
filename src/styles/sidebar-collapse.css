@@ -35,14 +35,29 @@
 .sidebar .nav-item>svg,.sidebar .sidebar-collapse-btn svg,.sidebar .sidebar-settings-button svg{stroke-width:1.9}
 /* dark theme nav readability */
 :root[data-theme="dark"] .sidebar .nav-item{color:#b4bdd0!important;opacity:1!important}
-:root[data-theme="dark"] .sidebar .nav-item:hover{color:var(--ink,#edf0f8);background:rgba(255,255,255,.06)}
-:root[data-theme="dark"] .sidebar .nav-item.active{background:#2b3358!important;color:#fff!important}
+:root[data-theme="dark"] .sidebar .nav-item:hover{color:var(--ink,var(--ds-text));background:rgba(255,255,255,.06)}
+:root[data-theme="dark"] .sidebar .nav-item.active{background:var(--ds-brand-soft)!important;color:#fff!important}
 :root[data-theme="dark"] .sidebar .nav-item.active>svg{color:#9fb2ff}
 :root[data-theme="dark"] .sidebar .sidebar-bottom{background:transparent}
-:root[data-theme="dark"] .sidebar .sidebar-settings-button{background:#222b3b;border-color:#30384a;color:#e7ebf5}
-:root[data-theme="dark"] .sidebar-collapse-btn{background:transparent;border-color:#30384a;color:#a2abc0}
+:root[data-theme="dark"] .sidebar .sidebar-settings-button{background:var(--ds-soft);border-color:#262e3c;color:var(--ds-text)}
+:root[data-theme="dark"] .sidebar-collapse-btn{background:transparent;border-color:#262e3c;color:var(--ds-text-muted)}
 
 /* default-account star */
-.default-star.is-default{color:var(--warning,#f2a64b)}
+.default-star.is-default{color:var(--warning,var(--ds-warning))}
 .default-star.is-default svg{fill:currentColor}
-.default-chip{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;color:var(--brand,#3157f6);background:var(--brand-soft,#eaf0ff);vertical-align:middle}
+.default-chip{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;color:var(--brand,var(--ds-brand));background:var(--brand-soft,#eaf0ff);vertical-align:middle}
+
+/* Collapse button lives in its own row under the logo so it stays in the same place when collapsed/expanded */
+.sidebar-collapse-row{display:none}
+@media(min-width:901px){
+.sidebar-collapse-row{display:flex;align-items:center;justify-content:flex-start;padding:0 0 10px 3px}
+.app-shell.sidebar-compact .sidebar-collapse-row{justify-content:center;padding:0 0 10px}
+.sidebar .brand{justify-content:flex-start}
+}
+/* hamburger only where the sidebar becomes a drawer (phones) */
+.topbar .menu-toggle{display:none!important}
+@media(max-width:680px){.topbar .menu-toggle{display:inline-grid!important}}
+@media(min-width:901px){
+.sidebar .brand{min-height:56px;padding-top:0;padding-bottom:0}
+.app-shell.sidebar-compact .sidebar .brand{flex-direction:row;justify-content:center;min-height:56px;padding:0;gap:0}
+}

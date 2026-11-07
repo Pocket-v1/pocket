@@ -3,7 +3,7 @@
 .cc-chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;line-height:1;padding:6px 10px;border-radius:99px;white-space:nowrap;background:var(--cc-pri-soft);color:var(--blue)}
 .cc-chip.ok{background:var(--cc-ok-soft);color:var(--cc-ok)}.cc-chip.warn{background:var(--cc-warn-soft);color:var(--cc-warn)}.cc-chip.bad{background:var(--cc-bad-soft);color:var(--cc-bad)}
 
-.cc-visual{--cc-a:#6c7cf5;border-radius:18px;padding:18px;color:#fff;min-height:150px;display:flex;flex-direction:column;justify-content:space-between;gap:18px;background:linear-gradient(135deg,color-mix(in srgb,var(--cc-a) 62%,#0b1033),var(--cc-a));position:relative;overflow:hidden}
+.cc-visual{--cc-a:var(--ds-brand);border-radius:18px;padding:18px;color:#fff;min-height:150px;display:flex;flex-direction:column;justify-content:space-between;gap:18px;background:linear-gradient(135deg,color-mix(in srgb,var(--cc-a) 62%,#0b1033),var(--cc-a));position:relative;overflow:hidden}
 .cc-visual:after{content:"";position:absolute;right:-40px;top:-40px;width:150px;height:150px;border-radius:50%;background:#ffffff1c}
 .cc-visual small{opacity:.82;font-size:12px;display:block}.cc-visual strong{font-size:19px;letter-spacing:-.01em;display:block}.cc-visual .cc-v-icon{width:34px;height:34px;border-radius:11px;background:#ffffff26;display:grid;place-items:center}
 .cc-visual > *{position:relative;z-index:1}
@@ -101,8 +101,8 @@
 .btn.btn-sm{min-height:34px;padding:6px 12px;font-size:13px}
 
 /* The "Other amount" input in the pay modals */
-.cc-option input{width:100%;margin-top:10px;height:44px;padding:0 12px;border:1px solid var(--ds-control-border,#e0e5ee);border-radius:var(--ds-radius-md,10px);background:var(--ds-control-bg,#fff);color:var(--ds-control-text,inherit)}
-.cc-option input:focus{outline:none;border-color:var(--ds-brand,#3157f6);box-shadow:0 0 0 3px var(--ds-focus-ring,#3157f633)}
+.cc-option input{width:100%;margin-top:10px;height:44px;padding:0 12px;border:1px solid var(--ds-control-border,var(--ds-control-border));border-radius:var(--ds-radius-md,10px);background:var(--ds-control-bg,var(--ds-surface));color:var(--ds-control-text,inherit)}
+.cc-option input:focus{outline:none;border-color:var(--ds-brand,var(--ds-brand));box-shadow:0 0 0 3px var(--ds-focus-ring,color-mix(in srgb,var(--ds-brand) 20%,transparent))}
 
 /* Distinct layouts per debt category */
 /* Credit cards: card-shaped tiles in a 2-column grid */
@@ -120,3 +120,53 @@
 .cc-app-next{display:flex;flex-direction:column;align-items:flex-start;gap:4px}.cc-app-next b{font-size:16px}
 .cc-app-actions{display:flex;gap:8px}
 @media(max-width:1000px){.cc-grid-cards{grid-template-columns:1fr}.cc-tile.cc-tile-app{grid-template-columns:minmax(0,1fr) auto;gap:12px 16px}.cc-app-commit{grid-column:1/-1;order:3}.cc-app-next{order:2;align-items:flex-end}.cc-app-actions{grid-column:1/-1;order:4}.cc-app-actions .btn{flex:1;justify-content:center}}
+
+/* ---- Visa-sized payment cards (credit cards + installment apps) ---- */
+.pc-wrap{display:grid;gap:10px;width:100%;max-width:400px;min-width:0}
+.pc-face{--pc-a:var(--ds-brand);--pc-b:#0b1033;position:relative;aspect-ratio:1.586/1;border-radius:20px;padding:20px 22px;color:var(--ds-on-brand);overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;background:linear-gradient(135deg,var(--pc-a),var(--pc-b));box-shadow:0 10px 26px rgba(15,23,60,.22)}
+.pc-face:before{content:"";position:absolute;right:-60px;top:-70px;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,.12)}
+.pc-face:after{content:"";position:absolute;left:-50px;bottom:-90px;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.07)}
+.pc-face>*{position:relative;z-index:1}
+.pc-click{cursor:pointer;transition:transform .16s ease,box-shadow .16s ease}.pc-click:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(15,23,60,.28)}.pc-click:focus-visible{outline:3px solid rgba(255,255,255,.8);outline-offset:2px}
+.pc-face small{display:block;font-size:11.5px;opacity:.82;text-transform:none;font-weight:500}
+.pc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.pc-id{display:flex;gap:10px;align-items:center;min-width:0}.pc-id b{display:block;font-size:17px;font-weight:800;letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pc-id>span:last-child{min-width:0}
+.pc-mono{width:34px;height:34px;border-radius:11px;background:rgba(255,255,255,.22);display:grid;place-items:center;font-weight:800;font-size:16px;flex-shrink:0}
+.pc-menu{display:flex;gap:2px}.pc-menu .icon-btn{background:rgba(255,255,255,.16)!important;border-color:transparent!important;color:var(--ds-on-brand)!important;width:30px;height:30px;min-height:30px}.pc-menu .icon-btn:hover{background:rgba(255,255,255,.3)!important}
+.pc-mid strong{display:block;font-size:26px;font-weight:800;letter-spacing:-.02em;margin:2px 0 8px}
+.pc-bar{height:6px;border-radius:999px;background:rgba(255,255,255,.28);overflow:hidden;margin-bottom:6px}.pc-bar i{display:block;height:100%;border-radius:999px;background:#fff}
+.pc-bottom{display:flex;justify-content:space-between;align-items:flex-end;gap:8px}.pc-bottom b{font-size:17px;font-weight:800}
+.pc-due .cc-chip,.pc-ok{background:rgba(255,255,255,.2)!important;color:#fff!important;border:0!important;font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:999px}
+.pc-actions{display:flex;gap:8px;flex-wrap:wrap}
+.cc-grid-cards,.cc-list-apps{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(290px,400px))!important;gap:20px!important}
+.acc-grid-liability{grid-template-columns:repeat(auto-fill,minmax(290px,400px))!important;gap:20px!important}
+@media(max-width:560px){.pc-wrap{max-width:none}.pc-face{padding:16px 18px}.pc-mid strong{font-size:23px}.cc-grid-cards,.cc-list-apps,.acc-grid-liability{grid-template-columns:1fr!important}}
+.pc-preview{display:flex;justify-content:center;margin:4px 0 18px}.pc-preview .pc-wrap{max-width:340px}
+.cc-provider-btn{display:flex;align-items:center;justify-content:center;gap:7px}.cc-provider-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+
+/* Card artwork layer (chip, contactless, swoosh) */
+.pc-face:before,.pc-face:after{display:none}
+.pc-face>.pc-art{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.pc-face>.pc-art~*{position:relative;z-index:1}
+
+/* Logo plate + full card image variants */
+.pc-logo{display:grid;place-items:center;height:36px;padding:5px 9px;border-radius:10px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.18);flex:none}
+.pc-logo img{display:block;height:100%;width:auto;max-width:92px;object-fit:contain}
+.pc-face.pc-has-face{background-size:cover;background-position:center;background-repeat:no-repeat;justify-content:flex-end;gap:6px;padding:0 42% 14px 18px}
+.pc-face.pc-has-face:after{display:block;content:"";position:absolute;inset:0;left:0;top:0;width:auto;height:auto;border-radius:0;background:linear-gradient(0deg,rgba(0,0,0,.62),rgba(0,0,0,0) 58%);z-index:0;pointer-events:none}
+.pc-face.pc-has-face .pc-top{position:absolute;left:12px;top:10px;padding:0}
+.pc-face.pc-has-face .pc-id{display:none}
+.pc-face.pc-has-face .pc-mid small:first-child,.pc-face.pc-has-face .pc-mid>small:last-child{display:none}
+.pc-face.pc-has-face .pc-mid strong{font-size:20px}
+.pc-face.pc-has-face .pc-bottom{gap:6px}
+.pc-logo{overflow:hidden;box-sizing:border-box}
+.pc-logo img{height:26px!important;width:auto;max-width:84px;max-height:26px}
+
+.pc-face.pc-logo-right .pc-id{flex:1;flex-direction:row-reverse;justify-content:space-between;align-items:center}
+.pc-face.pc-logo-right .pc-id>span:last-child{text-align:left}
+
+/* Full-artwork card (Halan): data sits bottom-left, due chip bottom-right like the other cards */
+.pc-face.pc-has-face{background-size:100% 100%;padding:0 18px 14px 20px;justify-content:flex-end}
+.pc-face.pc-has-face .pc-mid{max-width:50%}
+.pc-face.pc-has-face:after{background:linear-gradient(0deg,rgba(0,0,0,.5),rgba(0,0,0,0) 45%)}
+.pc-face.pc-has-face{background-color:#0b0b0b}

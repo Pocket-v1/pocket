@@ -2,11 +2,14 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
     <meta name="theme-color" content="#101828" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/brand/pocket-app-icon.png" />
     <meta name="description" content="Pocket helps you understand spending, plan ahead, and make room for what matters." />
+    <script>
+      (function(){try{var t='light';var has=Object.keys(localStorage).some(function(k){return /^sb-.*-auth-token$/.test(k)});if(has){var s=localStorage.getItem('pocket.appTheme');if(s==='dark')t='dark'}var d=document.documentElement;d.dataset.theme=t;d.style.background=t==='dark'?'#131925':'#f7f8fa';d.style.colorScheme=t}catch(e){}})();
+    </script>
     <title>Pocket — Personal Finance</title>
   </head>
   <body><div id="root"></div><script type="module" src="/src/main.jsx"></script></body>

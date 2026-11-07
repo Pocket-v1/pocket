@@ -2022,3 +2022,86 @@ alter table public.financial_accounts add constraint financial_accounts_credit_l
 -- An installment plan can belong to an installment app account.
 alter table public.debts add column if not exists provider_account_id uuid references public.financial_accounts(id) on delete set null;
 create index if not exists debts_user_provider_idx on public.debts(user_id, provider_account_id);
+
+
+-- Recurring payments: optional last date to pay + running part-payment total (additive).
+alter table public.recurring_payments add column if not exists pay_by_date date;
+alter table public.recurring_payments add column if not exists paid_amount numeric(12,2) not null default 0;
+
+-- ===== Security hardening (RLS scope, grants, rate limiter) — see SECURITY.md =====
+-- Security hardening (no data is touched; only who is allowed to do what).
+-- 1) Owner-only policies now apply to signed-in users only (they used to apply to the "public" role,
+--    which includes anonymous visitors; auth.uid() was null for them so they saw nothing, but it is cleaner).
+do $$
+declare t text; old text;
+begin
+  foreach t in array array['budgets','debts','financial_accounts','recurring_payments','savings_goals','transactions','user_settings'] loop
+    select policyname into old from pg_policies
+      where schemaname='public' and tablename=t and cmd='ALL' and roles='{public}' limit 1;
+    execute format('drop policy if exists %I on public.%I', 'Owner access', t);
+    execute format('create policy %I on public.%I for all to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id)', 'Owner access', t);
+    if old is not null and old <> 'Owner access' then execute format('drop policy %I on public.%I', old, t); end if;
+  end loop;
+end $$;
+
+-- 2) Table privileges: anonymous visitors never need direct table access; signed-in users do not need
+--    TRUNCATE / TRIGGER / REFERENCES (RLS does not cover TRUNCATE).
+do $$
+declare r record;
+begin
+  for r in select tablename from pg_tables where schemaname='public' loop
+    execute format('revoke all on public.%I from anon', r.tablename);
+    execute format('revoke truncate, trigger, references on public.%I from authenticated', r.tablename);
+  end loop;
+end $$;
+alter default privileges in schema public revoke all on tables from anon;
+
+-- 3) Functions: only signed-in users may run the payment RPC; the ownership trigger function is internal.
+do $$
+declare r record;
+begin
+  for r in select p.oid::regprocedure as sig from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+           where n.nspname='public' and p.proname='mark_recurring_payment_paid' loop
+    execute format('revoke execute on function %s from public, anon', r.sig);
+    execute format('grant execute on function %s to authenticated', r.sig);
+  end loop;
+  for r in select p.oid::regprocedure as sig from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+           where n.nspname='public' and p.proname='pocket_validate_vehicle_ownership' loop
+    execute format('revoke execute on function %s from public, anon, authenticated', r.sig);
+  end loop;
+end $$;
+-- Simple fixed-window rate limiter used by Edge Functions (service role only).
+create table if not exists public.rate_limits (
+  key text primary key,
+  hits integer not null default 0,
+  window_start timestamptz not null default now()
+);
+alter table public.rate_limits enable row level security;   -- no policies: nobody but the service role can touch it
+revoke all on public.rate_limits from anon, authenticated;
+
+create or replace function public.check_rate_limit(p_key text, p_max integer, p_window_seconds integer)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare r public.rate_limits;
+begin
+  insert into public.rate_limits as rl (key, hits, window_start)
+  values (p_key, 1, now())
+  on conflict (key) do update set
+    hits = case when rl.window_start < now() - make_interval(secs => p_window_seconds) then 1 else rl.hits + 1 end,
+    window_start = case when rl.window_start < now() - make_interval(secs => p_window_seconds) then now() else rl.window_start end
+  returning * into r;
+  if random() < 0.02 then
+    delete from public.rate_limits where window_start < now() - interval '2 days';
+  end if;
+  return r.hits <= p_max;
+end;
+$$;
+revoke execute on function public.check_rate_limit(text, integer, integer) from public, anon, authenticated;
+grant execute on function public.check_rate_limit(text, integer, integer) to service_role;
+
+-- Explicit deny: only the service role (which bypasses RLS) may use the limiter table.
+drop policy if exists "No direct access" on public.rate_limits;
+create policy "No direct access" on public.rate_limits for all to authenticated using (false) with check (false);

@@ -3,7 +3,7 @@ import { localISODate } from './format.js';
 
 export const CARD_TYPE = 'Credit card';
 export const PROVIDER_TYPE = 'Installment app';
-export const PROVIDER_PRESETS = ['Valu', 'Aman', 'Souhoola', 'Contact', 'Sympl', 'Halan', 'Forsa', 'Shahry', 'Premium Card'];
+export const PROVIDER_PRESETS = ['Valu', 'Aman', 'Souhoola', 'Contact', 'Sympl', 'Halan', 'Forsa', 'Shahry', 'Premium Card', 'Mogo', 'Klivvr', 'Seven', 'TRU', 'Mylo'];
 
 export const isCard = a => Boolean(a && a.type === CARD_TYPE);
 export const isProvider = a => Boolean(a && a.type === PROVIDER_TYPE);
@@ -18,6 +18,23 @@ const DAY = 864e5;
 const num = v => Number(v || 0);
 // A plan uses limit for the money financed (the price), not for interest/fees. Shrinks as it is repaid.
 export const planLimitUse = d => { const total = num(d.total_repayment) || num(d.original_amount); return total > 0 ? num(d.original_amount) * Math.min(1, num(d.remaining_amount) / total) : num(d.remaining_amount); };
+// Halan lowers the used limit by the PRINCIPAL part of each paid installment (reducing balance),
+// not by an equal share of the price. We solve the monthly rate from price, installment and term,
+// then return the principal still outstanding after the installments already paid.
+export const isReducingProvider = a => /halan/i.test(String(a?.name || ''));
+export function reducingUse(d) {
+  const P = num(d.original_amount), pay = num(d.monthly_payment), n = Math.round(num(d.term_months));
+  if (num(d.remaining_amount) <= 0) return 0;
+  if (!(P > 0 && pay > 0 && n > 0) || pay * n <= P) return null;
+  let lo = 1e-6, hi = 1;
+  for (let i = 0; i < 80; i++) { const r = (lo + hi) / 2; const f = P * r / (1 - Math.pow(1 + r, -n)); if (f > pay) hi = r; else lo = r; }
+  const r = (lo + hi) / 2;
+  const k = Math.min(n, Math.max(0, Math.round(num(d.paid_installments))));
+  let bal = P;
+  for (let i = 0; i < k; i++) bal = Math.max(0, bal * (1 + r) - pay);
+  return Math.min(P, bal);
+}
+export const planUse = (d, provider) => { if (isReducingProvider(provider)) { const v = reducingUse(d); if (v != null) return v; } return planLimitUse(d); };
 const iso = ms => new Date(ms).toISOString().slice(0, 10);
 const utc = s => { const [y, m, d] = String(s).slice(0, 10).split('-').map(Number); return Date.UTC(y, m - 1, d); };
 
@@ -115,7 +132,7 @@ export function providerSummary(provider, debts = [], today = localISODate(), tr
   const loosePurchases = transactions.filter(t => t.type === 'Expense' && String(t.account_id) === id && !(t.debt_id && planIds.has(String(t.debt_id)))).sort((a, b) => String(b.transaction_date).localeCompare(String(a.transaction_date)));
   const paidLoose = transactions.filter(t => t.type === 'Transfer' && String(t.to_account_id) === id).reduce((s, t) => s + num(t.amount), 0);
   const looseOwed = Math.max(0, loosePurchases.reduce((s, t) => s + num(t.amount), 0) - paidLoose);
-  const used = active.reduce((s, d) => s + planLimitUse(d), 0) + looseOwed;
+  const used = active.reduce((s, d) => s + planUse(d, provider), 0) + looseOwed;
   const byDue = new Map();
   for (const d of active) {
     const due = d.due_date || '';

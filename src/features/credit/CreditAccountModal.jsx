@@ -5,6 +5,8 @@ import { Field } from '../../components/ui/Field.jsx';
 import { WizardProgress } from '../../components/ui/WizardProgress.jsx';
 import { PROVIDER_PRESETS, cardCycle, isMoneyAccount, money } from '../../lib/credit.js';
 import { localISODate, shortDate } from '../../lib/format.js';
+import { PaymentCard } from './CreditSummary.jsx';
+import { PROVIDER_THEMES } from '../../lib/providerThemes.js';
 
 const COLORS = [['#6c7cf5', 'Indigo'], ['#50b99a', 'Green'], ['#f5b85b', 'Amber'], ['#ee8291', 'Rose']];
 
@@ -28,7 +30,7 @@ export function CreditAccountModal({ kind = 'card', initial, accounts = [], onCl
   });
   const set = (k, v) => S(s => ({ ...s, [k]: v }));
   // Picking an app also fills the name, so saving always has one.
-  const pickPreset = preset => S(s => ({ ...s, preset, name: preset === 'Other' ? (PROVIDER_PRESETS.includes(s.name) ? '' : s.name) : preset }));
+  const pickPreset = preset => S(s => ({ ...s, preset, color: PROVIDER_THEMES[preset]?.a || s.color, name: preset === 'Other' ? (PROVIDER_PRESETS.includes(s.name) ? '' : s.name) : preset }));
   const total = isCardKind ? 3 : 2;
   const labels = isCardKind ? ['Card details', 'Billing dates', 'Review'] : ['App details', 'Review'];
   const reviewStep = total;
@@ -47,6 +49,7 @@ export function CreditAccountModal({ kind = 'card', initial, accounts = [], onCl
     return { after, a, on, b };
   })();
 
+  const preview = <div className="pc-preview"><PaymentCard account={{ name: name || (isCardKind ? 'Card name' : 'Choose an app'), color: f.color }} kind={isCardKind ? 'card' : 'app'} used={0} limit={Number(f.limit) || 0} next={null} currency={currency} /></div>;
   const submit = e => { e.preventDefault(); if (step < reviewStep) { setStep(s => s + 1); return; } onSave({ ...f, kind, name }); };
   const typeLabel = isCardKind ? 'Credit card' : 'Installment app';
   const Icon = isCardKind ? CreditCard : ShoppingBag;
@@ -57,7 +60,7 @@ export function CreditAccountModal({ kind = 'card', initial, accounts = [], onCl
     <WizardProgress step={step} total={total} labels={labels} />
     <form onSubmit={submit}>
       {isCardKind && step === 1 && <section className="tx-wizard-page">
-        <div className="tx-wizard-intro"><h3>About your card</h3><p>Name it, set the limit, and choose which account pays the bill.</p></div>
+        <div className="tx-wizard-intro"><h3>About your card</h3><p>Name it, set the limit, and choose which account pays the bill.</p></div>{preview}
         <div className="form-grid">
           <Field label="Card name" wide><input autoFocus required maxLength={60} value={f.name} onChange={e => set('name', e.target.value)} placeholder="e.g. CIB Platinum" /></Field>
           <Field label={`Credit limit (${currency})`}><input required type="number" inputMode="decimal" min="1" step="0.01" value={f.limit} onChange={e => set('limit', e.target.value)} placeholder="e.g. 20000" /></Field>
@@ -84,10 +87,10 @@ export function CreditAccountModal({ kind = 'card', initial, accounts = [], onCl
       </section>}
 
       {!isCardKind && step === 1 && <section className="tx-wizard-page">
-        <div className="tx-wizard-intro"><h3>Which app?</h3><p>Pick the app that gives you the installment limit.</p></div>
-        <div className="cc-provider-grid" role="group" aria-label="Installment app">{[...PROVIDER_PRESETS, 'Other'].map(p => <button type="button" key={p} className={`cc-provider-btn ${f.preset === p ? 'on' : ''}`} onClick={() => pickPreset(p)} aria-pressed={f.preset === p}>{p}</button>)}</div>
+        <div className="tx-wizard-intro"><h3>Which app?</h3><p>Pick the app that gives you the installment limit. Your card takes that app's look.</p></div>{preview}
+        <div className="cc-provider-grid" role="group" aria-label="Installment app">{[...PROVIDER_PRESETS, 'Other'].map(p => <button type="button" key={p} className={`cc-provider-btn ${f.preset === p ? 'on' : ''}`} onClick={() => pickPreset(p)} aria-pressed={f.preset === p}><i className="cc-provider-dot" style={{ background: `linear-gradient(135deg,${PROVIDER_THEMES[p]?.a || '#9aa3b2'},${PROVIDER_THEMES[p]?.b || '#4b5563'})` }} />{p}</button>)}</div>
         <div className="form-grid" style={{ marginTop: 16 }}>
-          {f.preset === 'Other' && <Field label="App name" wide><input required autoFocus maxLength={60} value={f.name} onChange={e => set('name', e.target.value)} placeholder="Enter the app name" /></Field>}
+          {f.preset === 'Other' && <><Field label="App name" wide><input required autoFocus maxLength={60} value={f.name} onChange={e => set('name', e.target.value)} placeholder="Enter the app name" /></Field><Field label="Card color" wide><div className="choice-color-row">{COLORS.map(([v, l]) => <button type="button" key={v} title={l} aria-label={l} className={`color-choice ${f.color === v ? 'selected' : ''}`} style={{ '--choice-color': v }} onClick={() => set('color', v)}><span /></button>)}</div></Field></>}
           <Field label={`Credit limit (${currency})`}><input required type="number" inputMode="decimal" min="1" step="0.01" value={f.limit} onChange={e => set('limit', e.target.value)} placeholder="e.g. 30000" /><small className="field-hint">The most you can have in installments at once.</small></Field>
           <Field label="Pay installments from"><select required value={f.pay_from} onChange={e => set('pay_from', e.target.value)}><option value="">Choose account</option>{moneyAccounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></Field>
         </div>

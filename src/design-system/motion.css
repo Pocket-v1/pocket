@@ -1,0 +1,128 @@
+/* ==========================================================================
+   Motion layer — one place for every animation in Pocket.
+   Rules: transform-free keyframes (we use the individual `translate` / `scale`
+   / `rotate` properties) so nothing fights existing positioning; everything is
+   switched off for people who prefer reduced motion (bottom of file).
+   ========================================================================== */
+:root{
+  --mo-ease-out:cubic-bezier(.22,1,.36,1);
+  --mo-ease-spring:cubic-bezier(.34,1.56,.64,1);
+  --mo-fast:.16s;--mo-base:.28s;--mo-slow:.5s;
+}
+
+@keyframes mo-rise{from{opacity:0;translate:0 12px}to{opacity:1;translate:0 0}}
+@keyframes mo-fade{from{opacity:0}to{opacity:1}}
+@keyframes mo-slide-in{from{opacity:0;translate:14px 0}to{opacity:1;translate:0 0}}
+@keyframes mo-pop{0%{opacity:0;scale:.9}60%{opacity:1;scale:1.04}100%{opacity:1;scale:1}}
+@keyframes mo-drop{from{opacity:0;translate:0 -8px;scale:.96}to{opacity:1;translate:0 0;scale:1}}
+@keyframes mo-modal{from{opacity:0;translate:0 16px;scale:.97}to{opacity:1;translate:0 0;scale:1}}
+@keyframes mo-toast{0%{opacity:0;translate:36px 0;scale:.96}70%{opacity:1;translate:-4px 0;scale:1}100%{opacity:1;translate:0 0;scale:1}}
+@keyframes mo-ring{0%,100%{rotate:0deg}15%{rotate:16deg}30%{rotate:-14deg}45%{rotate:10deg}60%{rotate:-6deg}75%{rotate:3deg}}
+@keyframes mo-badge{0%{scale:0}60%{scale:1.25}100%{scale:1}}
+@keyframes mo-pulse-ring{0%{box-shadow:0 0 0 0 rgba(99,102,241,.35)}100%{box-shadow:0 0 0 10px rgba(99,102,241,0)}}
+@keyframes mo-shimmer{from{background-position:-200% 0}to{background-position:200% 0}}
+@keyframes mo-check{from{opacity:0;rotate:-40deg;scale:.3}to{opacity:1;rotate:0deg;scale:1}}
+
+/* ---- Text: headings and numbers reveal as the page opens ---- */
+.page-heading .eyebrow,.page-heading h1,.page-heading p,.page-heading .heading-actions{animation:mo-rise var(--mo-slow) var(--mo-ease-out) both}
+.page-heading h1{animation-delay:.05s}
+.page-heading p{animation-delay:.1s}
+.page-heading .heading-actions{animation-delay:.14s}
+.metric-card{animation:mo-rise var(--mo-slow) var(--mo-ease-out) both}
+.metric-grid>.metric-card:nth-child(2){animation-delay:.06s}
+.metric-grid>.metric-card:nth-child(3){animation-delay:.12s}
+.metric-grid>.metric-card:nth-child(4){animation-delay:.18s}
+.metric-card b,.metric-card strong,.metric-card .metric-value{animation:mo-rise .6s var(--mo-ease-out) .12s both}
+.panel{animation:mo-rise var(--mo-slow) var(--mo-ease-out) both}
+.debt-card-grid>.panel:nth-child(2),.cc-grid-cards>*:nth-child(2){animation-delay:.07s}
+.debt-card-grid>.panel:nth-child(3),.cc-grid-cards>*:nth-child(3){animation-delay:.14s}
+.status-tag{animation:mo-pop .4s var(--mo-ease-spring) both}
+.notification-toast-copy{animation:mo-rise .3s var(--mo-ease-out) both}
+.tx-wizard-intro h3,.tx-wizard-intro p,.modal-header h2,.modal-header p,.modal-head h2,.modal-head p{animation:mo-rise .4s var(--mo-ease-out) both}
+.tx-wizard-intro p,.modal-header p,.modal-head p{animation-delay:.06s}
+.sidebar a span,.sidebar button span{transition:translate var(--mo-base) var(--mo-ease-out),color var(--mo-fast)}
+.sidebar nav button:hover>span:last-child,.sidebar nav a:hover>span:last-child{translate:3px 0}
+
+/* ---- Icons ---- */
+.sidebar nav svg,.btn svg,.icon-btn svg,.metric-icon svg,.menu-item-icon svg{transition:scale var(--mo-base) var(--mo-ease-spring),rotate var(--mo-base) var(--mo-ease-spring),translate var(--mo-base) var(--mo-ease-out),color var(--mo-fast)}
+.sidebar nav button:hover svg,.sidebar nav a:hover svg{scale:1.18}
+.icon-btn:hover svg{scale:1.15}
+.icon-btn:active svg{scale:.9}
+.btn:hover svg:last-child:not(:first-child){translate:3px 0}
+.btn-primary:hover svg.lucide-plus:first-child:last-child{rotate:90deg}
+.metric-card:hover .metric-icon svg{scale:1.2;rotate:-8deg}
+.metric-icon{transition:background var(--mo-base),scale var(--mo-base) var(--mo-ease-spring)}
+.metric-card:hover .metric-icon{scale:1.08}
+.menu-caret{transition:rotate var(--mo-base) var(--mo-ease-spring)}
+[aria-expanded="true"]>.menu-caret,[aria-expanded="true"] .menu-caret{rotate:180deg}
+.notification-btn:hover svg,.notification-btn:focus-visible svg{animation:mo-ring .8s ease-in-out}
+.notification-count-badge{animation:mo-badge .45s var(--mo-ease-spring) both}
+[aria-label*="ettings" i]:hover svg{rotate:60deg}
+.empty-state svg{animation:mo-pop .6s var(--mo-ease-spring) both}
+.tx-review-icon{animation:mo-pop .55s var(--mo-ease-spring) both}
+.tx-choice-card svg,.tx-subcategory-card svg{transition:scale var(--mo-base) var(--mo-ease-spring)}
+.tx-choice-card:hover svg{scale:1.18}
+.tx-subcategory-card.selected svg,.tx-choice-card.selected svg:last-child{animation:mo-check .35s var(--mo-ease-spring) both}
+
+/* ---- Buttons & cards: tactile press ---- */
+.btn,.icon-btn,.tx-choice-card,.tx-subcategory-card,.menu-item,.pay-check{transition:background-color var(--mo-fast),border-color var(--mo-fast),box-shadow var(--mo-base),color var(--mo-fast),scale var(--mo-fast) var(--mo-ease-out),translate var(--mo-base) var(--mo-ease-out)}
+.btn:active,.icon-btn:active,.tx-choice-card:active,.tx-subcategory-card:active{scale:.97}
+.btn-primary:hover{translate:0 -1px}
+.tx-choice-card:hover,.tx-subcategory-card:hover{translate:0 -2px}
+.metric-card,.debt-detail-card,.cc-tile{transition:translate var(--mo-base) var(--mo-ease-out),box-shadow var(--mo-base)}
+.metric-card:hover,.debt-detail-card:hover{translate:0 -2px}
+input,select,textarea{transition:border-color var(--mo-fast),box-shadow var(--mo-base)}
+
+/* ---- Dropdowns & menus ---- */
+.menu-popover,.top-popover,.quick-add-menu,.goal-menu{transform-origin:top right;animation:mo-drop .22s var(--mo-ease-out) both}
+.menu-popover .menu-item,.top-popover .notification-item,.quick-add-menu>*{animation:mo-slide-in .3s var(--mo-ease-out) both}
+.menu-popover .menu-item:nth-child(1),.quick-add-menu>*:nth-child(1){animation-delay:.03s}
+.menu-popover .menu-item:nth-child(2),.quick-add-menu>*:nth-child(2){animation-delay:.07s}
+.menu-popover .menu-item:nth-child(3),.quick-add-menu>*:nth-child(3){animation-delay:.11s}
+.menu-popover .menu-item:nth-child(4),.quick-add-menu>*:nth-child(4){animation-delay:.15s}
+.menu-popover .menu-item:nth-child(n+5),.quick-add-menu>*:nth-child(n+5){animation-delay:.19s}
+.menu-item:hover .menu-item-icon{scale:1.1}
+.menu-item:hover{translate:2px 0}
+
+/* ---- Notifications ---- */
+.notification-popover{transform-origin:top right;animation:mo-drop .26s var(--mo-ease-out) both}
+.notification-item{animation:mo-slide-in .35s var(--mo-ease-out) both;transition:background-color var(--mo-fast),translate var(--mo-base) var(--mo-ease-out)}
+.notification-popover .notification-item:nth-of-type(1){animation-delay:.04s}
+.notification-popover .notification-item:nth-of-type(2){animation-delay:.09s}
+.notification-popover .notification-item:nth-of-type(3){animation-delay:.14s}
+.notification-popover .notification-item:nth-of-type(4){animation-delay:.19s}
+.notification-popover .notification-item:nth-of-type(n+5){animation-delay:.24s}
+.notification-item:hover{translate:2px 0}
+.notification-item-icon{animation:mo-pop .5s var(--mo-ease-spring) .1s both}
+.notification-toast{animation:mo-toast .5s var(--mo-ease-spring) both}
+.notification-toast .notification-item-icon,.notification-toast svg:first-child{animation:mo-ring 1s ease-in-out .5s both}
+.toast{animation:mo-rise .35s var(--mo-ease-spring) both}
+
+/* ---- Popups and wizard cards ---- */
+.modal-backdrop{animation:mo-fade .22s ease-out both}
+@media(min-width:681px){
+  .modal-backdrop>.modal,.modal-backdrop>.modal-shell,.modal-backdrop>section{animation:mo-modal .34s var(--mo-ease-out) both}
+}
+.tx-wizard-page{animation:mo-slide-in .38s var(--mo-ease-out) both}
+.tx-category-grid>*,.tx-subcategory-grid>*{animation:mo-rise .4s var(--mo-ease-out) both}
+.tx-category-grid>*:nth-child(1),.tx-subcategory-grid>*:nth-child(1){animation-delay:.02s}
+.tx-category-grid>*:nth-child(2),.tx-subcategory-grid>*:nth-child(2){animation-delay:.05s}
+.tx-category-grid>*:nth-child(3),.tx-subcategory-grid>*:nth-child(3){animation-delay:.08s}
+.tx-category-grid>*:nth-child(4),.tx-subcategory-grid>*:nth-child(4){animation-delay:.11s}
+.tx-category-grid>*:nth-child(5),.tx-subcategory-grid>*:nth-child(5){animation-delay:.14s}
+.tx-category-grid>*:nth-child(6),.tx-subcategory-grid>*:nth-child(6){animation-delay:.17s}
+.tx-category-grid>*:nth-child(n+7),.tx-subcategory-grid>*:nth-child(n+7){animation-delay:.2s}
+.tx-choice-card.selected,.tx-subcategory-card.selected{animation:mo-pop .35s var(--mo-ease-spring) both}
+.tx-wizard-track span{transition:width .55s var(--mo-ease-out)}
+.tx-wizard-step span{transition:background-color var(--mo-base),color var(--mo-base),scale var(--mo-base) var(--mo-ease-spring)}
+.tx-wizard-step.active span{scale:1.12;animation:mo-pulse-ring 1.6s ease-out infinite}
+.tx-wizard-step.complete span svg{animation:mo-check .35s var(--mo-ease-spring) both}
+.tx-wizard-step b{transition:color var(--mo-base),translate var(--mo-base) var(--mo-ease-out)}
+.tx-wizard-step.active b{translate:2px 0}
+.tx-review-card{animation:mo-rise .45s var(--mo-ease-out) .05s both}
+.loan-box{animation:mo-rise .35s var(--mo-ease-out) both}
+
+/* ---- Reduced motion: keep every state change, drop the movement ---- */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition-duration:.01ms!important}
+}

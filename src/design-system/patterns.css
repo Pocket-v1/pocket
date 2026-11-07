@@ -1,0 +1,146 @@
+/* ==========================================================================
+   POCKET DESIGN SYSTEM · PATTERNS
+   Reusable multi-part patterns. Colors, radii and sizes come from tokens.css.
+   1) Wizard action row   2) Repeatable-row editor
+   ========================================================================== */
+
+/* One look for the action row of every popup, wizard and form: secondary on the left, primary on the right. */
+.tx-wizard-actions,.modal-actions,.category-wizard-actions,.admin-wizard-actions,.vehicle-form-actions,.category-create-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:nowrap}
+.tx-wizard-actions>:only-child,.modal-actions>:only-child,.category-wizard-actions>:only-child,.admin-wizard-actions>:only-child,.vehicle-form-actions>:only-child{margin-left:auto}
+.tx-wizard-actions .btn,.modal-actions .btn,.category-wizard-actions .btn,.admin-wizard-actions .btn,.vehicle-form-actions .btn{flex:0 0 auto;min-width:112px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+@media (max-width:640px){
+ .tx-wizard-actions .btn,.modal-actions .btn,.category-wizard-actions .btn,.admin-wizard-actions .btn,.vehicle-form-actions .btn{flex:1 1 0;min-width:0}
+ .tx-wizard-actions .btn-primary,.modal-actions .btn-primary{flex-grow:1.5}
+}
+
+/* Accounts list view: rows carry their account color, cards and apps look like their grid cards. */
+
+.tx-wizard-actions .btn:hover,.tx-wizard-actions .btn:active,.modal-actions .btn:hover,.modal-actions .btn:active{transform:none;translate:none}
+.tx-wizard-actions .btn svg,.modal-actions .btn svg{rotate:none!important}
+
+/* 2) Repeatable-row editor: a list of rows the user can add to and remove from
+   (tanks & batteries, and any future "add another" list). */
+.ds-repeat{display:grid;gap:10px;margin:14px 0;padding:14px;border:1px solid var(--ds-border);border-radius:var(--ds-radius-lg);background:var(--ds-surface)}
+.ds-repeat-head{display:grid;gap:2px}
+.ds-repeat-head small{color:var(--ds-text-muted);font-size:var(--ds-fs-sm);line-height:1.4}
+.ds-repeat-row{display:grid;grid-template-columns:110px 1fr 130px 38px;gap:8px;align-items:center}
+.ds-repeat-row select,.ds-repeat-row input{min-width:0;width:100%}
+.ds-repeat-unit{position:relative;display:block}
+.ds-repeat-unit input{padding-right:44px}
+.ds-repeat-unit em{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-style:normal;font-size:var(--ds-fs-sm);color:var(--ds-text-muted);pointer-events:none}
+.ds-repeat-add{justify-self:start}
+@media(max-width:640px){.ds-repeat-row{grid-template-columns:1fr 1fr}.ds-repeat-row .ds-repeat-unit{grid-column:1}.ds-repeat-row .icon-btn{grid-column:2;justify-self:end}}
+
+/* 3) Icons: one stroke weight for every lucide icon in the app. */
+svg.lucide{stroke-width:var(--ds-icon-stroke)}
+
+/* 4) Month picker: we draw the label ourselves ("Nov 2026") so it never wraps or clips; the native input sits invisibly on top and still opens the picker. */
+.month-picker-label{white-space:nowrap;font-weight:700;font-size:var(--ds-fs-lg)}
+.month-picker input{position:absolute!important;inset:0;width:100%!important;height:100%;opacity:0;cursor:pointer}
+@media(max-width:680px){
+ .month-picker{flex:1 1 0;min-width:124px;padding:0 10px;gap:6px;justify-content:space-between}
+ .month-picker-label{font-size:var(--ds-fs-md)}
+ .month-picker::after{margin-left:0}
+ .page-heading-actions .btn-primary,.heading-actions .btn-primary{flex:0 1 auto;padding-inline:12px;min-width:0}
+}
+
+/* 5) Welcome card (home greeting): brand gradient, the person, month switch, main action.
+   Gradient comes from --ds-hero-* so light and dark are set in tokens.css. */
+.welcome-card{position:relative;isolation:isolate;overflow:hidden;margin:0 0 22px;padding:22px 26px;border-radius:24px;color:var(--ds-on-brand);background:linear-gradient(145deg,var(--ds-hero-from),var(--ds-hero-mid) 55%,var(--ds-hero-to));box-shadow:0 6px 16px color-mix(in srgb,var(--ds-hero-from) 14%,transparent)}
+.welcome-card:before,.welcome-card:after{content:"";position:absolute;z-index:-1;border-radius:50%;background:rgba(255,255,255,.12)}
+.welcome-card:before{right:-70px;top:-80px;width:240px;height:240px}
+.welcome-card:after{right:18%;bottom:-110px;width:200px;height:200px;background:rgba(255,255,255,.07)}
+.welcome-top{display:flex;align-items:center;gap:16px}
+.welcome-avatar{flex:0 0 68px;width:68px;height:68px;border-radius:50%;padding:3px;background:rgba(255,255,255,.22);border:2px solid rgba(255,255,255,.7);display:grid;place-items:center;overflow:hidden}
+.welcome-avatar-img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
+.welcome-copy{min-width:0;display:grid;gap:2px}
+.welcome-hi{font-size:var(--ds-fs-lg);color:rgba(255,255,255,.86);font-weight:600}
+.welcome-name{margin:0;font-family:var(--ds-font-display);font-size:clamp(26px,2.6vw,34px);font-weight:800;letter-spacing:-.045em;line-height:1.05;color:var(--ds-on-brand)!important;-webkit-text-fill-color:var(--ds-on-brand)!important;text-transform:none}
+.welcome-card .tip-wrap{margin-left:auto;align-self:flex-start}
+.welcome-card .tip-btn{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.45);color:var(--ds-on-brand)}
+.welcome-card .tip-btn:hover,.welcome-card .tip-btn[aria-expanded="true"]{background:rgba(255,255,255,.28);border-color:rgba(255,255,255,.8);color:var(--ds-on-brand)}
+.welcome-sub{margin:6px 0 0;font-size:var(--ds-fs-md);color:rgba(255,255,255,.86);text-transform:none}
+.welcome-actions{display:flex;align-items:center;gap:10px;margin-top:18px}
+.welcome-card .month-picker{flex:0 0 auto;min-width:168px;height:44px;border-radius:12px;background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.4);color:var(--ds-on-brand);box-shadow:none}
+.welcome-card .month-picker:hover{background:rgba(255,255,255,.26);border-color:rgba(255,255,255,.7)}
+.welcome-card .month-picker:focus-within{border-color:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.3)}
+.welcome-card .month-picker .month-picker-label{color:var(--ds-on-brand)}
+.welcome-add{height:44px;min-height:44px;padding:0 18px;border-radius:12px;background:#fff;color:var(--ds-brand);border:0;font-weight:800;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;box-shadow:0 6px 16px rgba(20,30,90,.18)}
+.welcome-add:hover{background:#f1f4ff;transform:none}
+@media(min-width:1100px){.welcome-card{display:flex;align-items:center;gap:24px;padding:20px 28px}.welcome-top{flex:1 1 auto;min-width:0}.welcome-actions{margin-top:0;flex:0 0 auto}.welcome-card .tip-wrap{order:3;position:static;margin:0;align-self:center}.welcome-sub{margin:4px 0 0}}
+@media(max-width:1099px){.welcome-card{padding:18px 20px;border-radius:20px}.welcome-avatar{flex-basis:56px;width:56px;height:56px}.welcome-actions .month-picker{flex:1 1 0;min-width:0}.welcome-add{flex:1 1 0;padding:0 12px}}
+/* Keep the welcome card controls light-on-brand in dark mode too (beats the generic dark control rules). */
+:root[data-theme="dark"] .welcome-card .month-picker{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.36);color:var(--ds-on-brand);box-shadow:none}
+:root[data-theme="dark"] .welcome-card .month-picker:hover{background:rgba(255,255,255,.24);border-color:rgba(255,255,255,.7)}
+:root[data-theme="dark"] .welcome-card .month-picker input,:root[data-theme="dark"] .welcome-card .month-picker-label{color:var(--ds-on-brand)}
+:root[data-theme="dark"] .welcome-card .welcome-add{background:#fff;color:var(--ds-brand);border:0}
+.welcome-card .month-picker-label,.welcome-card .welcome-add{font-size:var(--ds-fs-lg)}
+
+/* ===== 6. Bank SMS: status chips + setup sheet ===== */
+.sms-box{margin:0 0 12px;flex-wrap:wrap}
+.sms-sheet-wrap{position:fixed;inset:0;z-index:2000;display:flex;justify-content:flex-end}
+.sms-scrim{position:absolute;inset:0;background:rgba(15,20,40,.38)}
+.sms-sheet{position:relative;width:min(440px,100%);height:100%;display:flex;flex-direction:column;overflow:hidden;background:var(--ds-surface);border-left:1px solid var(--ds-border);box-shadow:-12px 0 30px rgba(20,28,60,.18);padding:18px 16px 0}
+.sms-sheet-top{display:flex;align-items:center;justify-content:space-between;flex:none;padding:4px 2px 14px}
+.sms-sheet-body{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:2px 2px calc(24px + env(safe-area-inset-bottom));display:grid;gap:10px;align-content:start}
+.sms-sheet-body>.sms-acc{margin:0}
+.sms-sheet-top h3{margin:0;font-family:var(--ds-font-display);font-size:18px;color:var(--ds-text)}
+.sms-acc{border:1px solid var(--ds-border);border-radius:14px;margin-bottom:10px;background:var(--ds-surface)}
+.sms-acc.open{border-color:var(--ds-brand)}
+.sms-acc-h{all:unset;box-sizing:border-box;width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 14px;cursor:pointer;color:var(--ds-text)}
+.sms-acc-h b{display:block;font-size:14px}.sms-acc-h small{display:block;color:var(--ds-text-muted);font-size:12px;font-weight:500}
+.sms-acc.open .sms-acc-h svg{transform:rotate(180deg)}
+.sms-sec-body{padding:0 14px 14px;display:grid;gap:14px;min-width:0}
+.sms-sheet .sms-card{border:0;background:none;padding:0;gap:12px}
+.sms-sheet .sms-dup,.sms-sheet .smd-head{display:none}
+.sms-sheet .sms-card h4{font-size:14px}
+.sms-sheet .smd{gap:18px}
+.sms-sheet .smd-row{flex-wrap:wrap;gap:8px 10px}
+.sms-sheet .smd-row>div{flex:1 1 150px}
+.sms-sheet .smd-row small{word-break:break-all}
+.sms-sheet .sms-steps{gap:6px}
+.sms-sheet .sms-steps button{padding:8px 6px;gap:6px;white-space:nowrap;font-size:13px;min-width:0}
+.sms-sheet .sms-steps button i{width:18px;height:18px;flex:none}
+.sms-sheet .sms-steps button.done i{background:var(--ds-brand-soft);color:var(--ds-brand)}
+.sms-sheet .form-grid{grid-template-columns:1fr}
+.sms-sheet .sms-rule{grid-template-columns:1fr auto}
+.sms-sheet .sms-actions{justify-content:flex-start}
+.sms-sheet .sms-acc .sms-acc-head{padding:12px}
+@media (max-width:720px){
+  .sms-sheet-wrap{align-items:flex-end}
+  .sms-sheet{width:100%;height:auto;max-height:88vh;max-height:88dvh;border-left:0;border-top:1px solid var(--ds-border);border-radius:22px 22px 0 0;box-shadow:0 -12px 30px rgba(20,28,60,.2)}
+}
+.sms-panel > .panel-header{padding:0 0 14px;border:0}
+.smx-filters{margin-bottom:12px}
+.smx-search{flex:1 1 220px}
+.smx-filters select{flex:0 0 auto}
+@media (max-width:720px){.smx-filters select,.smx-filters input[type=date]{flex:1 1 calc(50% - 4px)}}
+.sms-sheet small,.sms-sheet p,.sms-sheet .sms-hint{text-transform:none}
+.sms-sheet .sms-acc-h small{text-transform:none}
+.smd-acts{display:flex;align-items:center;gap:6px;flex:none}
+.sms-sheet .smd-row>div:not(.smd-acts){flex:1 1 150px}
+.sms-sheet .smd-acts{flex:1 0 100%;padding-left:44px}
+.sms-toggle span,.sms-sheet .sms-toggle span{text-transform:none}
+.smi-kpis>div{align-content:start}.smi-kpis>div span,.smi-kpis>div small{text-transform:none}
+.smi-kpis b{line-height:1.2}
+.smi-rec>div{min-width:0;flex:1}.smi-rec>.sms-pill{flex:none;white-space:nowrap}
+@media(max-width:760px){.smi-rec{flex-wrap:wrap}.smi-rec>.sms-pill{margin-left:auto}}
+.sms-sheet-top{border-bottom:1px solid var(--ds-border);margin-bottom:12px}
+.sms-pane>.sms-actions{justify-content:flex-end;margin:0}
+
+/* ===== 7. Bank SMS: connection chip, cards grid, insights sheet ===== */
+.sms-conn{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:99px;background:var(--ds-warn-soft);color:var(--ds-warn);font-size:12px;font-weight:700;margin:0 0 14px;text-transform:none}
+.sms-conn.ok{background:var(--ds-ok-soft);color:var(--ds-ok)}
+.sms-main{display:grid;gap:12px}
+.smx-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px;align-items:start}
+@media (max-width:720px){.smx-cards{grid-template-columns:1fr}}
+.sms-sheet .smi-kpis{grid-template-columns:1fr 1fr}
+.sms-sheet .smi-grid{grid-template-columns:1fr}
+.sms-sheet .smi-card.wide{grid-column:auto}
+@media (max-width:720px){.smx-filters select[aria-label="Message status"]{flex:1 1 100%}.smx-filters select{flex:1 1 calc(50% - 4px)}}
+.sms-conn.ok{background:var(--ds-ok-soft)}
+.sms-sheet .smi-grid{display:flex;flex-direction:column}
+.sms-sheet .smi-card:last-child{order:-1}
+.sms-sheet .smi-card h4,.sms-sheet .smi-card small{text-transform:none}
+@media (max-width:640px){.sms-actions .menu-wrap .menu-popover{left:auto;right:0}}
+.sms-main>.period-switch{margin:0}

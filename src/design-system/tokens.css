@@ -25,6 +25,12 @@
   --ds-bad: #c03e48;  --ds-bad-soft: #fdeaec;
   --ds-chip-brand-soft: #eef0ff;
   --ds-soft: #f5f6fb;
+  --ds-surface-raised: #ffffff;       /* cards that sit on a surface, popovers */
+  --ds-hover: #f0f2f6;                /* hover / pressed fill */
+  --ds-border-strong: #d9deea;        /* dividers that must stand out */
+  --ds-text-subtle: #8b92a5;          /* hints, placeholders */
+  --ds-on-brand: #ffffff;             /* text on brand / danger fills */
+  --ds-hero-from: #2c4fe6; --ds-hero-mid: #4a5fec; --ds-hero-to: #7468e6;  /* welcome card gradient */
 
   /* ---- Surfaces + text ---- */
   --ds-page: #f7f8fa;
@@ -62,6 +68,13 @@
   --ds-label-fs: 11px;      /* small label above a field */
   --ds-focus-ring: color-mix(in srgb, var(--ds-brand) 25%, transparent);
 
+  /* ---- Short aliases used with fallbacks across the CSS (so dark mode follows) ---- */
+  --border: var(--ds-border);
+  --surface: var(--ds-surface);
+  --surface-soft: var(--ds-soft);
+  --text: var(--ds-text);
+  --accent: var(--ds-brand);
+
   /* ---- Legacy names -> tokens (do not edit, edit the --ds-* above) ---- */
   --ink: var(--ds-text);
   --muted: var(--ds-text-muted);
@@ -82,7 +95,7 @@
 
 /* On phones and touch screens, inputs must be 16px or iOS zooms the page on focus. */
 @media (max-width: 760px), (pointer: coarse) {
-  :root { --ds-control-fs: 16px; --ds-control-height: 48px; --ds-label-fs: 12.5px; }
+  :root { --ds-control-fs: 14px; --ds-control-height: 42px; --ds-label-fs: 12px; }
 }
 
 /* ---- Dark theme ---- */
@@ -92,16 +105,30 @@
   --ds-warn: #f0a458; --ds-warn-soft: #3b2c17;
   --ds-bad: #ff8790;  --ds-bad-soft: #3d1d24;
   --ds-chip-brand-soft: #2b3358;
-  --ds-soft: #222b3b;
-  --ds-page: #131925;
-  --ds-surface: #1d2432;
-  --ds-text: #edf0f8;
-  --ds-text-muted: #a2abc0;
-  --ds-border: #30384a;
-  --ds-control-bg: #222b3b;
-  --ds-control-border: #394256;
-  --ds-control-text: #e7ebf5;
-  --ds-secondary-text: #e7ebf5;
+  --ds-soft: #202837;
+  --ds-surface-raised: #1d2432;
+  --ds-hover: #262f40;
+  --ds-hero-from: #2a47cf; --ds-hero-mid: #3f4fc4; --ds-hero-to: #6a5bd0;
+  --ds-border-strong: #30384a;
+  --ds-text-subtle: #8b92a5;
+  --ds-page: #0c1017;
+  --ds-surface: #141a24;
+  --ds-text: #eceff7;
+  --ds-text-muted: #9aa4ba;
+  --ds-border: #262e3c;
+  --ds-control-bg: #202837;
+  --ds-control-border: #323c4e;
+  --ds-control-text: #e4e8f2;
+  --ds-secondary-text: #e4e8f2;
+}
+
+/* ---- Icons ---- */
+:root { --ds-icon-stroke: 2; }
+
+/* ---- Fuel kinds (fuel log cards, chips, gauges) ---- */
+:root {
+  --ds-fuel-80: #8f96a8; --ds-fuel-92: #3157f6; --ds-fuel-95: #8f7bff; --ds-fuel-98: #cb4756;
+  --ds-fuel-diesel: #f2a64b; --ds-fuel-gas: #32b98a; --ds-fuel-electric: #1fb5c9;
 }
 
 /* ---- Optional accent themes (set data-design on <html>) ---- */
