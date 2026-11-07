@@ -34,8 +34,8 @@ export function TipButton({ tips }) {
   </span>;
 }
 
-export function PageHeading({eyebrow,title,subtitle,actions,className=''}){
+export function PageHeading({eyebrow,title,subtitle,actions,titleExtra,className=''}){
   const isGreeting=className.includes('greeting-heading')||(typeof title==='string'&&/^(Good morning|Good afternoon|Good evening)/.test(title));
   const tips=isGreeting?PAGE_TIPS.overview:(typeof title==='string'?PAGE_TIPS[title]:null);
-  return <div className={`page-heading ${className}${isGreeting?' greeting-heading':''}`}><div>{eyebrow&&<div className="eyebrow">{eyebrow}</div>}<h1>{title}{tips&&!isGreeting&&<TipButton tips={tips}/>}</h1>{subtitle&&<p>{subtitle}</p>}</div><div className="heading-actions">{tips&&isGreeting&&<TipButton tips={tips}/>}{actions}</div></div>
+  return <div className={`page-heading ${className}${isGreeting?' greeting-heading':''}`}><div>{eyebrow&&<div className="eyebrow">{eyebrow}</div>}<h1>{title}{tips&&!isGreeting&&<TipButton tips={tips}/>}{titleExtra}</h1>{subtitle&&<p>{subtitle}</p>}</div><div className="heading-actions">{tips&&isGreeting&&<TipButton tips={tips}/>}{actions}</div></div>
 }
