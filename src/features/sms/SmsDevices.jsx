@@ -22,16 +22,15 @@ export function SmsDevices({ devices, setDevices, token, lastSms, userId, supaba
   const remove = async d => { const { error } = await supabase.from('sms_devices').delete().eq('id', d.id); if (error) { setToast(error.message); return; } setDevices(o => o.filter(x => x.id !== d.id)); };
   const live = devices.filter(d => !d.revoked); const dead = devices.filter(d => d.revoked);
   return <div className="smd">
-    <div className="sms-card"><div className="smd-head"><h4>Connected phones</h4></div>
-      <p>Each phone has its own token. Revoke one phone without breaking the others.</p>
+    <div className="sms-card"><p>Each phone has its own token. Revoke one phone without breaking the others.</p>
       <div className="smd-row"><span className="smd-ic"><Smartphone size={16} /></span><div><b>Main phone</b><small>{lastSms ? `last SMS ${ago(lastSms)}` : 'no SMS yet'} · token {reveal.main ? token : mask(token)}</small></div>
-        <button type="button" className="icon-btn" aria-label={reveal.main ? 'Hide token' : 'Show token'} onClick={() => setReveal(o => ({ ...o, main: !o.main }))}>{reveal.main ? <EyeOff size={15} /> : <Eye size={15} />}</button>
+        <div className="smd-acts"><button type="button" className="icon-btn" aria-label={reveal.main ? 'Hide token' : 'Show token'} onClick={() => setReveal(o => ({ ...o, main: !o.main }))}>{reveal.main ? <EyeOff size={15} /> : <Eye size={15} />}</button>
         <button type="button" className="icon-btn" aria-label="Copy token" onClick={() => copy(token, setToast)}><Copy size={15} /></button>
-        <button type="button" className="btn btn-sm" onClick={() => { if (window.confirm('Make a new token? Your main phone stops working until you paste the new token into its Shortcut.')) makeToken(); }}><RefreshCw size={14} /> New token</button></div>
+        <button type="button" className="btn btn-sm" onClick={() => { if (window.confirm('Make a new token? Your main phone stops working until you paste the new token into its Shortcut.')) makeToken(); }}><RefreshCw size={14} /> New token</button></div></div>
       {live.map(d => <div className="smd-row" key={d.id}><span className="smd-ic"><Smartphone size={16} /></span><div><b>{d.name}</b><small>{ago(d.last_seen_at)} · token {reveal[d.id] ? d.token : mask(d.token)}</small></div>
-        <button type="button" className="icon-btn" aria-label={reveal[d.id] ? 'Hide token' : 'Show token'} onClick={() => setReveal(o => ({ ...o, [d.id]: !o[d.id] }))}>{reveal[d.id] ? <EyeOff size={15} /> : <Eye size={15} />}</button>
+        <div className="smd-acts"><button type="button" className="icon-btn" aria-label={reveal[d.id] ? 'Hide token' : 'Show token'} onClick={() => setReveal(o => ({ ...o, [d.id]: !o[d.id] }))}>{reveal[d.id] ? <EyeOff size={15} /> : <Eye size={15} />}</button>
         <button type="button" className="icon-btn" aria-label="Copy token" onClick={() => copy(d.token, setToast)}><Copy size={15} /></button>
-        <button type="button" className="btn btn-sm" onClick={() => revoke(d)}>Revoke</button></div>)}
+        <button type="button" className="btn btn-sm" onClick={() => revoke(d)}>Revoke</button></div></div>)}
       {dead.length > 0 && <details className="sms-other"><summary>Revoked ({dead.length})</summary>{dead.map(d => <div className="smd-row" key={d.id}><span className="smd-ic"><Smartphone size={16} /></span><div><b>{d.name}</b><small>revoked</small></div><button type="button" className="icon-btn" aria-label="Delete device" onClick={() => remove(d)}><Trash2 size={15} /></button></div>)}</details>}
       <div className="sms-rule"><input value={name} onChange={e => setName(e.target.value)} placeholder="Name, e.g. Nora’s iPad" /><button type="button" className="btn btn-primary btn-sm" onClick={add}><Plus size={14} /> Add phone</button></div></div>
     <div className="sms-card"><h4>Quiet mode</h4>
