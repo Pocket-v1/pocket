@@ -170,3 +170,6 @@ svg.lucide{stroke-width:var(--ds-icon-stroke)}
 .account-popover-identity .email-status.status-pending{background:var(--ds-warn-soft);color:var(--ds-warn);border:0}
 :root[data-theme="dark"] .account-popover-identity .email-status.status-good{background:rgba(50,185,138,.16);color:#5fd3a8}
 :root[data-theme="dark"] .account-popover-identity .email-status.status-pending{background:rgba(242,166,75,.16);color:#f2b365}
+.account-popover-identity{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.account-popover-identity .email-status{word-spacing:.18em;letter-spacing:0;gap:.3em}
+.account-popover-identity a{text-decoration:none!important;color:inherit;pointer-events:none}
