@@ -173,3 +173,12 @@ svg.lucide{stroke-width:var(--ds-icon-stroke)}
 .account-popover-identity{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .account-popover-identity .email-status{word-spacing:.18em;letter-spacing:0;gap:.3em}
 .account-popover-identity a{text-decoration:none!important;color:inherit;pointer-events:none}
+
+/* overview panels: even spacing, flush edges */
+.panel .panel-header .select-lite{padding-right:0;padding-left:8px;flex:none;white-space:nowrap}
+.panel .panel-header{align-items:flex-start;gap:12px}
+.cc-list-row{padding-left:0;padding-right:0}
+.panel:not(.table-panel) .tx-table tbody tr{padding-left:0;padding-right:0}
+.overview-vehicle-summary .overview-vehicle-stats{margin-top:2px}
+.cc-list-row{align-items:center!important}
+.cc-list-row .cc-strip-icon{align-self:center}
