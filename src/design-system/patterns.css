@@ -78,7 +78,7 @@ svg.lucide{stroke-width:var(--ds-icon-stroke)}
 
 /* ===== 6. Bank SMS: status chips + setup sheet ===== */
 .sms-box{margin:0 0 12px;flex-wrap:wrap}
-.sms-sheet-wrap{position:fixed;inset:0;z-index:1200;display:flex;justify-content:flex-end}
+.sms-sheet-wrap{position:fixed;inset:0;z-index:2000;display:flex;justify-content:flex-end}
 .sms-scrim{position:absolute;inset:0;background:rgba(15,20,40,.38)}
 .sms-sheet{position:relative;width:min(440px,100%);height:100%;overflow:auto;background:var(--ds-surface);border-left:1px solid var(--ds-border);box-shadow:-12px 0 30px rgba(20,28,60,.18);padding:20px 18px 28px}
 .sms-sheet-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
@@ -91,10 +91,12 @@ svg.lucide{stroke-width:var(--ds-icon-stroke)}
 .sms-sec-body{padding:0 14px 14px}
 @media (max-width:720px){
   .sms-sheet-wrap{align-items:flex-end}
-  .sms-sheet{width:100%;height:auto;max-height:90vh;border-left:0;border-top:1px solid var(--ds-border);border-radius:22px 22px 0 0;box-shadow:0 -12px 30px rgba(20,28,60,.2)}
+  .sms-sheet{width:100%;height:auto;max-height:88vh;max-height:88dvh;padding-bottom:calc(28px + env(safe-area-inset-bottom));overscroll-behavior:contain;border-left:0;border-top:1px solid var(--ds-border);border-radius:22px 22px 0 0;box-shadow:0 -12px 30px rgba(20,28,60,.2)}
 }
 .sms-panel > .panel-header{padding:0 0 14px;border:0}
 .smx-filters{margin-bottom:12px}
 .smx-search{flex:1 1 220px}
 .smx-filters select{flex:0 0 auto}
 @media (max-width:720px){.smx-filters select,.smx-filters input[type=date]{flex:1 1 calc(50% - 4px)}}
+.sms-sheet small,.sms-sheet p,.sms-sheet .sms-hint{text-transform:none}
+.sms-sheet .sms-acc-h small{text-transform:none}

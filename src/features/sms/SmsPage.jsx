@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { MetricCard } from '../../components/ui/MetricCard.jsx';
 import { ArrowLeftRight, BarChart3, Check, ChevronDown, Copy, Inbox, History, MessageSquare, Pencil, RefreshCw, RotateCcw, Search, Settings2, X, Clock, CheckCircle2, Download, Eye, EyeOff, FileSpreadsheet, FileText, Plus, Scissors, Trash2, TriangleAlert } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -381,6 +382,7 @@ export function SmsPage({ accounts, transactions = [], session, supabase, curren
   const jsonBody = `{"token":"${token || 'YOUR_TOKEN'}","sender":"<Sender>","body":"<Message>"}`;
   const inSettings = ['banks', 'connect', 'test', 'devices', 'rules', 'setup'].includes(tab);
   const cur = inSettings ? main : tab;
+  useEffect(() => { if (!inSettings) return; const o = document.body.style.overflow; document.body.style.overflow = 'hidden'; return () => { document.body.style.overflow = o; }; }, [inSettings]);
   const isTab = k => ['inbox', 'insights', 'history'].includes(k) ? tab === k : inSettings;
   const tabs = [['inbox', 'Inbox', Inbox, items.length], ['insights', 'Insights', BarChart3], ['history', 'History', History], [inSettings ? tab : 'connect', 'Settings', Settings2]];
   const subnav = <div className="sms-seg sms-sub" role="tablist">{[['connect', 'Phone'], ['banks', 'Banks'], ['devices', 'Devices'], ['rules', 'Learned rules'], ['test', 'Try an SMS']].map(([k, l]) => <button type="button" key={k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{l}</button>)}</div>;
@@ -432,7 +434,7 @@ export function SmsPage({ accounts, transactions = [], session, supabase, curren
         </article>)}</div>}
     </section>}
 
-    {inSettings && <div className="sms-sheet-wrap"><div className="sms-scrim" onClick={() => setTab(main)} />
+    {inSettings && createPortal(<div className="sms-sheet-wrap"><div className="sms-scrim" onClick={() => setTab(main)} />
     <aside className="sms-sheet" role="dialog" aria-label="SMS setup">
       <div className="sms-sheet-top"><h3>SMS setup</h3><button type="button" className="icon-btn" aria-label="Close setup" onClick={() => setTab(main)}><X size={18} /></button></div>
       <div className={`sms-acc ${tab === 'connect' ? 'open' : ''}`}>
@@ -520,7 +522,7 @@ export function SmsPage({ accounts, transactions = [], session, supabase, curren
     </div>
         </>}
       </div>
-    </aside></div>}
+    </aside></div>, document.body)}
     </section>
     {undo && <div className="smx-undo" role="status"><span>Approved {undo.label}</span><button type="button" onClick={doUndo}>Undo</button></div>}
   </div>;
