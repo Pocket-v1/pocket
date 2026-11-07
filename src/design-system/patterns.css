@@ -94,3 +94,7 @@ svg.lucide{stroke-width:var(--ds-icon-stroke)}
   .sms-sheet{width:100%;height:auto;max-height:90vh;border-left:0;border-top:1px solid var(--ds-border);border-radius:22px 22px 0 0;box-shadow:0 -12px 30px rgba(20,28,60,.2)}
 }
 .sms-panel > .panel-header{padding:0 0 14px;border:0}
+.smx-filters{margin-bottom:12px}
+.smx-search{flex:1 1 220px}
+.smx-filters select{flex:0 0 auto}
+@media (max-width:720px){.smx-filters select,.smx-filters input[type=date]{flex:1 1 calc(50% - 4px)}}
