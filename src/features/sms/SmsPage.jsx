@@ -136,6 +136,7 @@ export function SmsPage({ accounts, transactions = [], session, supabase, curren
   const userId = session?.user?.id;
   const [tab, setTabRaw] = useState('inbox');
   const [main, setMain] = useState('inbox');
+  const [insOpen, setInsOpen] = useState(false);
   const setTab = k => { if (['inbox', 'insights', 'history'].includes(k)) setMain(k); setTabRaw(k); };
   const [items, setItems] = useState([]);
   const [hist, setHist] = useState([]);
@@ -382,24 +383,21 @@ export function SmsPage({ accounts, transactions = [], session, supabase, curren
   const jsonBody = `{"token":"${token || 'YOUR_TOKEN'}","sender":"<Sender>","body":"<Message>"}`;
   const inSettings = ['banks', 'connect', 'test', 'devices', 'rules', 'setup'].includes(tab);
   const cur = inSettings ? main : tab;
-  useEffect(() => { if (!inSettings) return; const o = document.body.style.overflow; document.body.style.overflow = 'hidden'; return () => { document.body.style.overflow = o; }; }, [inSettings]);
+  useEffect(() => { if (!inSettings && !insOpen) return; const o = document.body.style.overflow; document.body.style.overflow = 'hidden'; return () => { document.body.style.overflow = o; }; }, [inSettings, insOpen]);
   const isTab = k => ['inbox', 'insights', 'history'].includes(k) ? tab === k : inSettings;
   const tabs = [['inbox', 'Inbox', Inbox, items.length], ['insights', 'Insights', BarChart3], ['history', 'History', History], [inSettings ? tab : 'connect', 'Settings', Settings2]];
   const subnav = <div className="sms-seg sms-sub" role="tablist">{[['connect', 'Phone'], ['banks', 'Banks'], ['devices', 'Devices'], ['rules', 'Learned rules'], ['test', 'Try an SMS']].map(([k, l]) => <button type="button" key={k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{l}</button>)}</div>;
   const filters = <div className="smx-filters">
     <label className="smx-search"><Search size={15} /><input value={q} onChange={e => setQ(e.target.value)} placeholder="Search merchant or message" aria-label="Search SMS" /></label>
+    <select value={cur === 'inbox' ? 'inbox' : hStatus} onChange={e => { const v = e.target.value; if (v === 'inbox') setTab('inbox'); else { setHStatus(v); setTab('history'); } }} aria-label="Message status"><option value="inbox">{`To review (${items.length})`}</option><option value="approved">{`Approved (${hist.filter(h => h.status === 'approved').length})`}</option><option value="dismissed">{`Dismissed (${hist.filter(h => h.status === 'dismissed').length})`}</option></select>
     <select value={fAcc} onChange={e => setFAcc(e.target.value)} aria-label="Filter by account"><option value="">All accounts</option>{cur === 'inbox' && <option value="none">No account</option>}{usable.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select>
     <select value={range} onChange={e => setRange(e.target.value)} aria-label="Date range"><option value="all">Any date</option><option value="today">Today</option><option value="week">Last 7 days</option><option value="month">This month</option></select>
-    {cur === 'inbox' && <select value={view} onChange={e => setView(e.target.value)} aria-label="Review status"><option value="all">All messages</option><option value="check">{`Needs review (${needsReview})`}</option><option value="ready">{`Ready (${readyCount})`}</option></select>}
   </div>;
 
   return <div className="sms-page">
-    <PageHeading eyebrow="AUTOMATIC TRACKING" title="Bank SMS" subtitle="Bank messages land here first. You review them before they become transactions." actions={<><button type="button" className="btn btn-secondary" onClick={load}><RefreshCw size={17} /> Refresh</button><button type="button" className="btn btn-primary" onClick={() => setTab(inSettings ? main : 'connect')}><Settings2 size={17} /> Setup</button></>}/>
-    <div className="metric-grid three"><MetricCard label="To review" value={items.length} icon={Inbox} tone="blue" note="waiting for you" /><MetricCard label="Connection" value={lastSms ? 'Connected' : 'Not connected'} icon={Clock} tone="purple" note={lastSms ? `last SMS ${ago(lastSms)}` : 'open Setup to connect your phone'} /><MetricCard label="Approved" value={approvedMonth} icon={CheckCircle2} tone="green" note="this month" /></div>
-    <section className="panel sms-panel"><div className="panel-header section-header"><div><h2>Messages</h2><p>Review each bank SMS before it becomes a transaction.</p></div><div className="cc-view" role="group" aria-label="Choose what to show"><button type="button" className={`cc-view-btn ${cur !== 'insights' ? 'on' : ''}`} aria-pressed={cur !== 'insights'} onClick={() => setTab(main === 'insights' ? 'inbox' : main)}><Inbox size={15} /> List</button><button type="button" className={`cc-view-btn ${cur === 'insights' ? 'on' : ''}`} aria-pressed={cur === 'insights'} onClick={() => setTab('insights')}><BarChart3 size={15} /> Insights</button></div></div>
-
-    {cur !== 'insights' && <div className="smx-chips2 sms-box" role="tablist" aria-label="Messages">{[['inbox', `To review ${items.length}`, () => setTab('inbox'), cur === 'inbox'], ['approved', `Approved ${hist.filter(h => h.status === 'approved').length}`, () => { setHStatus('approved'); setTab('history'); }, cur === 'history' && hStatus === 'approved'], ['dismissed', `Dismissed ${hist.filter(h => h.status === 'dismissed').length}`, () => { setHStatus('dismissed'); setTab('history'); }, cur === 'history' && hStatus === 'dismissed']].map(([k, l, fn, on]) => <button type="button" role="tab" aria-selected={on} key={k} className={`sms-chipbtn ${on ? 'on' : ''}`} onClick={fn}>{l}</button>)}</div>}
-
+    <PageHeading eyebrow="AUTOMATIC TRACKING" title="Bank SMS" subtitle="Bank messages land here first. You review them before they become transactions." actions={<><button type="button" className="btn btn-secondary" onClick={() => setInsOpen(true)}><BarChart3 size={17} /> Insights</button><button type="button" className="btn btn-primary" onClick={() => setTab('connect')}><Settings2 size={17} /> Setup</button></>}/>
+    <div className={`sms-conn ${lastSms ? "ok" : ""}`}>{lastSms ? `Connected · last SMS ${ago(lastSms)}` : 'Not connected yet. Open Setup to connect your phone.'}</div>
+    <section className="sms-main">
     {cur === 'inbox' && <section className="sms-pane">
       {filters}
       {groups.length > 0 && shown.length > 1 && <div className="smx-groups"><span>Quick groups</span>{groups.map(g => <button type="button" key={g.key} className="sms-chipbtn" onClick={() => approveGroup(g)}>{g.label} ×{g.ids.length} · Approve</button>)}</div>}
@@ -413,13 +411,11 @@ export function SmsPage({ accounts, transactions = [], session, supabase, curren
         <button type="button" className="btn btn-sm" disabled={!picked.length} onClick={bulkDismiss}><X size={14} /> Dismiss</button>
         <button type="button" className="btn btn-primary btn-sm" disabled={!picked.length} onClick={bulkApprove}><Check size={14} /> Approve</button></div>}
       {shown.length > 0 && <p className="smx-tip">Swipe a row right to approve, left to dismiss. On a computer, drag it or use the buttons.</p>}
-      <div className="smx-list">{shown.map(x => <SmsCard key={x.id} conf={confMap[x.id]} sug={suggestAuto(x, hist, configs)} onAutoRule={addAutoRule} xfer={xfers[x.id]} onTransfer={approveTransfer} cur={curOf(x)} x={x} selectMode={selectMode} selected={sel.includes(x.id)} onSelect={toggleSel} dup={dupFor(x)} bal={balFor(x)} usable={usable} expCats={expCats} currency={currency} fmt={fmt} patch={patch} onApprove={approve} onDismiss={dismiss} onRemember={remember} editing={!!editingIds[x.id]} setEditing={setEditing} />)}</div>
+      <div className="smx-list smx-cards">{shown.map(x => <SmsCard key={x.id} conf={confMap[x.id]} sug={suggestAuto(x, hist, configs)} onAutoRule={addAutoRule} xfer={xfers[x.id]} onTransfer={approveTransfer} cur={curOf(x)} x={x} selectMode={selectMode} selected={sel.includes(x.id)} onSelect={toggleSel} dup={dupFor(x)} bal={balFor(x)} usable={usable} expCats={expCats} currency={currency} fmt={fmt} patch={patch} onApprove={approve} onDismiss={dismiss} onRemember={remember} editing={!!editingIds[x.id]} setEditing={setEditing} />)}</div>
       {noise.length > 0 && <details className="sms-other"><summary>Not a payment ({noise.length}) <small>OTP codes, offers…</small></summary>
         {noise.map(x => <div className="sms-other-row" key={x.id}><p dir="auto">{x.body}</p><button type="button" className="btn btn-sm" onClick={() => dismiss(x)}><X size={14} /> Dismiss</button></div>)}
         <div className="sms-actions"><button type="button" className="btn btn-sm" onClick={async () => { for (const x of noise) await dismiss(x); }}>Dismiss all</button></div></details>}
     </section>}
-
-    {cur === 'insights' && <SmsInsights items={items} hist={hist} configs={configs} usable={usable} accounts={accounts} transactions={transactions} fmt={fmt} flagged={flagged} />}
 
     {cur === 'history' && <section className="sms-pane">
       {filters}
@@ -432,6 +428,10 @@ export function SmsPage({ accounts, transactions = [], session, supabase, curren
           {x.status === 'dismissed' && <button type="button" className="btn btn-sm" onClick={() => restore(x)}><RotateCcw size={14} /> Restore</button>}
         </article>)}</div>}
     </section>}
+
+    </section>
+
+    {insOpen && createPortal(<div className="sms-sheet-wrap"><div className="sms-scrim" onClick={() => setInsOpen(false)} /><aside className="sms-sheet" role="dialog" aria-label="SMS insights"><div className="sms-sheet-top"><h3>SMS insights</h3><button type="button" className="icon-btn" aria-label="Close insights" onClick={() => setInsOpen(false)}><X size={18} /></button></div><div className="sms-sheet-body"><SmsInsights items={items} hist={hist} configs={configs} usable={usable} accounts={accounts} transactions={transactions} fmt={fmt} flagged={flagged} /></div></aside></div>, document.body)}
 
     {inSettings && createPortal(<div className="sms-sheet-wrap"><div className="sms-scrim" onClick={() => setTab(main)} />
     <aside className="sms-sheet" role="dialog" aria-label="SMS setup">
@@ -521,7 +521,6 @@ export function SmsPage({ accounts, transactions = [], session, supabase, curren
       </div>
       </div>
     </aside></div>, document.body)}
-    </section>
     {undo && <div className="smx-undo" role="status"><span>Approved {undo.label}</span><button type="button" onClick={doUndo}>Undo</button></div>}
   </div>;
 }

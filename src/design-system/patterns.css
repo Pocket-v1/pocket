@@ -127,3 +127,18 @@ svg.lucide{stroke-width:var(--ds-icon-stroke)}
 @media(max-width:760px){.smi-rec{flex-wrap:wrap}.smi-rec>.sms-pill{margin-left:auto}}
 .sms-sheet-top{border-bottom:1px solid var(--ds-border);margin-bottom:12px}
 .sms-pane>.sms-actions{justify-content:flex-end;margin:0}
+
+/* ===== 7. Bank SMS: connection chip, cards grid, insights sheet ===== */
+.sms-conn{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:99px;background:var(--ds-warn-soft);color:var(--ds-warn);font-size:12px;font-weight:700;margin:0 0 14px;text-transform:none}
+.sms-conn.ok{background:var(--ds-ok-soft);color:var(--ds-ok)}
+.sms-main{display:grid;gap:12px}
+.smx-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px;align-items:start}
+@media (max-width:720px){.smx-cards{grid-template-columns:1fr}}
+.sms-sheet .smi-kpis{grid-template-columns:1fr 1fr}
+.sms-sheet .smi-grid{grid-template-columns:1fr}
+.sms-sheet .smi-card.wide{grid-column:auto}
+@media (max-width:720px){.smx-filters select[aria-label="Message status"]{flex:1 1 100%}.smx-filters select{flex:1 1 calc(50% - 4px)}}
+.sms-conn.ok{background:var(--ds-ok-soft)}
+.sms-sheet .smi-grid{display:flex;flex-direction:column}
+.sms-sheet .smi-card:last-child{order:-1}
+.sms-sheet .smi-card h4,.sms-sheet .smi-card small{text-transform:none}
