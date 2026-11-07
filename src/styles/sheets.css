@@ -18,7 +18,7 @@
 .modal-backdrop:has(> .modal > .settings-accordion-list) { align-items: flex-end !important; justify-content: center !important; padding: 0 !important; }
 .modal:has(> .settings-accordion-list) { display: flex; flex-direction: column; max-height: min(88dvh, 900px); min-height: 0; overflow: hidden; }
 .modal > .settings-accordion-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding-bottom: 18px; }
-.modal:has(> .settings-accordion-list) > .modal-actions { flex: 0 0 auto; position: sticky; bottom: 0; z-index: 2; background: var(--panel, #fff); padding: 14px 0 max(14px, env(safe-area-inset-bottom)); border-top: 1px solid var(--line); margin-top: 0; }
+.modal:has(> .settings-accordion-list) > .modal-actions { flex: 0 0 auto; position: sticky; bottom: 0; z-index: 2; background: var(--panel, var(--ds-surface)); padding: 14px 0 max(14px, env(safe-area-inset-bottom)); border-top: 1px solid var(--line); margin-top: 0; }
 
 /* --- Keep the page behind a sheet from scrolling; hide the popup notification over it ------ */
 html.pocket-sheet-open, html.pocket-sheet-open body { overflow: hidden; }
@@ -95,7 +95,7 @@ html.pocket-sheet-open .notification-toast { visibility: hidden; pointer-events:
     bottom: 0 !important;
     margin-top: auto !important;
     padding: 12px 18px max(14px, env(safe-area-inset-bottom)) !important;
-    border-top: 1px solid var(--line, #e5e8ef);
+    border-top: 1px solid var(--line, var(--ds-border));
     background: var(--panel, #fff) !important;
     box-sizing: border-box;
     z-index: 8 !important;
@@ -218,5 +218,5 @@ html.pocket-sheet-open .notification-toast { visibility: hidden; pointer-events:
 .modal:has(> .profile-settings-form)>.modal-head{flex:0 0 auto}
 .modal>.profile-settings-form{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .modal>.profile-settings-form>*{flex-shrink:0}
-.modal>.profile-settings-form>.profile-settings-footer{position:sticky;bottom:0;z-index:2;margin-top:auto;background:var(--panel,var(--surface,#fff));padding:12px 0 max(12px,env(safe-area-inset-bottom));border-top:1px solid var(--border,#eef0f4)}
-:root[data-theme="dark"] .modal>.profile-settings-form>.profile-settings-footer{background:var(--ds-surface,#1b2230);border-color:#262e3c}
+.modal>.profile-settings-form>.profile-settings-footer{position:sticky;bottom:0;z-index:2;margin-top:auto;background:var(--panel,var(--surface,var(--ds-surface)));padding:12px 0 max(12px,env(safe-area-inset-bottom));border-top:1px solid var(--border,#eef0f4)}
+:root[data-theme="dark"] .modal>.profile-settings-form>.profile-settings-footer{background:var(--ds-surface,var(--ds-surface-raised));border-color:#262e3c}

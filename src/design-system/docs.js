@@ -12,8 +12,8 @@ document.body.classList.add('ds-doc-body');
 const COLORS = [
   ['Brand', [['--ds-brand','Brand'],['--ds-brand-hover','Brand hover'],['--ds-brand-soft','Brand soft']]],
   ['Status', [['--ds-success','Success / income'],['--ds-warning','Warning'],['--ds-danger','Danger'],['--ds-ok','Chip OK'],['--ds-warn','Chip warning'],['--ds-bad','Chip late']]],
-  ['Surfaces', [['--ds-page','Page'],['--ds-surface','Card / panel'],['--ds-soft','Soft fill'],['--ds-border','Border']]],
-  ['Text', [['--ds-text','Text'],['--ds-text-muted','Muted text'],['--ds-secondary-text','Secondary button text']]],
+  ['Surfaces', [['--ds-page','Page'],['--ds-surface','Card / panel'],['--ds-surface-raised','Raised card, popover'],['--ds-soft','Soft fill'],['--ds-hover','Hover fill'],['--ds-border','Border'],['--ds-border-strong','Strong border']]],
+  ['Text', [['--ds-text','Text'],['--ds-text-muted','Muted text'],['--ds-text-subtle','Hints, placeholders'],['--ds-on-brand','Text on brand fill'],['--ds-secondary-text','Secondary button text']]],
   ['Fuel kinds', [['--ds-fuel-80','80 Octane'],['--ds-fuel-92','92 Octane'],['--ds-fuel-95','95 Octane'],['--ds-fuel-98','98 Octane'],['--ds-fuel-diesel','Diesel'],['--ds-fuel-gas','Gas'],['--ds-fuel-electric','Electric']]],
  ['Form controls', [['--ds-control-bg','Input background'],['--ds-control-border','Input border'],['--ds-control-text','Input text']]],
 ];

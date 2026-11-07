@@ -1,6 +1,6 @@
 .acc-row{position:relative;overflow:hidden;padding-left:22px;background-image:linear-gradient(90deg,color-mix(in srgb,var(--acc-c,#5b6cf0) 9%,transparent),transparent 38%)}
 .acc-row:before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--acc-c,#5b6cf0)}
-.acc-row-chip{width:54px;height:36px;border-radius:9px;flex:none;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,var(--pc-a,var(--ds-brand)),var(--pc-b,#0b1033));box-shadow:0 4px 10px color-mix(in srgb,var(--pc-a,var(--ds-brand)) 35%,transparent)}
+.acc-row-chip{width:54px;height:36px;border-radius:9px;flex:none;display:grid;place-items:center;color:var(--ds-on-brand);background:linear-gradient(135deg,var(--pc-a,var(--ds-brand)),var(--pc-b,#0b1033));box-shadow:0 4px 10px color-mix(in srgb,var(--pc-a,var(--ds-brand)) 35%,transparent)}
 .acc-liab .cc-bar{background:color-mix(in srgb,var(--pc-a) 16%,var(--border,#e5e8f0))}
 .acc-liab .cc-bar i{background:var(--pc-a)}
 .acc-liab .cc-bar i.hi{background:var(--ds-danger)}

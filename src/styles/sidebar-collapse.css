@@ -35,12 +35,12 @@
 .sidebar .nav-item>svg,.sidebar .sidebar-collapse-btn svg,.sidebar .sidebar-settings-button svg{stroke-width:1.9}
 /* dark theme nav readability */
 :root[data-theme="dark"] .sidebar .nav-item{color:#b4bdd0!important;opacity:1!important}
-:root[data-theme="dark"] .sidebar .nav-item:hover{color:var(--ink,#eceff7);background:rgba(255,255,255,.06)}
-:root[data-theme="dark"] .sidebar .nav-item.active{background:#2b3358!important;color:#fff!important}
+:root[data-theme="dark"] .sidebar .nav-item:hover{color:var(--ink,var(--ds-text));background:rgba(255,255,255,.06)}
+:root[data-theme="dark"] .sidebar .nav-item.active{background:var(--ds-brand-soft)!important;color:#fff!important}
 :root[data-theme="dark"] .sidebar .nav-item.active>svg{color:#9fb2ff}
 :root[data-theme="dark"] .sidebar .sidebar-bottom{background:transparent}
-:root[data-theme="dark"] .sidebar .sidebar-settings-button{background:#202837;border-color:#262e3c;color:#e4e8f2}
-:root[data-theme="dark"] .sidebar-collapse-btn{background:transparent;border-color:#262e3c;color:#9aa4ba}
+:root[data-theme="dark"] .sidebar .sidebar-settings-button{background:var(--ds-soft);border-color:#262e3c;color:var(--ds-text)}
+:root[data-theme="dark"] .sidebar-collapse-btn{background:transparent;border-color:#262e3c;color:var(--ds-text-muted)}
 
 /* default-account star */
 .default-star.is-default{color:var(--warning,var(--ds-warning))}

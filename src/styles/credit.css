@@ -101,7 +101,7 @@
 .btn.btn-sm{min-height:34px;padding:6px 12px;font-size:13px}
 
 /* The "Other amount" input in the pay modals */
-.cc-option input{width:100%;margin-top:10px;height:44px;padding:0 12px;border:1px solid var(--ds-control-border,#e0e5ee);border-radius:var(--ds-radius-md,10px);background:var(--ds-control-bg,#fff);color:var(--ds-control-text,inherit)}
+.cc-option input{width:100%;margin-top:10px;height:44px;padding:0 12px;border:1px solid var(--ds-control-border,var(--ds-control-border));border-radius:var(--ds-radius-md,10px);background:var(--ds-control-bg,var(--ds-surface));color:var(--ds-control-text,inherit)}
 .cc-option input:focus{outline:none;border-color:var(--ds-brand,var(--ds-brand));box-shadow:0 0 0 3px var(--ds-focus-ring,color-mix(in srgb,var(--ds-brand) 20%,transparent))}
 
 /* Distinct layouts per debt category */
@@ -123,7 +123,7 @@
 
 /* ---- Visa-sized payment cards (credit cards + installment apps) ---- */
 .pc-wrap{display:grid;gap:10px;width:100%;max-width:400px;min-width:0}
-.pc-face{--pc-a:var(--ds-brand);--pc-b:#0b1033;position:relative;aspect-ratio:1.586/1;border-radius:20px;padding:20px 22px;color:#fff;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;background:linear-gradient(135deg,var(--pc-a),var(--pc-b));box-shadow:0 10px 26px rgba(15,23,60,.22)}
+.pc-face{--pc-a:var(--ds-brand);--pc-b:#0b1033;position:relative;aspect-ratio:1.586/1;border-radius:20px;padding:20px 22px;color:var(--ds-on-brand);overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;background:linear-gradient(135deg,var(--pc-a),var(--pc-b));box-shadow:0 10px 26px rgba(15,23,60,.22)}
 .pc-face:before{content:"";position:absolute;right:-60px;top:-70px;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,.12)}
 .pc-face:after{content:"";position:absolute;left:-50px;bottom:-90px;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.07)}
 .pc-face>*{position:relative;z-index:1}
@@ -132,7 +132,7 @@
 .pc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
 .pc-id{display:flex;gap:10px;align-items:center;min-width:0}.pc-id b{display:block;font-size:17px;font-weight:800;letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pc-id>span:last-child{min-width:0}
 .pc-mono{width:34px;height:34px;border-radius:11px;background:rgba(255,255,255,.22);display:grid;place-items:center;font-weight:800;font-size:16px;flex-shrink:0}
-.pc-menu{display:flex;gap:2px}.pc-menu .icon-btn{background:rgba(255,255,255,.16)!important;border-color:transparent!important;color:#fff!important;width:30px;height:30px;min-height:30px}.pc-menu .icon-btn:hover{background:rgba(255,255,255,.3)!important}
+.pc-menu{display:flex;gap:2px}.pc-menu .icon-btn{background:rgba(255,255,255,.16)!important;border-color:transparent!important;color:var(--ds-on-brand)!important;width:30px;height:30px;min-height:30px}.pc-menu .icon-btn:hover{background:rgba(255,255,255,.3)!important}
 .pc-mid strong{display:block;font-size:26px;font-weight:800;letter-spacing:-.02em;margin:2px 0 8px}
 .pc-bar{height:6px;border-radius:999px;background:rgba(255,255,255,.28);overflow:hidden;margin-bottom:6px}.pc-bar i{display:block;height:100%;border-radius:999px;background:#fff}
 .pc-bottom{display:flex;justify-content:space-between;align-items:flex-end;gap:8px}.pc-bottom b{font-size:17px;font-weight:800}

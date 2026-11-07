@@ -31,7 +31,7 @@
 :root[data-theme="dark"] .cc-section-head p,
 :root[data-theme="dark"] .acc-toolbar p,
 :root[data-theme="dark"] .acc-alert small,
-:root[data-theme="dark"] .fuel-card-stats dt{color:#9aa4ba}
+:root[data-theme="dark"] .fuel-card-stats dt{color:var(--ds-text-muted)}
 :root[data-theme="dark"] .status-pending,
 :root[data-theme="dark"] .access-request-stat.pending strong{color:#f0a458}
 :root[data-theme="dark"] .notification-toast-copy > b{color:#a9b8ff}
@@ -43,13 +43,13 @@
 :root[data-theme="dark"] .status-tag:not(.status-good):not(.status-pending):not(.status-brand):not(.status-bad):not(.status-danger){background:rgba(255,255,255,.07);color:#c5cbdb}
 :root[data-theme="dark"] .footer-dot{color:#8c97b3}
 :root[data-theme="dark"] .amount-expense,
-:root[data-theme="dark"] .table-bottom b{color:#eceff7!important}
+:root[data-theme="dark"] .table-bottom b{color:var(--ds-text)!important}
 :root[data-theme="dark"] .select-lite,
 :root[data-theme="dark"] .amount-transfer,
 :root[data-theme="dark"] .cc-view-btn.on,
 :root[data-theme="dark"] .onboarding li.next .onboarding-dot{color:#a9b8ff!important}
 :root[data-theme="dark"] .sidebar-section-title,
-:root[data-theme="dark"] .sidebar-section-heading span{color:#9aa4ba!important}
+:root[data-theme="dark"] .sidebar-section-heading span{color:var(--ds-text-muted)!important}
 :root[data-theme="dark"] .access-request-stat.approved strong{color:#56c9a0!important}
 :root[data-theme="dark"] .access-request-stat.denied strong,
 :root[data-theme="dark"] .calendar-day .cal-net.neg,
@@ -58,8 +58,8 @@
 :root[data-theme="dark"] .recharts-tooltip-label{color:#171923!important}
 
 /* Toast + tinted icon chips: dark surfaces instead of bright light ones */
-:root[data-theme="dark"] .notification-toast{background:#141a24;border:1px solid #262e3c;color:#eceff7}
-:root[data-theme="dark"] .notification-toast-copy>b{color:#eceff7!important}
+:root[data-theme="dark"] .notification-toast{background:var(--ds-surface);border:1px solid #262e3c;color:var(--ds-text)}
+:root[data-theme="dark"] .notification-toast-copy>b{color:var(--ds-text)!important}
 :root[data-theme="dark"] .notification-toast-icon{background:rgba(255,135,144,.16)}
 :root[data-theme="dark"] .tx-income,:root[data-theme="dark"] .metric-icon.green{background:rgba(86,201,160,.16)!important;color:#56c9a0!important}
 :root[data-theme="dark"] .tx-expense,:root[data-theme="dark"] .metric-icon.orange{background:rgba(240,164,88,.16)!important;color:#f0a458!important}
@@ -72,11 +72,11 @@
 .smx-bg.ap{background:#17805a}
 
 /* Plain .btn (no variant) had the browser's light grey in dark mode; SMS card fields too */
-:root[data-theme="dark"] .btn:where(:not(.btn-primary,.btn-secondary,.btn-danger,.btn-ghost,.btn-link)){background:#202837;color:#e4e8f2;border-color:#323c4e}
-:root[data-theme="dark"] .btn:where(:not(.btn-primary,.btn-secondary,.btn-danger,.btn-ghost,.btn-link)):hover{background:#2a3448}
-:root[data-theme="dark"] .smx-card select,:root[data-theme="dark"] .smx-card input:not([type=checkbox]):not([type=radio]){background:#202837;color:#e4e8f2;border-color:#323c4e}
+:root[data-theme="dark"] .btn:where(:not(.btn-primary,.btn-secondary,.btn-danger,.btn-ghost,.btn-link)){background:var(--ds-soft);color:#e4e8f2;border-color:var(--ds-control-border)}
+:root[data-theme="dark"] .btn:where(:not(.btn-primary,.btn-secondary,.btn-danger,.btn-ghost,.btn-link)):hover{background:var(--ds-hover)}
+:root[data-theme="dark"] .smx-card select,:root[data-theme="dark"] .smx-card input:not([type=checkbox]):not([type=radio]){background:var(--ds-soft);color:#e4e8f2;border-color:var(--ds-control-border)}
 :root[data-theme="dark"] .smx-card select:focus-visible,:root[data-theme="dark"] .smx-card input:focus-visible{outline-color:#a9b8ff}
-:root[data-theme="dark"] .smx-chips2 select{background:#202837;color:#e4e8f2;border-color:#323c4e}
+:root[data-theme="dark"] .smx-chips2 select{background:var(--ds-soft);color:#e4e8f2;border-color:var(--ds-control-border)}
 
 /* ===== Dark palette v2 =====
    page #151a24 > sidebar/topbar #181e2a > card #1c2230 > nested #222a3a > control #262f41
@@ -93,21 +93,21 @@
 :root[data-theme="dark"] .btn-primary{background:#3d63f6;color:#fff;box-shadow:none}
 :root[data-theme="dark"] .btn-primary:hover{background:#5174ff}
 :root[data-theme="dark"] .modal-backdrop{background:rgba(8,11,17,.62)}
-:root[data-theme="dark"] .modal{background:#141a24;border:1px solid #262e3c}
-:root[data-theme="dark"] .progress-track,:root[data-theme="dark"] .report-bar{background:#252d3d}
-:root[data-theme="dark"] .upgrade-progress{background:#252d3d}
+:root[data-theme="dark"] .modal{background:var(--ds-surface);border:1px solid #262e3c}
+:root[data-theme="dark"] .progress-track,:root[data-theme="dark"] .report-bar{background:var(--ds-hover)}
+:root[data-theme="dark"] .upgrade-progress{background:var(--ds-hover)}
 :root[data-theme="dark"] .insight-bullet{background:rgba(120,148,255,.16)!important;color:#9db2ff!important}
-:root[data-theme="dark"] .recharts-default-tooltip{background:#202837!important;border:1px solid #323c4e!important}
-:root[data-theme="dark"] .recharts-tooltip-label,:root[data-theme="dark"] .recharts-tooltip-item{color:#eceff7!important}
+:root[data-theme="dark"] .recharts-default-tooltip{background:var(--ds-soft)!important;border:1px solid #323c4e!important}
+:root[data-theme="dark"] .recharts-tooltip-label,:root[data-theme="dark"] .recharts-tooltip-item{color:var(--ds-text)!important}
 :root[data-theme="dark"] .month-picker,:root[data-theme="dark"] .year-picker,:root[data-theme="dark"] .month-picker input,:root[data-theme="dark"] .year-picker select{color:#c3cadb}
-:root[data-theme="dark"] input::placeholder,:root[data-theme="dark"] textarea::placeholder{color:#8791a8;opacity:1}
+:root[data-theme="dark"] input::placeholder,:root[data-theme="dark"] textarea::placeholder{color:var(--ds-text-subtle);opacity:1}
 :root[data-theme="dark"] input,:root[data-theme="dark"] select,:root[data-theme="dark"] textarea{color-scheme:dark}
 
 /* Date pills + account cards (dark) */
-:root[data-theme="dark"] .month-picker,:root[data-theme="dark"] .year-picker{background:#141a24;border-color:#2c3546;color:#eceff7;box-shadow:none}
+:root[data-theme="dark"] .month-picker,:root[data-theme="dark"] .year-picker{background:var(--ds-surface);border-color:#2c3546;color:var(--ds-text);box-shadow:none}
 :root[data-theme="dark"] .month-picker:hover,:root[data-theme="dark"] .year-picker:hover{border-color:#44527a}
-:root[data-theme="dark"] .month-picker input,:root[data-theme="dark"] .year-picker select{color:#eceff7}
-:root[data-theme="dark"] .year-picker select option{background:#1a212d;color:#eceff7}
+:root[data-theme="dark"] .month-picker input,:root[data-theme="dark"] .year-picker select{color:var(--ds-text)}
+:root[data-theme="dark"] .year-picker select option{background:var(--ds-surface-raised);color:#eceff7}
 :root[data-theme="dark"] .acc-card:not(.acc-solid){background-image:linear-gradient(180deg,color-mix(in srgb,var(--acc-c) 34%,#141a24),#141a24 75%)!important;border-color:color-mix(in srgb,var(--acc-c) 45%,#262e3c)!important}
 :root[data-theme="dark"] .acc-card:not(.acc-solid):before{height:5px}
 :root[data-theme="dark"] .nav-item svg{color:#8f9ab3}

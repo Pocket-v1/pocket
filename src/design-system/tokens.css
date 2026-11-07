@@ -25,6 +25,11 @@
   --ds-bad: #c03e48;  --ds-bad-soft: #fdeaec;
   --ds-chip-brand-soft: #eef0ff;
   --ds-soft: #f5f6fb;
+  --ds-surface-raised: #ffffff;       /* cards that sit on a surface, popovers */
+  --ds-hover: #f0f2f6;                /* hover / pressed fill */
+  --ds-border-strong: #d9deea;        /* dividers that must stand out */
+  --ds-text-subtle: #8b92a5;          /* hints, placeholders */
+  --ds-on-brand: #ffffff;             /* text on brand / danger fills */
 
   /* ---- Surfaces + text ---- */
   --ds-page: #f7f8fa;
@@ -100,6 +105,10 @@
   --ds-bad: #ff8790;  --ds-bad-soft: #3d1d24;
   --ds-chip-brand-soft: #2b3358;
   --ds-soft: #202837;
+  --ds-surface-raised: #1d2432;
+  --ds-hover: #262f40;
+  --ds-border-strong: #30384a;
+  --ds-text-subtle: #8b92a5;
   --ds-page: #0c1017;
   --ds-surface: #141a24;
   --ds-text: #eceff7;
