@@ -73,7 +73,7 @@ const mapPending = (x, cfgs, memo) => {
 };
 const isNoise = x => x.amount == null && !x.txn_type;
 
-function SmsCard({ conf, sug, onAutoRule, xfer, onTransfer, cur, x, usable, expCats, currency, fmt, patch, onApprove, onDismiss, onRemember, editing, setEditing, selectMode, selected, onSelect, dup, bal }) {
+function SmsCard({ payTargets = [], conf, sug, onAutoRule, xfer, onTransfer, cur, x, usable, expCats, currency, fmt, patch, onApprove, onDismiss, onRemember, editing, setEditing, selectMode, selected, onSelect, dup, bal }) {
   const [open, setOpen] = useState(false);
   const accName = usable.find(a => String(a.id) === String(x._acc))?.name;
   const isIn = x._type === 'Income';
@@ -83,7 +83,7 @@ function SmsCard({ conf, sug, onAutoRule, xfer, onTransfer, cur, x, usable, expC
   const splits = x._splits || null;
   const splitSum = splits ? splits.reduce((n, r) => n + (Number(r.amount) || 0), 0) : 0;
   const remain = amt - splitSum;
-  const startEdit = () => { patch(x.id, { _snap: { _type: x._type, _amount: x._amount, _acc: x._acc, _cat: x._cat, _desc: x._desc, _splits: x._splits || null, _to: x._to || '' } }); setEditing(x.id, true); };
+  const startEdit = () => { patch(x.id, { _snap: { _type: x._type, _amount: x._amount, _acc: x._acc, _cat: x._cat, _desc: x._desc, _splits: x._splits || null, _to: x._to || '', _pay: x._pay || '' } }); setEditing(x.id, true); };
   const cancelEdit = () => { if (x._snap) patch(x.id, { ...x._snap, _snap: null }); setEditing(x.id, false); };
   const setSplit = (i, k, v) => patch(x.id, { _splits: splits.map((r, j) => j === i ? { ...r, [k]: v } : r) });
   const [dx, setDx] = useState(0);
@@ -104,9 +104,10 @@ function SmsCard({ conf, sug, onAutoRule, xfer, onTransfer, cur, x, usable, expC
     </div>
     <div className="smx-hero"><div className={`smx-big ${isIn ? 'in' : 'out'}`}>{amt > 0 ? (cur ? `${isIn ? '+' : '−'}${cur} ${amt}` : `${isIn ? '+' : '−'}${fmt(amt)}`) : 'No amount'}</div>{x._desc && <b className="smx-title">{x._desc}</b>}</div>
     {!editing ? <div className="smx-quick"><label><small>Account</small><select value={x._acc} onChange={e => patch(x.id, { _acc: e.target.value })}><option value="">Choose…</option>{usable.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>{x._type === 'Transfer' ? <label><small>To account</small><select value={x._to || ''} onChange={e => patch(x.id, { _to: e.target.value })}><option value="">Choose…</option>{usable.filter(a => String(a.id) !== String(x._acc)).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label> : splits ? <span className="smx-chip">Split in {splits.length}</span> : <label><small>Category</small><select value={x._cat} onChange={e => patch(x.id, { _cat: e.target.value })}><option value="">{isIn ? 'Other income' : 'Other'}</option>{cats.map(c => <option key={c}>{c}</option>)}</select></label>}</div> : <div className="form-grid smx-edit">
-      <Field label="Type"><select value={x._type} onChange={e => patch(x.id, { _type: e.target.value, _cat: '', _splits: null, _to: '' })}><option>Expense</option><option>Income</option><option>Transfer</option></select></Field>
+      <Field label="Type"><select value={x._type} onChange={e => patch(x.id, { _type: e.target.value, _cat: '', _splits: null, _to: '', _pay: '' })}><option>Expense</option><option>Income</option><option>Transfer</option></select></Field>
       <Field label={`Amount (${currency})`}><input inputMode="decimal" value={x._amount} onChange={e => patch(x.id, { _amount: e.target.value })} /></Field>
       <Field label="Account"><select value={x._acc} onChange={e => patch(x.id, { _acc: e.target.value })}><option value="">Choose…</option>{usable.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></Field>
+      {x._type === 'Expense' && payTargets.length > 0 && <Field label="Use it to pay" wide><select value={x._pay || ''} onChange={e => patch(x.id, { _pay: e.target.value })}><option value="">Just an expense</option>{payTargets.some(t => t.kind === 'debt') && <optgroup label="Debts and installments">{payTargets.filter(t => t.kind === 'debt').map(t => <option key={t.key} value={t.key}>{t.label}</option>)}</optgroup>}{payTargets.some(t => t.kind === 'bill') && <optgroup label="Bills and subscriptions">{payTargets.filter(t => t.kind === 'bill').map(t => <option key={t.key} value={t.key}>{t.label}</option>)}</optgroup>}</select></Field>}
       {x._type === 'Transfer' && <Field label="To account"><select value={x._to || ''} onChange={e => patch(x.id, { _to: e.target.value })}><option value="">Choose…</option>{usable.filter(a => String(a.id) !== String(x._acc)).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></Field>}
       {!splits && x._type !== 'Transfer' && <Field label="Category"><select value={x._cat} onChange={e => patch(x.id, { _cat: e.target.value })}><option value="">{isIn ? 'Other income' : 'Other'}</option>{cats.map(c => <option key={c}>{c}</option>)}</select></Field>}
       <Field label="Description" wide><input value={x._desc} onChange={e => patch(x.id, { _desc: e.target.value })} placeholder="Where was it?" /></Field>
@@ -133,7 +134,7 @@ function SmsCard({ conf, sug, onAutoRule, xfer, onTransfer, cur, x, usable, expC
   </article></div>;
 }
 
-export function SmsPage({ accounts, transactions = [], session, supabase, currency = 'EGP', gender = '', onApprove, onUndoTx, onPendingChange, setToast }) {
+export function SmsPage({ debts = [], recurring = [], onPayDebt, onPayBill, accounts, transactions = [], session, supabase, currency = 'EGP', gender = '', onApprove, onUndoTx, onPendingChange, setToast }) {
   const userId = session?.user?.id;
   const [tab, setTabRaw] = useState('inbox');
   const [main, setMain] = useState('inbox');
@@ -250,6 +251,10 @@ export function SmsPage({ accounts, transactions = [], session, supabase, curren
   const patch = (id, p) => setItems(o => o.map(x => x.id === id ? { ...x, ...p } : x));
   const setEditing = (id, v) => setEditingIds(o => ({ ...o, [id]: v }));
   const curOf = x => { const c = detectCurrency(x.body); return c && c !== currency ? c : null; };
+  const payTargets = [
+    ...debts.filter(d => Number(d.remaining_amount || 0) > 0).map(d => ({ kind: 'debt', key: `debt:${d.id}`, label: `${d.name} · ${fmt(d.monthly_payment || d.remaining_amount)}` })),
+    ...recurring.filter(r => r.is_active !== false).map(r => ({ kind: 'bill', key: `bill:${r.id}`, label: `${r.name} · ${fmt(r.amount)}` })),
+  ];
   const approve = async (x, opts = {}) => {
     const amount = Number(x._amount);
     if (!(amount > 0)) { setEditing(x.id, true); setToast('Enter the amount first'); return false; }
@@ -260,6 +265,19 @@ export function SmsPage({ accounts, transactions = [], session, supabase, curren
     const parts = x._splits || null;
     if (parts && Math.abs(amount - parts.reduce((n, r) => n + (Number(r.amount) || 0), 0)) >= 0.01) { setEditing(x.id, true); setToast('The split parts must add up to the full amount'); return false; }
     const acc = accounts.find(a => String(a.id) === String(x._acc));
+    if (x._type === 'Expense' && x._pay && !parts) {
+      const [kind, id] = String(x._pay).split(':');
+      let ok = false, label = '';
+      if (kind === 'debt') { const d = debts.find(z => String(z.id) === id); if (d) { label = d.name; ok = await onPayDebt?.(d, { mode: 'transaction', amount: conv(amount), accountId: x._acc, paymentDate: localISODate(new Date(x.received_at)) }); } }
+      else { const r = recurring.find(z => String(z.id) === id); if (r) { label = r.name; ok = await onPayBill?.(r, { accountId: x._acc, record: true, amount: conv(amount) }); } }
+      if (!ok) return false;
+      const pUpd = { status: 'approved', transaction_id: null, category: kind === 'debt' ? 'Debt repayment' : 'Bill', merchant: label, amount, txn_type: 'Expense', account_id: x._acc, edited: true, auto: !!opts.auto };
+      await supabase.from('sms_inbox').update(pUpd).eq('id', x.id);
+      setItems(o => o.filter(y => y.id !== x.id));
+      setHist(o => [{ ...x, ...pUpd }, ...o]);
+      setToast(`Paid ${label} with this SMS`);
+      return true;
+    }
     if (x._type === 'Transfer') {
       if (!x._to || String(x._to) === String(x._acc)) { setEditing(x.id, true); setToast('Choose the account the money went to'); return false; }
       const to = accounts.find(a => String(a.id) === String(x._to));
@@ -436,7 +454,7 @@ export function SmsPage({ accounts, transactions = [], session, supabase, curren
         <button type="button" className="btn btn-sm" disabled={!picked.length} onClick={bulkDismiss}><X size={14} /> Dismiss</button>
         <button type="button" className="btn btn-primary btn-sm" disabled={!picked.length} onClick={bulkApprove}><Check size={14} /> Approve</button></div>}
       {shown.length > 0 && <p className="smx-tip">Swipe a row right to approve, left to dismiss. On a computer, drag it or use the buttons.</p>}
-      <div className="smx-list smx-cards">{shown.map(x => <SmsCard key={x.id} conf={confMap[x.id]} sug={suggestAuto(x, hist, configs)} onAutoRule={addAutoRule} xfer={xfers[x.id]} onTransfer={approveTransfer} cur={curOf(x)} x={x} selectMode={selectMode} selected={sel.includes(x.id)} onSelect={toggleSel} dup={dupFor(x)} bal={balFor(x)} usable={usable} expCats={expCats} currency={currency} fmt={fmt} patch={patch} onApprove={approve} onDismiss={dismiss} onRemember={remember} editing={!!editingIds[x.id]} setEditing={setEditing} />)}</div>
+      <div className="smx-list smx-cards">{shown.map(x => <SmsCard key={x.id} payTargets={payTargets} conf={confMap[x.id]} sug={suggestAuto(x, hist, configs)} onAutoRule={addAutoRule} xfer={xfers[x.id]} onTransfer={approveTransfer} cur={curOf(x)} x={x} selectMode={selectMode} selected={sel.includes(x.id)} onSelect={toggleSel} dup={dupFor(x)} bal={balFor(x)} usable={usable} expCats={expCats} currency={currency} fmt={fmt} patch={patch} onApprove={approve} onDismiss={dismiss} onRemember={remember} editing={!!editingIds[x.id]} setEditing={setEditing} />)}</div>
       {noise.length > 0 && <details className="sms-other"><summary>Not a payment ({noise.length}) <small>OTP codes, offers…</small></summary>
         {noise.map(x => <div className="sms-other-row" key={x.id}><p dir="auto">{x.body}</p><button type="button" className="btn btn-sm" onClick={() => dismiss(x)}><X size={14} /> Dismiss</button></div>)}
         <div className="sms-actions"><button type="button" className="btn btn-sm" onClick={async () => { for (const x of noise) await dismiss(x); }}>Dismiss all</button></div></details>}
