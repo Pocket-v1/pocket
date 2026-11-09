@@ -83,7 +83,7 @@ function SmsCard({ conf, sug, onAutoRule, xfer, onTransfer, cur, x, usable, expC
   const splits = x._splits || null;
   const splitSum = splits ? splits.reduce((n, r) => n + (Number(r.amount) || 0), 0) : 0;
   const remain = amt - splitSum;
-  const startEdit = () => { patch(x.id, { _snap: { _type: x._type, _amount: x._amount, _acc: x._acc, _cat: x._cat, _desc: x._desc, _splits: x._splits || null } }); setEditing(x.id, true); };
+  const startEdit = () => { patch(x.id, { _snap: { _type: x._type, _amount: x._amount, _acc: x._acc, _cat: x._cat, _desc: x._desc, _splits: x._splits || null, _to: x._to || '' } }); setEditing(x.id, true); };
   const cancelEdit = () => { if (x._snap) patch(x.id, { ...x._snap, _snap: null }); setEditing(x.id, false); };
   const setSplit = (i, k, v) => patch(x.id, { _splits: splits.map((r, j) => j === i ? { ...r, [k]: v } : r) });
   const [dx, setDx] = useState(0);
@@ -103,15 +103,16 @@ function SmsCard({ conf, sug, onAutoRule, xfer, onTransfer, cur, x, usable, expC
       {conf && <span className={`smx-conf ${conf.level}`} title={conf.why.join(' · ')}>{conf.level === 'sure' ? '✓ Sure' : '! Check this'}</span>}
     </div>
     <div className="smx-hero"><div className={`smx-big ${isIn ? 'in' : 'out'}`}>{amt > 0 ? (cur ? `${isIn ? '+' : '−'}${cur} ${amt}` : `${isIn ? '+' : '−'}${fmt(amt)}`) : 'No amount'}</div>{x._desc && <b className="smx-title">{x._desc}</b>}</div>
-    {!editing ? <div className="smx-quick"><label><small>Account</small><select value={x._acc} onChange={e => patch(x.id, { _acc: e.target.value })}><option value="">Choose…</option>{usable.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>{splits ? <span className="smx-chip">Split in {splits.length}</span> : <label><small>Category</small><select value={x._cat} onChange={e => patch(x.id, { _cat: e.target.value })}><option value="">{isIn ? 'Other income' : 'Other'}</option>{cats.map(c => <option key={c}>{c}</option>)}</select></label>}</div> : <div className="form-grid smx-edit">
-      <Field label="Type"><select value={x._type} onChange={e => patch(x.id, { _type: e.target.value, _cat: '', _splits: null })}><option>Expense</option><option>Income</option></select></Field>
+    {!editing ? <div className="smx-quick"><label><small>Account</small><select value={x._acc} onChange={e => patch(x.id, { _acc: e.target.value })}><option value="">Choose…</option>{usable.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>{x._type === 'Transfer' ? <label><small>To account</small><select value={x._to || ''} onChange={e => patch(x.id, { _to: e.target.value })}><option value="">Choose…</option>{usable.filter(a => String(a.id) !== String(x._acc)).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label> : splits ? <span className="smx-chip">Split in {splits.length}</span> : <label><small>Category</small><select value={x._cat} onChange={e => patch(x.id, { _cat: e.target.value })}><option value="">{isIn ? 'Other income' : 'Other'}</option>{cats.map(c => <option key={c}>{c}</option>)}</select></label>}</div> : <div className="form-grid smx-edit">
+      <Field label="Type"><select value={x._type} onChange={e => patch(x.id, { _type: e.target.value, _cat: '', _splits: null, _to: '' })}><option>Expense</option><option>Income</option><option>Transfer</option></select></Field>
       <Field label={`Amount (${currency})`}><input inputMode="decimal" value={x._amount} onChange={e => patch(x.id, { _amount: e.target.value })} /></Field>
       <Field label="Account"><select value={x._acc} onChange={e => patch(x.id, { _acc: e.target.value })}><option value="">Choose…</option>{usable.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></Field>
-      {!splits && <Field label="Category"><select value={x._cat} onChange={e => patch(x.id, { _cat: e.target.value })}><option value="">{isIn ? 'Other income' : 'Other'}</option>{cats.map(c => <option key={c}>{c}</option>)}</select></Field>}
+      {x._type === 'Transfer' && <Field label="To account"><select value={x._to || ''} onChange={e => patch(x.id, { _to: e.target.value })}><option value="">Choose…</option>{usable.filter(a => String(a.id) !== String(x._acc)).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></Field>}
+      {!splits && x._type !== 'Transfer' && <Field label="Category"><select value={x._cat} onChange={e => patch(x.id, { _cat: e.target.value })}><option value="">{isIn ? 'Other income' : 'Other'}</option>{cats.map(c => <option key={c}>{c}</option>)}</select></Field>}
       <Field label="Description" wide><input value={x._desc} onChange={e => patch(x.id, { _desc: e.target.value })} placeholder="Where was it?" /></Field>
       {splits && <div className="smx-splits wide">{splits.map((r, i) => <div className="smx-split" key={i}><select value={r.cat} onChange={e => setSplit(i, 'cat', e.target.value)} aria-label="Category"><option value="">{isIn ? 'Other income' : 'Other'}</option>{cats.map(c => <option key={c}>{c}</option>)}</select><input inputMode="decimal" value={r.amount} onChange={e => setSplit(i, 'amount', e.target.value)} placeholder="Amount" aria-label="Part amount" /><button type="button" className="icon-btn" aria-label="Remove part" onClick={() => patch(x.id, { _splits: splits.length > 2 ? splits.filter((_, j) => j !== i) : null })}><Trash2 size={15} /></button></div>)}
         <div className="smx-split-foot"><button type="button" className="btn btn-sm" onClick={() => patch(x.id, { _splits: [...splits, { cat: '', amount: remain > 0 ? String(Math.round(remain * 100) / 100) : '' }] })}><Plus size={14} /> Add part</button><small className={Math.abs(remain) < 0.01 ? 'ok' : 'bad'}>{Math.abs(remain) < 0.01 ? 'Parts add up' : remain > 0 ? `${fmt(remain)} left to assign` : `${fmt(-remain)} too much`}</small></div></div>}
-      {!splits && amt > 0 && <button type="button" className="sms-link smx-splitbtn" onClick={() => patch(x.id, { _splits: [{ cat: x._cat, amount: String(Math.round(amt / 2 * 100) / 100) }, { cat: '', amount: String(Math.round(amt / 2 * 100) / 100) }] })}><Scissors size={13} /> Split into categories</button>}
+      {!splits && amt > 0 && x._type !== 'Transfer' && <button type="button" className="sms-link smx-splitbtn" onClick={() => patch(x.id, { _splits: [{ cat: x._cat, amount: String(Math.round(amt / 2 * 100) / 100) }, { cat: '', amount: String(Math.round(amt / 2 * 100) / 100) }] })}><Scissors size={13} /> Split into categories</button>}
     </div>}
     {cur && <label className="smx-rate"><small>Exchange rate · 1 {cur} = ? {currency}</small><span><input inputMode="decimal" value={x._rate ?? ''} onChange={e => patch(x.id, { _rate: e.target.value })} placeholder="e.g. 50" aria-label="Exchange rate" /><b>{Number(x._rate) > 0 && amt > 0 ? `= ${fmt(Math.round(amt * Number(x._rate) * 100) / 100)}` : ''}</b></span></label>}
     {conf?.level === 'check' && <p className="smx-alert"><TriangleAlert size={14} /> {conf.why.join(' · ')}. Please confirm.</p>}
@@ -259,6 +260,19 @@ export function SmsPage({ accounts, transactions = [], session, supabase, curren
     const parts = x._splits || null;
     if (parts && Math.abs(amount - parts.reduce((n, r) => n + (Number(r.amount) || 0), 0)) >= 0.01) { setEditing(x.id, true); setToast('The split parts must add up to the full amount'); return false; }
     const acc = accounts.find(a => String(a.id) === String(x._acc));
+    if (x._type === 'Transfer') {
+      if (!x._to || String(x._to) === String(x._acc)) { setEditing(x.id, true); setToast('Choose the account the money went to'); return false; }
+      const to = accounts.find(a => String(a.id) === String(x._to));
+      const tLabel = x._desc && x._desc !== 'Transfer' ? x._desc : `Transfer · ${acc?.name} → ${to?.name}`;
+      const tSaved = await onApprove({ transaction_date: localISODate(new Date(x.received_at)), type: 'Transfer', category: 'Transfer', subcategory: null, description: tLabel, amount: conv(amount), need_want: null, fixed_variable: 'Variable', payment_method: acc?.name || 'Unassigned', account_id: x._acc, to_account_id: x._to, goal_id: null, debt_id: null, recurring: false, notes: `From bank SMS: ${x.body}${cur ? ` | Original ${cur} ${amount} @ ${rate}` : ''}`.slice(0, 500) });
+      if (!tSaved) return false;
+      const tUpd = { status: 'approved', transaction_id: tSaved.id, category: 'Transfer', merchant: tLabel, amount, txn_type: x.txn_type || 'Expense', account_id: x._acc, edited: true, auto: !!opts.auto };
+      await supabase.from('sms_inbox').update(tUpd).eq('id', x.id);
+      setItems(o => o.filter(y => y.id !== x.id));
+      setHist(o => [{ ...x, ...tUpd }, ...o]);
+      if (!opts.bulk) showUndo({ x, ids: [tSaved.id], label: tLabel });
+      return true;
+    }
     const label0 = x._desc || (x.sender ? `SMS · ${x.sender}` : 'Bank SMS');
     const list = parts ? parts.map((r, i) => ({ cat: r.cat || (x._type === 'Income' ? 'Other income' : 'Other'), amount: conv(r.amount), label: `${label0} (${i + 1}/${parts.length})` })) : [{ cat: x._cat || (x._type === 'Income' ? 'Other income' : 'Other'), amount: conv(amount), label: label0 }];
     const note = `From bank SMS: ${x.body}${cur ? ` | Original ${cur} ${amount} @ ${rate}` : ''}`.slice(0, 500);
