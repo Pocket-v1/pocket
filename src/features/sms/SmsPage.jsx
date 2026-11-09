@@ -134,7 +134,7 @@ function SmsCard({ payTargets = [], conf, sug, onAutoRule, xfer, onTransfer, cur
   </article></div>;
 }
 
-export function SmsPage({ debts = [], recurring = [], onPayDebt, onPayBill, accounts, transactions = [], session, supabase, currency = 'EGP', gender = '', onApprove, onUndoTx, onPendingChange, setToast }) {
+export function SmsPage({ focusAccount = null, onFocusDone, debts = [], recurring = [], onPayDebt, onPayBill, accounts, transactions = [], session, supabase, currency = 'EGP', gender = '', onApprove, onUndoTx, onPendingChange, setToast }) {
   const userId = session?.user?.id;
   const [tab, setTabRaw] = useState('inbox');
   const [main, setMain] = useState('inbox');
@@ -160,6 +160,7 @@ export function SmsPage({ debts = [], recurring = [], onPayDebt, onPayBill, acco
   const [showTok, setShowTok] = useState(false);
   const [loading, setLoading] = useState(true);
   const [openAcc, setOpenAcc] = useState(null);
+  useEffect(() => { if (!focusAccount) return; setOpenAcc(focusAccount); setTab('banks'); onFocusDone?.(); }, [focusAccount]); // eslint-disable-line react-hooks/exhaustive-deps
   const [editingIds, setEditingIds] = useState({});
   const [selectMode, setSelectMode] = useState(false);
   const [sel, setSel] = useState([]);
