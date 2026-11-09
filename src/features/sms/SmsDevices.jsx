@@ -15,7 +15,7 @@ export function DailyCheck({ link, seen, platform, copy, setToast }) {
     <div className="sms-copy"><code>{link ? `${link.slice(0, 34)}…` : '—'}</code><button type="button" className="icon-btn" aria-label="Copy check link" disabled={!link} onClick={() => copy(link, setToast)}><Copy size={15} /></button></div>
     {platform === 'iphone' ? <ol>
       <li>Open <b>Shortcuts</b> → <b>Automation</b> → <b>+</b> → <b>Time of Day</b>.</li>
-      <li>Pick a time (for example 9:00 AM), <b>Repeat: Daily</b>, then <b>Run Immediately</b>.</li>
+      <li>Pick <b>12:00 AM</b>, <b>Repeat: Daily</b>, then <b>Run Immediately</b>.</li>
       <li>Add <b>Get Contents of URL</b> and paste the check link above. Leave Method as <b>GET</b>.</li>
     </ol> : <ol>
       <li>Install <b>MacroDroid</b> (or Tasker).</li>
