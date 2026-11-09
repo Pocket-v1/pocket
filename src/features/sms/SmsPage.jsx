@@ -14,7 +14,7 @@ import { buildAmountPattern, detectCurrency, findBalance, findLast4, matchAccoun
 import { BANKS } from '../../lib/smsBanks.js';
 import { confidence, detectTransfers, groupsByMerchant, merchantKey, suggestAuto } from '../../lib/smsInsights.js';
 import { SmsInsights } from './SmsInsights.jsx';
-import { SmsDevices, SmsRulesBackup } from './SmsDevices.jsx';
+import { DailyCheck, SmsDevices, SmsRulesBackup } from './SmsDevices.jsx';
 
 const TEST_SENDER = 'Pocket Test';
 const csv = v => String(v || '').split(/[,\n،]/).map(x => x.trim()).filter(Boolean);
@@ -471,6 +471,7 @@ export function SmsPage({ accounts, transactions = [], session, supabase, curren
             <li>New rule: sender contains your bank → forward to <b>Webhook</b> (POST, <code>application/json</code>).</li>
             <li>Paste the address and the JSON body above.</li>
           </ol>}
+          <DailyCheck link={token ? `${endpoint}?ping=1&token=${token}` : ''} seen={mainSeen} platform={platform} copy={copy} setToast={setToast} />
           <div className={`sms-wait ${lastSms ? 'ok' : ''}`}>{lastSms ? <><Check size={15} /> Connected. Last SMS {ago(lastSms)}.</> : <><Clock size={15} /> Waiting for your first SMS… send yourself a message that matches your rule.</>}</div>
           <div className="sms-actions"><button type="button" className="btn btn-sm" onClick={() => setCstep(1)}>Back</button><button type="button" className="btn btn-sm" disabled={testing} onClick={sendTest}>{testing ? 'Sending…' : 'Send a test'}</button><button type="button" className="btn btn-primary btn-sm" onClick={() => setCstep(3)}>Next</button></div>
           <p className="sms-hint">Don’t press ▶ inside Shortcuts to test. With no real SMS it sends an empty message and you’ll see “Missing SMS body”. Use “Send a test” here instead.</p></div>
