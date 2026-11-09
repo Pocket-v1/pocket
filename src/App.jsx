@@ -897,7 +897,7 @@ function App(){
   }
   async function markRecurringPaid(r,opts={}){
     const accId=opts.accountId||r.account_id||null;const record=opts.record!==false;
-    if(paidBusy.includes(r.id))return;
+    if(paidBusy.includes(r.id))return false;
     setPaidBusy(old=>[...old,r.id]);
     try{
       const paidDate=localISODate();
@@ -933,7 +933,8 @@ function App(){
         setTransactions(old=>[savedTx,...old]);setRecurring(old=>old.map(x=>x.id===r.id?{...x,...patch}:x));
       }
       setToast(!record?(done?'Marked as paid · no transaction created':'Part payment saved · no transaction created'):done?'Payment recorded and next due date updated':`Part payment recorded · ${fmt(Math.max(0,Number(r.amount||0)-newPaid))} left`);
-    }catch(err){setToast(err.message||'Could not mark payment as paid');}
+      return true;
+    }catch(err){setToast(err.message||'Could not mark payment as paid');return false;}
     finally{setPaidBusy(old=>old.filter(id=>id!==r.id));}
   }
 
