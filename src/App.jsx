@@ -643,12 +643,14 @@ function App(){
     if(!saved)return;setDebts(old=>old.map(x=>x.id===debt.id?saved:x));setToast(`${debt.name} closed`);
   }
   async function reopenDebt(debt){
-    const total=Number(debt.total_repayment||debt.original_amount||0),installment=Number(debt.monthly_payment||0),paidCount=Number(debt.paid_installments||0);
-    const paidSoFar=Number(debt.amount_paid??Math.min(total,paidCount*installment));
-    const remaining=Math.max(0,Number((total-paidSoFar).toFixed(2)));
-    if(!(remaining>0)){setToast('This debt was fully paid, so there is nothing left to reopen.');return;}
+    // Reopen = forget installments that were only auto-counted from the due date; keep real payments recorded as transactions.
+    const total=Number(debt.total_repayment||debt.original_amount||0);
+    const real=transactions.filter(t=>String(t.debt_id)===String(debt.id)&&t.type==='Expense');
+    const realPaid=Math.min(total,real.reduce((n,t)=>n+Number(t.amount||0),0));
+    const remaining=Math.max(0,Number((total-realPaid).toFixed(2)));
+    if(!(remaining>0)){setToast('This debt has real payments covering all of it, so there is nothing left to reopen.');return;}
     const note=`Reopened on ${localISODate()}.`;
-    const saved=await saveRecord('debts',{remaining_amount:remaining,notes:[debt.notes,note].filter(Boolean).join('\n')},debt.id);
+    const saved=await saveRecord('debts',{remaining_amount:remaining,amount_paid:Number(realPaid.toFixed(2)),paid_installments:real.length,notes:[debt.notes,note].filter(Boolean).join('\n')},debt.id);
     if(!saved)return;setDebts(old=>old.map(x=>x.id===debt.id?saved:x));setToast(`${debt.name} is active again`);
   }
   async function recordDebtInstallment(debt, options={}){
