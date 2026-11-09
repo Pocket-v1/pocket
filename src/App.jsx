@@ -642,6 +642,15 @@ function App(){
     const saved=await saveRecord('debts',{remaining_amount:0,notes:[debt.notes,note].filter(Boolean).join('\n')},debt.id);
     if(!saved)return;setDebts(old=>old.map(x=>x.id===debt.id?saved:x));setToast(`${debt.name} closed`);
   }
+  async function reopenDebt(debt){
+    const total=Number(debt.total_repayment||debt.original_amount||0),installment=Number(debt.monthly_payment||0),paidCount=Number(debt.paid_installments||0);
+    const paidSoFar=Number(debt.amount_paid??Math.min(total,paidCount*installment));
+    const remaining=Math.max(0,Number((total-paidSoFar).toFixed(2)));
+    if(!(remaining>0)){setToast('This debt was fully paid, so there is nothing left to reopen.');return;}
+    const note=`Reopened on ${localISODate()}.`;
+    const saved=await saveRecord('debts',{remaining_amount:remaining,notes:[debt.notes,note].filter(Boolean).join('\n')},debt.id);
+    if(!saved)return;setDebts(old=>old.map(x=>x.id===debt.id?saved:x));setToast(`${debt.name} is active again`);
+  }
   async function recordDebtInstallment(debt, options={}){
     if(typeof options==='string') options={accountId:options};
     const {mode='transaction', amount:enteredAmount, accountId:chosenAccountId, paymentDate=localISODate()}=options||{};
@@ -1061,7 +1070,7 @@ function App(){
         {canSeeCurrentPage&&page==='Accounts'&&<AccountsPage {...{debts,creditActions,accountsView,setAccountsView,accounts,transactions,setModal,setEditing,removeRecord,setAccounts,currency,requestConfirm,defaultAccountId,setDefaultAccountId,pendingSms}} openSms={allowedFeatures.includes('bank_sms')?()=>setPage('Bank SMS'):null}/>}
         {canSeeCurrentPage&&page==='Bank SMS'&&<SmsPage accounts={accounts} transactions={transactions} session={session} supabase={supabase} currency={currency} gender={session?.user?.user_metadata?.gender||''} setToast={setToast} onPendingChange={setPendingSms} onUndoTx={async ids=>{for(const id of ids)await removeRecord('transactions',id,setTransactions,transactions);}} onApprove={async payload=>{const saved=await saveRecord('transactions',payload);if(saved)setTransactions(o=>[saved,...o]);return saved}}/>}
         {canSeeCurrentPage&&page==='Cash flow calendar'&&<CashFlowCalendar {...{transactions,recurring:activeRecurring,accounts,debts,month,setMonth,currency}}/>}
-        {canSeeCurrentPage&&page==='Debts & installments'&&<DebtsPage {...{debts,accounts,transactions,debtFocus,setDebtFocus,credit:creditActions,setAccounts,setModal,setEditing,removeRecord,setDebts,currency,requestConfirm,recordDebtInstallment,closeDebt,setDebtPaymentTarget,setToast}}/>}
+        {canSeeCurrentPage&&page==='Debts & installments'&&<DebtsPage {...{debts,accounts,transactions,debtFocus,setDebtFocus,credit:creditActions,setAccounts,setModal,setEditing,removeRecord,setDebts,currency,requestConfirm,recordDebtInstallment,closeDebt,reopenDebt,setDebtPaymentTarget,setToast}}/>}
         {canSeeCurrentPage&&(page==='Insights & reports'||page==='Insights & forecast'||page==='Reports')&&<InsightsReportsPage {...{transactions:reportTx,month,setMonth,budgets,recurring:activeRecurring,goals,debts,currency,setPage,accounts,showVehicles:allowedFeatures.includes('vehicle_management')}}/>}
         {canSeeCurrentPage&&page==='Budgets'&&<BudgetsPage {...{budgets,transactions:reportTx,month,setMonth,setModal,setEditing,setToast,removeRecord,setBudgets,requestConfirm}}/>}
         {canSeeCurrentPage&&page==='Savings goals'&&<GoalsPage {...{goals,transactions,accounts,setModal,setEditing,setToast,removeRecord,setGoals,totalSaved,goalTarget,requestConfirm}}/>}
