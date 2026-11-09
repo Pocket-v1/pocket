@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
   const body = String(p.body ?? p.text ?? p.message ?? p.content ?? p.sms ?? '').trim();
   const when = p.date || p.received_at || p.time;
   if (!token || token.length < 20) return json({ ok: false, error: 'Missing token' }, 401);
-  if (!body) return json({ ok: false, error: 'Missing SMS body' }, 400);
+  if (!body && !p.ping) return json({ ok: false, error: 'Missing SMS body' }, 400);
   if (body.length > 2000) return json({ ok: false, error: 'SMS too long' }, 413);
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -131,6 +131,8 @@ Deno.serve(async (req) => {
   }
   if (!userId) return json({ ok: false, error: 'Invalid token' }, 401);
   if (deviceId) await service.from('sms_devices').update({ last_seen_at: new Date().toISOString() }).eq('id', deviceId);
+
+  if (p.ping) return json({ ok: true, ping: true });
 
   const { data: allowed } = await service.rpc('check_rate_limit', { p_key: `sms:${userId}`, p_max: 200, p_window_seconds: 600 });
   if (allowed === false) return json({ ok: false, error: 'Too many messages. Try again soon.' }, 429);

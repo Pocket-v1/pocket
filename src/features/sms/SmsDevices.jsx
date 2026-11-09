@@ -9,7 +9,7 @@ const stat = d => { if (!d) return ['never', 'Not connected']; const days = (Dat
 const Stat = ({ at }) => { const [k, l] = stat(at); return <span className={`smd-stat ${k}`}>{l}</span>; };
 const fullDate = d => d ? new Date(d).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
 
-export function SmsDevices({ devices, setDevices, token, lastSms, mainSeen, userId, supabase, setToast, copy, makeToken, quiet, setQuiet, exportHist, histCount }) {
+export function SmsDevices({ devices, setDevices, token, lastSms, mainSeen, endpoint, userId, supabase, setToast, copy, makeToken, quiet, setQuiet, exportHist, histCount }) {
   const [name, setName] = useState('');
   const [reveal, setReveal] = useState({});
   const add = async () => {
@@ -27,6 +27,7 @@ export function SmsDevices({ devices, setDevices, token, lastSms, mainSeen, user
   const live = devices.filter(d => !d.revoked); const dead = devices.filter(d => d.revoked);
   return <div className="smd">
     <div className="sms-card"><p>Each phone has its own token. Revoke one phone without breaking the others.</p>
+      <div className="smd-ping"><b>Auto-check every 30 min</b><span>Add a Shortcuts automation that opens this link every 30 minutes. It only says “I’m alive”, no SMS is sent.</span><button type="button" className="btn btn-sm" onClick={() => copy(`${endpoint}?ping=1&token=${token}`, setToast)}><Copy size={14} /> Copy check link (main phone)</button></div>
       <div className="smd-row"><span className="smd-ic"><Smartphone size={16} /></span><div><b>Main phone <Stat at={mainSeen || (devices.length ? null : lastSms)} /></b><small title={fullDate(mainSeen)}>Last check: {mainSeen ? ago(mainSeen) : devices.length ? 'not yet' : lastSms ? ago(lastSms) : 'never'} · token {reveal.main ? token : mask(token)}</small></div>
         <div className="smd-acts"><button type="button" className="icon-btn" aria-label={reveal.main ? 'Hide token' : 'Show token'} onClick={() => setReveal(o => ({ ...o, main: !o.main }))}>{reveal.main ? <EyeOff size={15} /> : <Eye size={15} />}</button>
         <button type="button" className="icon-btn" aria-label="Copy token" onClick={() => copy(token, setToast)}><Copy size={15} /></button>

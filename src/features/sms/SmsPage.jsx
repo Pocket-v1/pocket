@@ -198,6 +198,17 @@ export function SmsPage({ accounts, transactions = [], session, supabase, curren
   useEffect(() => { if (!loading && userId && !token) { const t = newToken(); supabase.from('sms_tokens').upsert({ user_id: userId, token: t }, { onConflict: 'user_id' }).then(({ error }) => { if (!error) setToken(t); }); } }, [loading, userId, token, supabase]);
   const live = useRef({ items: [], configs: [], hist: [] });
   live.current = { items, configs, hist };
+  useEffect(() => {
+    const refresh = async () => {
+      if (document.visibilityState !== 'visible') return;
+      const [dv, tk] = await Promise.all([supabase.from('sms_devices').select('*').order('created_at', { ascending: false }), supabase.from('sms_tokens').select('last_seen_at').maybeSingle()]);
+      if (!dv.error && dv.data) setDevices(dv.data);
+      if (!tk.error && tk.data) setMainSeen(tk.data.last_seen_at || null);
+    };
+    const id = setInterval(refresh, 60000);
+    document.addEventListener('visibilitychange', refresh);
+    return () => { clearInterval(id); document.removeEventListener('visibilitychange', refresh); };
+  }, [supabase]);
   const poll = useCallback(async () => {
     const { data } = await supabase.from('sms_inbox').select('*').eq('status', 'pending').order('received_at', { ascending: false });
     if (!data) return;
@@ -493,7 +504,7 @@ export function SmsPage({ accounts, transactions = [], session, supabase, curren
         <button type="button" className="sms-acc-h" aria-expanded={tab === 'devices'} onClick={() => setTab(tab === 'devices' ? 'setup' : 'devices')}><span><b>Devices</b><small>{devices.filter(d => !d.revoked).length + 1} connected</small></span><ChevronDown size={16} /></button>
         {tab === 'devices' && <>
 <div className="sms-sec-body">
-      <SmsDevices devices={devices} setDevices={setDevices} token={token} lastSms={lastSms} mainSeen={mainSeen} userId={userId} supabase={supabase} setToast={setToast} copy={copy} makeToken={makeToken} quiet={quiet} setQuiet={setQuiet} exportHist={exportHist} histCount={histShown.length} />
+      <SmsDevices devices={devices} setDevices={setDevices} token={token} lastSms={lastSms} mainSeen={mainSeen} endpoint={endpoint} userId={userId} supabase={supabase} setToast={setToast} copy={copy} makeToken={makeToken} quiet={quiet} setQuiet={setQuiet} exportHist={exportHist} histCount={histShown.length} />
     </div>
         </>}
       </div>

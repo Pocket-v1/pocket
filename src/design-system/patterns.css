@@ -187,3 +187,13 @@ svg.lucide{stroke-width:var(--ds-icon-stroke)}
 .smd-stat{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;text-transform:none;vertical-align:1px;background:var(--ds-surface-soft,var(--surface-soft));color:var(--ds-text-muted)}
 .smd-stat.ok{background:var(--ds-ok-soft);color:var(--ds-ok)}
 .smd-stat.warn{background:var(--ds-warn-soft);color:var(--ds-warn)}
+
+/* SMS devices: responsive rows + auto-check box */
+.smd-row b{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px}
+.smd-row b .smd-stat{margin-left:0}
+.sms-sheet .smd-acts{box-sizing:border-box;flex-wrap:wrap;max-width:100%}
+.sms-sheet .smd-acts .btn{white-space:nowrap}
+.smd-ping{display:grid;gap:6px;justify-items:start;padding:12px;margin:4px 0 8px;border-radius:12px;background:var(--ds-surface-soft,var(--surface-soft))}
+.smd-ping b{font-size:13px}
+.smd-ping span{font-size:12.5px;color:var(--ds-text-muted);text-transform:none}
+.sms-sheet .smd-row>.smd-acts{flex:1 0 100%;padding-left:44px}
