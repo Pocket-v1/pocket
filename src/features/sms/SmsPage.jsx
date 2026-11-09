@@ -147,6 +147,7 @@ export function SmsPage({ accounts, transactions = [], session, supabase, curren
   const [testing, setTesting] = useState(false);
   const [testOk, setTestOk] = useState(false);
   const [devices, setDevices] = useState([]);
+  const [mainSeen, setMainSeen] = useState(null);
   const [quiet, setQuietState] = useState(() => { try { return localStorage.getItem('pocket.smsQuiet') === '1'; } catch { return false; } });
   const setQuiet = v => { setQuietState(v); try { localStorage.setItem('pocket.smsQuiet', v ? '1' : '0'); } catch { /* ignore */ } };
   const savedF = (() => { try { return JSON.parse(localStorage.getItem('pocket.smsFilter') || 'null'); } catch { return null; } })();
@@ -179,7 +180,7 @@ export function SmsPage({ accounts, transactions = [], session, supabase, curren
     const [i, c, t, h] = await Promise.all([
       supabase.from('sms_inbox').select('*').eq('status', 'pending').order('received_at', { ascending: false }),
       supabase.from('account_sms_config').select('*'),
-      supabase.from('sms_tokens').select('token').maybeSingle(),
+      supabase.from('sms_tokens').select('*').maybeSingle(),
       supabase.from('sms_inbox').select('*').in('status', ['approved', 'dismissed']).order('received_at', { ascending: false }).limit(300),
     ]);
     const hrows = (h.data || []).filter(r => r.sender !== TEST_SENDER);
@@ -190,7 +191,7 @@ export function SmsPage({ accounts, transactions = [], session, supabase, curren
     setItems((i.data || []).map(x => mapPending(x, c.data || [], memo)));
     setHist(hrows);
     setConfigs(c.data || []);
-    setToken(t.data?.token || '');
+    setToken(t.data?.token || ''); setMainSeen(t.data?.last_seen_at || null);
     setLoading(false);
   }, [supabase, setToast]);
   useEffect(() => { load(); }, [load]);
@@ -492,7 +493,7 @@ export function SmsPage({ accounts, transactions = [], session, supabase, curren
         <button type="button" className="sms-acc-h" aria-expanded={tab === 'devices'} onClick={() => setTab(tab === 'devices' ? 'setup' : 'devices')}><span><b>Devices</b><small>{devices.filter(d => !d.revoked).length + 1} connected</small></span><ChevronDown size={16} /></button>
         {tab === 'devices' && <>
 <div className="sms-sec-body">
-      <SmsDevices devices={devices} setDevices={setDevices} token={token} lastSms={lastSms} userId={userId} supabase={supabase} setToast={setToast} copy={copy} makeToken={makeToken} quiet={quiet} setQuiet={setQuiet} exportHist={exportHist} histCount={histShown.length} />
+      <SmsDevices devices={devices} setDevices={setDevices} token={token} lastSms={lastSms} mainSeen={mainSeen} userId={userId} supabase={supabase} setToast={setToast} copy={copy} makeToken={makeToken} quiet={quiet} setQuiet={setQuiet} exportHist={exportHist} histCount={histShown.length} />
     </div>
         </>}
       </div>

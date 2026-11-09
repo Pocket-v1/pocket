@@ -5,7 +5,11 @@ import { downloadJson } from '../../lib/smsInsights.js';
 const mask = t => (t ? `${t.slice(0, 4)}••••••••••••${t.slice(-4)}` : '—');
 const ago = d => { if (!d) return 'never used'; const m = Math.round((Date.now() - new Date(d).getTime()) / 60000); return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} d ago`; };
 
-export function SmsDevices({ devices, setDevices, token, lastSms, userId, supabase, setToast, copy, makeToken, quiet, setQuiet, exportHist, histCount }) {
+const stat = d => { if (!d) return ['never', 'Not connected']; const days = (Date.now() - new Date(d).getTime()) / 864e5; return days <= 3 ? ['ok', 'Connected'] : ['warn', 'Quiet']; };
+const Stat = ({ at }) => { const [k, l] = stat(at); return <span className={`smd-stat ${k}`}>{l}</span>; };
+const fullDate = d => d ? new Date(d).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+
+export function SmsDevices({ devices, setDevices, token, lastSms, mainSeen, userId, supabase, setToast, copy, makeToken, quiet, setQuiet, exportHist, histCount }) {
   const [name, setName] = useState('');
   const [reveal, setReveal] = useState({});
   const add = async () => {
@@ -23,11 +27,11 @@ export function SmsDevices({ devices, setDevices, token, lastSms, userId, supaba
   const live = devices.filter(d => !d.revoked); const dead = devices.filter(d => d.revoked);
   return <div className="smd">
     <div className="sms-card"><p>Each phone has its own token. Revoke one phone without breaking the others.</p>
-      <div className="smd-row"><span className="smd-ic"><Smartphone size={16} /></span><div><b>Main phone</b><small>{lastSms ? `last SMS ${ago(lastSms)}` : 'no SMS yet'} · token {reveal.main ? token : mask(token)}</small></div>
+      <div className="smd-row"><span className="smd-ic"><Smartphone size={16} /></span><div><b>Main phone <Stat at={mainSeen || (devices.length ? null : lastSms)} /></b><small title={fullDate(mainSeen)}>Last check: {mainSeen ? ago(mainSeen) : devices.length ? 'not yet' : lastSms ? ago(lastSms) : 'never'} · token {reveal.main ? token : mask(token)}</small></div>
         <div className="smd-acts"><button type="button" className="icon-btn" aria-label={reveal.main ? 'Hide token' : 'Show token'} onClick={() => setReveal(o => ({ ...o, main: !o.main }))}>{reveal.main ? <EyeOff size={15} /> : <Eye size={15} />}</button>
         <button type="button" className="icon-btn" aria-label="Copy token" onClick={() => copy(token, setToast)}><Copy size={15} /></button>
         <button type="button" className="btn btn-sm" onClick={() => { if (window.confirm('Make a new token? Your main phone stops working until you paste the new token into its Shortcut.')) makeToken(); }}><RefreshCw size={14} /> New token</button></div></div>
-      {live.map(d => <div className="smd-row" key={d.id}><span className="smd-ic"><Smartphone size={16} /></span><div><b>{d.name}</b><small>{ago(d.last_seen_at)} · token {reveal[d.id] ? d.token : mask(d.token)}</small></div>
+      {live.map(d => <div className="smd-row" key={d.id}><span className="smd-ic"><Smartphone size={16} /></span><div><b>{d.name} <Stat at={d.last_seen_at} /></b><small title={fullDate(d.last_seen_at)}>Last check: {ago(d.last_seen_at).replace('never used','never')} · token {reveal[d.id] ? d.token : mask(d.token)}</small></div>
         <div className="smd-acts"><button type="button" className="icon-btn" aria-label={reveal[d.id] ? 'Hide token' : 'Show token'} onClick={() => setReveal(o => ({ ...o, [d.id]: !o[d.id] }))}>{reveal[d.id] ? <EyeOff size={15} /> : <Eye size={15} />}</button>
         <button type="button" className="icon-btn" aria-label="Copy token" onClick={() => copy(d.token, setToast)}><Copy size={15} /></button>
         <button type="button" className="btn btn-sm" onClick={() => revoke(d)}>Revoke</button></div></div>)}

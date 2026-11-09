@@ -124,7 +124,7 @@ Deno.serve(async (req) => {
 
   let userId = null, deviceId = null;
   const { data: tk } = await service.from('sms_tokens').select('user_id').eq('token', token).maybeSingle();
-  if (tk) userId = tk.user_id;
+  if (tk) { userId = tk.user_id; await service.from('sms_tokens').update({ last_seen_at: new Date().toISOString() }).eq('token', token); }
   else {
     const { data: dv } = await service.from('sms_devices').select('id,user_id').eq('token', token).eq('revoked', false).maybeSingle();
     if (dv) { userId = dv.user_id; deviceId = dv.id; }

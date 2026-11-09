@@ -182,3 +182,8 @@ svg.lucide{stroke-width:var(--ds-icon-stroke)}
 .overview-vehicle-summary .overview-vehicle-stats{margin-top:2px}
 .cc-list-row{align-items:center!important}
 .cc-list-row .cc-strip-icon{align-self:center}
+
+/* SMS devices: per-shortcut status */
+.smd-stat{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;text-transform:none;vertical-align:1px;background:var(--ds-surface-soft,var(--surface-soft));color:var(--ds-text-muted)}
+.smd-stat.ok{background:var(--ds-ok-soft);color:var(--ds-ok)}
+.smd-stat.warn{background:var(--ds-warn-soft);color:var(--ds-warn)}
