@@ -37,10 +37,11 @@ import { ExpenseCategoriesPage } from './features/settings/ExpenseCategoriesPage
 import { SettingsModal } from './features/settings/SettingsModal.jsx';
 import { ImportModal } from './features/transactions/ImportModal.jsx';
 import { setCategoryIconOverrides } from './lib/categoryIcons.js';
+import { ChatSheet } from './components/ui/ChatSheet.jsx';
 import { TransactionModal } from './features/transactions/TransactionModal.jsx';
 import { TransactionsPage } from './features/transactions/TransactionsPage.jsx';
 import { PROFILE_AVATARS, defaultAvatarForGender } from './lib/avatars.js';
-import { customSubcategoriesOverride, expenseCategories, expenseCategoriesOverride, getExpenseCategories, setCustomSubcategoriesOverride, setExpenseCategoriesOverride } from './lib/categories.js';
+import { customSubcategoriesOverride, incomeCategories, getCategoriesForType, expenseCategories, expenseCategoriesOverride, getExpenseCategories, setCustomSubcategoriesOverride, setExpenseCategoriesOverride } from './lib/categories.js';
 import { FEATURE_OPTIONS, PAGE_FEATURE, isGoalsAccount } from './lib/features.js';
 import { addFrequency, fmt, getGreeting, localISODate, monthNow, monthStart, titleCaseName, uid } from './lib/format.js';
 import { authRedirectUrl, cloudReady, supabase } from './lib/supabase.js';
@@ -549,17 +550,17 @@ function App(){
     const payload={transaction_date:form.transaction_date,type:form.type,category:form.type==='Transfer'?'Transfer':form.category,subcategory:form.type==='Transfer'?(form.goal_id?(goals.find(g=>String(g.id)===String(form.goal_id))?.name||'Transfer'):'Transfer'):(form.subcategory||null),description:form.description,amount:Number(form.amount),need_want:form.type==='Expense'?form.need_want:null,fixed_variable:form.fixed_variable,payment_method:accounts.find(a=>String(a.id)===String(form.account_id))?.name||'Unassigned',account_id:form.account_id||null,to_account_id:form.type==='Transfer'?form.to_account_id||null:null,goal_id:form.type==='Transfer'?(form.goal_id||null):null,debt_id:form.type==='Income'&&form.loan_mode==='new'?null:(form.debt_id||null),recurring:form.type==='Transfer'?false:form.recurring,notes:form.notes};
     const saved=await saveRecord('transactions',payload,editing?.id);if(!saved)return;
     setTransactions(old=>editing?old.map(x=>x.id===editing.id?saved:x):[saved,...old]);
-    if(form.type==='Income'&&form.loan_mode==='new'){setEditing(null);setTxPresetAccount('');setConvertTx(saved);setDebtPresetProvider('');setModal('debt');setToast(editing?'Income saved · now add the debt details':'Income added · now add the debt details');return;}
+    if(form.type==='Income'&&form.loan_mode==='new'){setEditing(null);setTxPresetAccount('');setConvertTx(saved);setDebtPresetProvider('');setModal('debt');setToast(editing?'Income saved · now add the debt details':'Income added · now add the debt details');return true;}
     if(form.type==='Income'&&form.loan_mode==='link'&&form.debt_id&&!editing){
       const d=(debts||[]).find(x=>String(x.id)===String(form.debt_id));const add=Number(form.amount)||0;
       if(d&&add>0){const r2=n=>Number(Number(n).toFixed(2));
         const dp={name:d.name,debt_type:d.debt_type||'Other',lender:d.lender||'',account_id:d.account_id||null,original_amount:r2(Number(d.original_amount||0)+add),remaining_amount:r2(Number(d.remaining_amount||0)+add),monthly_payment:d.monthly_payment,due_date:d.due_date||null,frequency:d.frequency||'Monthly',notes:d.notes||'',start_date:d.start_date||null,term_months:d.term_months||null,total_repayment:r2(Number(d.total_repayment||d.original_amount||0)+add),interest_rate:Number(d.interest_rate||0),paid_installments:d.paid_installments||0,amount_paid:Number(d.amount_paid||0)};
         const ds=await saveRecord('debts',dp,d.id);
-        if(ds){setDebts(old=>old.map(x=>x.id===d.id?ds:x));setModal(null);setEditing(null);setTxPresetAccount('');setToast(`Income added · ${d.name} increased by ${fmt(add)}`);return;}
-        setToast('Income added, but the debt could not be updated');
+        if(ds){setDebts(old=>old.map(x=>x.id===d.id?ds:x));setModal(null);setEditing(null);setTxPresetAccount('');setToast(`Income added · ${d.name} increased by ${fmt(add)}`);return true;}
+        setToast('Income added, but the debt could not be updated');return true;
       }
     }
-    setModal(null);setEditing(null);setTxPresetAccount('');setToast(editing?'Transaction updated':'Transaction added');
+    setModal(null);setEditing(null);setTxPresetAccount('');setToast(editing?'Transaction updated':'Transaction added');return true;
   }
   async function addGoal(form){
     const p={name:form.name,goal_type:form.goal_type||'Other',target_amount:Number(form.target_amount),saved_amount:Number(form.saved_amount||0),target_date:form.target_date||null,notes:form.notes||''};
@@ -686,6 +687,15 @@ function App(){
     if(txSaved)setTransactions(old=>[txSaved,...old]);setDebts(old=>old.map(x=>x.id===debt.id?saved:x));setToast(mode==='transaction'?`Installment recorded from ${account.name}${actualPaid>installmentAmount?' including extra fees':''}`:'Installment recorded without creating a transaction');return true;
   }
 
+  async function chatSave(d){
+    const base={transaction_date:d.date,subcategory:'',description:d.description||'',need_want:'Need',fixed_variable:'Variable',account_id:d.accountId||'',to_account_id:'',goal_id:'',debt_id:'',recurring:false,notes:'Added by typing',loan_mode:'none'};
+    if(d.kind==='expense'||d.kind==='income')return !!(await submitTransaction({...base,type:d.type,category:d.category,amount:d.amount}));
+    if(d.kind==='transfer')return !!(await submitTransaction({...base,type:'Transfer',category:'Transfer',description:'Transfer',amount:d.amount,to_account_id:d.toAccountId||''}));
+    if(d.kind==='goal'){if(!d.goalId){setToast('Choose a goal first.');return false;}return !!(await submitTransaction({...base,type:'Transfer',category:'Transfer',description:'Goal deposit',amount:d.amount,to_account_id:d.goalsAccountId,goal_id:d.goalId}));}
+    if(d.kind==='debt'){const debt=debts.find(x=>String(x.id)===String(d.debtId));if(!debt)return false;return !!(await recordDebtInstallment(debt,{accountId:d.accountId,amount:d.amount,paymentDate:d.date}));}
+    if(d.kind==='bill'){const r=recurring.find(x=>String(x.id)===String(d.billId));if(!r)return false;return !!(await markRecurringPaid(r,{accountId:d.accountId,amount:d.amount}));}
+    return false;
+  }
   async function signIn(e){
     e.preventDefault(); if(!supabase)return;
     const locked=loginLockSeconds();if(locked){setAuthMsg(`Too many sign-in attempts. Try again in ${formatWait(locked)}.`);return;}
@@ -1102,6 +1112,7 @@ function App(){
     {modal==='import'&&<ImportModal rows={importPreview} onClose={()=>{setModal(null);setImportPreview([])}} onConfirm={confirmImport}/>}
     {confirmDialog&&<ConfirmActionModal dialog={confirmDialog} onCancel={()=>setConfirmDialog(null)} onConfirm={async()=>{const action=confirmDialog.onConfirm;setConfirmDialog(null);await action?.()}}/>}
     <GlobalSearch open={searchOpen} onClose={()=>setSearchOpen(false)} {...{transactions,accounts,debts,recurring,goals,currency}} loadVehicles={allowedFeatures.includes('vehicle_management')&&cloudReady&&session?.user?async()=>{const {data}=await supabase.from('vehicles').select('id,name,make,model,plate');return data||[]}:null} onPick={r=>{if(r.kind==='transaction'){setSearch(r.title||'');setPage('Transactions')}else if(r.kind==='account'){const a=accounts.find(x=>String(x.id)===String(r.id));if(a&&isLiability(a))openCredit(a.id);else setPage('Accounts')}else if(r.kind==='debt')setPage('Debts & installments');else if(r.kind==='recurring')setPage('Subscriptions & bills');else if(r.kind==='goal')setPage('Savings goals');else if(r.kind==='vehicle'){setVehicleSidebarTab('vehicles');setPage('Vehicle Management')}}}/>
+    {<ChatSheet accounts={accounts} debts={debts} recurring={activeRecurring} goals={goals} currency={currency} defaultAccountId={defaultAccountId} expenseCats={getCategoriesForType('Expense',session?.user?.user_metadata?.gender||'')} incomeCats={incomeCategories} onSave={chatSave}/>}
     <QuickAdd showVehicles={allowedFeatures.includes('vehicle_management')} onTransaction={()=>{if(!accounts.length){setToast('Add an account or wallet first. Go to Accounts → Add account.');setPage('Accounts');return}setEditing(null);setModal('transaction')}} onFuel={()=>{setVehicleSidebarTab('fuel');setPage('Vehicle Management');setQuickAction({type:'fuel',n:Date.now()})}} onService={()=>{setVehicleSidebarTab('history');setPage('Vehicle Management');setQuickAction({type:'service',n:Date.now()})}}/>
     {toast&&<div className={`toast ${/insufficient balance|error|failed|could not/i.test(toast)?'toast-error':'toast-success'}`} role="status">{/insufficient balance|error|failed|could not/i.test(toast)?<XCircle size={18}/>:<Check size={17}/>}<span>{toast}</span></div>}
     {notificationToast&&<div role="button" tabIndex={0} className="notification-toast" onClick={()=>{setPage(notificationToast.target);setNotificationToast(null)}} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){setPage(notificationToast.target);setNotificationToast(null)}}} aria-label={`Open notification: ${notificationToast.name}`}><span className={`notification-toast-icon ${notificationToast.kind}`}><Bell size={17}/></span><span className="notification-toast-copy"><b>New notification</b><strong>{notificationToast.name}</strong><small>{notificationToast.detail}</small></span><button type="button" className="notification-toast-close" aria-label="Dismiss notification" onClick={e=>{e.stopPropagation();setNotificationToast(null)}}><X size={15}/></button></div>}
