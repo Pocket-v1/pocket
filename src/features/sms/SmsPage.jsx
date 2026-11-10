@@ -334,6 +334,16 @@ export function SmsPage({ focusAccount = null, onFocusDone, debts = [], recurrin
   };
   const approveAll = async () => { for (const x of shown.filter(y => y._acc && Number(y._amount) > 0)) await approve(x, { bulk: true }); setToast('Approved all ready SMS'); };
   const dismiss = async x => { await supabase.from('sms_inbox').update({ status: 'dismissed' }).eq('id', x.id); setItems(o => o.filter(y => y.id !== x.id)); setHist(o => [{ ...x, status: 'dismissed' }, ...o]); };
+  const reopen = async x => {
+    const first = transactions.find(t => String(t.id) === String(x.transaction_id));
+    const pre = `From bank SMS: ${x.body}`.slice(0, 200);
+    const ids = first ? transactions.filter(t => String(t.id) === String(first.id) || ((t.notes || '').startsWith(pre) && t.transaction_date === first.transaction_date && String(t.account_id) === String(first.account_id))).map(t => t.id) : [];
+    if (ids.length && onUndoTx) await onUndoTx(ids);
+    const { error } = await supabase.from('sms_inbox').update({ status: 'pending', transaction_id: null }).eq('id', x.id);
+    if (error) { setToast(error.message); return; }
+    setToast(ids.length ? `Moved back to Inbox. ${ids.length > 1 ? `${ids.length} transactions were` : 'The transaction was'} removed.` : 'Moved back to Inbox');
+    await load();
+  };
   const restore = async x => { const { error } = await supabase.from('sms_inbox').update({ status: 'pending' }).eq('id', x.id); if (error) { setToast(error.message); return; } setToast('Moved back to Inbox'); await load(); };
   const remember = async x => {
     const acc = accounts.find(a => String(a.id) === String(x._acc)); if (!acc) { setToast('Choose the account first'); return; }
@@ -469,6 +479,7 @@ export function SmsPage({ focusAccount = null, onFocusDone, debts = [], recurrin
           <div className="smx-row-main"><b>{x.merchant || x.sender || 'Bank SMS'}</b><small>{new Date(x.received_at).toLocaleDateString()} · {accLabel(x.account_id) || 'No account'}{x.category ? ` · ${x.category}` : ''}</small></div>
           <div className="smx-row-end">{x.amount != null && <b className={x.txn_type === 'Income' ? 'smx-in' : ''}>{x.txn_type === 'Income' ? '+' : '−'}{fmt(x.amount)}</b>}<span className={`sms-pill ${x.status === 'approved' ? 'on' : ''}`}>{x.status === 'approved' ? 'Approved' : 'Dismissed'}</span></div>
           {x.status === 'dismissed' && <button type="button" className="btn btn-sm" onClick={() => restore(x)}><RotateCcw size={14} /> Restore</button>}
+          {x.status === 'approved' && x.transaction_id && <button type="button" className="btn btn-sm" onClick={() => reopen(x)}><RotateCcw size={14} /> Reopen</button>}
         </article>)}</div>}
     </section>}
 
