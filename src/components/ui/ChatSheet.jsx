@@ -47,6 +47,15 @@ export function ChatSheet({ accounts, debts, recurring, goals, expenseCats, inco
   useEffect(() => { const b = bodyRef.current; if (!b) return; const last = b.lastElementChild; b.scrollTop = last ? Math.max(0, last.offsetTop - 8) : 0; }, [msgs, open]);
   useEffect(() => { if (!open) return; const k = e => { if (e.key === 'Escape') setOpen(false); }; window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k); }, [open]);
 
+  const [vv, setVv] = useState(null);
+  useEffect(() => {
+    if (!open || !window.visualViewport) return;
+    const v = window.visualViewport;
+    const fit = () => { if (window.innerWidth > 680) { setVv(null); return; } setVv({ bottom: Math.max(0, window.innerHeight - v.offsetTop - v.height), height: Math.min(window.innerHeight * 0.88, v.height - 8) }); };
+    fit(); v.addEventListener('resize', fit); v.addEventListener('scroll', fit);
+    return () => { v.removeEventListener('resize', fit); v.removeEventListener('scroll', fit); };
+  }, [open]);
+
   const push = m => setMsgs(old => [...old, { id: Math.random().toString(36).slice(2), ...m }]);
   const patch = (id, p) => setMsgs(old => old.map(m => m.id === id ? { ...m, ...p } : m));
 
@@ -56,7 +65,7 @@ export function ChatSheet({ accounts, debts, recurring, goals, expenseCats, inco
     push({ from: 'me', text: raw });
     if (!accounts.some(a => !a.is_system)) { push({ from: 'bot', text: 'Add an account or wallet first (Accounts → Add account), then I can add transactions for you.' }); return; }
     const r = parseChat(raw, { accounts, debts, recurring, goals, expenseCats, incomeCats, defaultAccountId, today: todayISO() });
-    if (r.error) { push({ from: 'bot', text: r.error === 'amount' ? 'I could not find an amount. Try: sarraft 200 3ala akl' : 'Type what you spent or received.' }); return; }
+    if (r.error) { push({ from: 'bot', text: r.error === 'amount' ? 'I could not find an amount. Try: صرفت 200 على أكل' : 'Type what you spent or received.' }); return; }
     push({ from: 'bot', draft: r, status: 'draft' });
   }
 
@@ -73,7 +82,7 @@ export function ChatSheet({ accounts, debts, recurring, goals, expenseCats, inco
   return <>
     {!open && <button type="button" className="chat-fab" onClick={() => setOpen(true)} aria-label="Add by typing"><MessageCircle size={20} aria-hidden="true" /><span>Add by typing</span></button>}
     {open && <div className="chat-scrim" onClick={() => setOpen(false)} aria-hidden="true" />}
-    {open && <section className="chat-sheet" role="dialog" aria-label="Add by typing">
+    {open && <section className="chat-sheet" role="dialog" aria-label="Add by typing" style={vv ? { bottom: vv.bottom, height: vv.height } : undefined}>
       <header className="chat-head"><h2>Add by typing</h2><button type="button" className="chat-x" onClick={() => setOpen(false)} aria-label="Close"><X size={18} aria-hidden="true" /></button></header>
       <div className="chat-body" ref={bodyRef}>
         {!msgs.length && <div className="chat-empty"><p>Type what you spent or got. Pocket fills the details and asks you to confirm.</p><div className="chat-ex">{EXAMPLES.map(x => <button key={x} type="button" onClick={() => send(x)}>{x}</button>)}</div></div>}
@@ -84,7 +93,7 @@ export function ChatSheet({ accounts, debts, recurring, goals, expenseCats, inco
             : <div key={m.id} className="chat-bot">{m.text}</div>)}
       </div>
       <form className="chat-input" onSubmit={e => { e.preventDefault(); send(); }}>
-        <input ref={inputRef} value={text} onChange={e => setText(e.target.value)} placeholder="sarraft 200 3ala akl" aria-label="Message" autoComplete="off" />
+        <input ref={inputRef} value={text} onChange={e => setText(e.target.value)} placeholder="صرفت 200 على أكل" aria-label="Message" autoComplete="off" />
         <button type="submit" className="chat-send" aria-label="Send"><Send size={18} aria-hidden="true" /></button>
       </form>
     </section>}

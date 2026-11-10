@@ -165,4 +165,4 @@ export function parseChat(text, ctx = {}) {
   return { ...base, kind: type.toLowerCase(), type, amount: amt.amount, category, description, accountId: (found[0]?.a || defAcc)?.id || '' };
 }
 
-export const EXAMPLES = ['sarraft 200 3ala akl', 'ge3ly 3000 mortab', 'dafa3t 95 uber', '7awalt 500 mn CIB l Cash'];
+export const EXAMPLES = ['صرفت 200 على أكل', 'جالي 3000 مرتب', 'دفعت 95 أوبر', 'حولت 500 من CIB لـ Cash'];

@@ -242,8 +242,9 @@ svg.lucide{stroke-width:var(--ds-icon-stroke)}
 .chat-input input:focus{outline:none;border-color:var(--ds-brand)}
 .chat-send{width:48px;height:48px;border:0;border-radius:14px;background:var(--ds-brand);color:var(--ds-on-brand,#fff);display:grid;place-items:center}
 @media(max-width:680px){
-  .chat-fab{right:16px;bottom:calc(18px + 56px + 12px + env(safe-area-inset-bottom))}
-  .chat-sheet{right:0;left:0;bottom:0;width:auto;height:88vh;border-radius:22px 22px 0 0;border-width:1px 0 0}
+  .chat-fab{right:16px;bottom:calc(14px + env(safe-area-inset-bottom));height:48px}
+  .quick-add{bottom:calc(14px + 48px + 12px + env(safe-area-inset-bottom))!important}
+  .chat-sheet{right:0;left:0;bottom:0;width:auto;height:88vh;max-height:calc(100dvh - 8px);border-radius:22px 22px 0 0;border-width:1px 0 0}
   .chat-field input,.chat-input input{font-size:16px}
 }
 @media(prefers-reduced-motion:no-preference){.chat-sheet{animation:mo-rise .25s ease both}}
