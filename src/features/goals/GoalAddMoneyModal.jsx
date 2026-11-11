@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { X } from 'lucide-react';
+import { ModalShell } from '../../components/modals/ModalShell.jsx';
+import { Field } from '../../components/ui/Field.jsx';
 import { isGoalsAccount } from '../../lib/features.js';
 import { isLiability } from '../../lib/credit.js';
 
@@ -9,23 +10,16 @@ export function GoalAddMoneyModal({ goal, accounts = [], currency = 'EGP', onClo
   const [source, setSource] = useState('outside');
   const [busy, setBusy] = useState(false);
   const fmt = n => new Intl.NumberFormat('en-EG', { style: 'currency', currency, maximumFractionDigits: 2 }).format(Number(n) || 0);
-  async function go() { if (busy || !(Number(amount) > 0)) return; setBusy(true); try { await onConfirm({ amount: Number(amount), source }); } finally { setBusy(false); } }
-  return <div className="modal-backdrop" onMouseDown={e => e.target === e.currentTarget && onClose()}>
-    <section className="modal gc-modal" role="dialog" aria-modal="true" aria-labelledby="gam-title">
-      <button type="button" className="icon-btn gc-x" onClick={onClose} aria-label="Close"><X size={18} /></button>
-      <p className="eyebrow">SAVINGS GOAL</p>
-      <h2 id="gam-title">Add money to {goal.name}</h2>
-      <label className="gc-field"><span>Amount ({currency})</span><input type="number" inputMode="decimal" min="0" step="0.01" autoFocus value={amount} onChange={e => setAmount(e.target.value)} placeholder="0" /></label>
-      <label className="gc-field"><span>Where is this money coming from?</span>
-        <select value={source} onChange={e => setSource(e.target.value)}>
-          <option value="outside">Cash I hold outside Pocket</option>
-          {list.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-        </select></label>
-      <p className="gc-note">{source === 'outside' ? `Adds ${fmt(amount)} to this goal and to your Goals account. No other account changes.` : `Moves ${fmt(amount)} from this account into your Goals account, tagged to ${goal.name}.`}</p>
-      <div className="gc-actions">
-        <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
-        <button type="button" className="btn btn-primary" disabled={busy || !(Number(amount) > 0)} onClick={go}>{busy ? 'Saving…' : 'Add money'}</button>
-      </div>
-    </section>
-  </div>;
+  const ok = Number(amount) > 0;
+  async function go() { if (busy || !ok) return; setBusy(true); try { await onConfirm({ amount: Number(amount), source }); } finally { setBusy(false); } }
+  return <ModalShell title={`Add money to ${goal.name}`} subtitle="Enter the amount and say where the money is." onClose={onClose}>
+    <div className="form-grid">
+      <Field label={`Amount (${currency})`} wide><input type="number" inputMode="decimal" min="0" step="0.01" autoFocus value={amount} onChange={e => setAmount(e.target.value)} placeholder="Enter amount" /></Field>
+    </div>
+    <div className="cc-options" role="radiogroup" aria-label="Where is this money" style={{ marginTop: 14 }}>
+      <button type="button" role="radio" aria-checked={source === 'outside'} className={`cc-option ${source === 'outside' ? 'on' : ''}`} onClick={() => setSource('outside')}><span><b>Cash I keep outside Pocket</b><small>No account changes. Not counted in your total balance.</small></span></button>
+      {list.map(a => <button type="button" role="radio" key={a.id} aria-checked={String(source) === String(a.id)} className={`cc-option ${String(source) === String(a.id) ? 'on' : ''}`} onClick={() => setSource(a.id)}><span><b>{a.name}</b><small>{ok ? `Balance goes down by ${fmt(amount)}.` : 'Balance goes down by this amount.'}</small></span></button>)}
+    </div>
+    <div className="modal-actions"><button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button><button type="button" className="btn btn-primary" disabled={busy || !ok} onClick={go}>{busy ? 'Saving…' : 'Add money'}</button></div>
+  </ModalShell>;
 }

@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { X } from 'lucide-react';
+import { ModalShell } from '../../components/modals/ModalShell.jsx';
+import { Field } from '../../components/ui/Field.jsx';
 
-export function GoalSpendModal({ goal, saved, expenseCats = [], accounts = [], currency = 'EGP', onClose, onConfirm }) {
+export function GoalSpendModal({ goal, saved, expenseCats = [], currency = 'EGP', onClose, onConfirm }) {
   const guess = { Travel: 'Travel', Education: 'Education', Home: 'Housing', Car: 'Transportation' }[goal.goal_type];
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState(expenseCats.includes(guess) ? guess : (expenseCats.includes('Shopping') ? 'Shopping' : expenseCats[0] || ''));
@@ -9,20 +10,13 @@ export function GoalSpendModal({ goal, saved, expenseCats = [], accounts = [], c
   const fmt = n => new Intl.NumberFormat('en-EG', { style: 'currency', currency, maximumFractionDigits: 2 }).format(Number(n) || 0);
   const n = Number(amount); const tooMuch = n > saved + 0.005; const ok = n > 0 && !tooMuch;
   async function go() { if (busy || !ok) return; setBusy(true); try { await onConfirm({ amount: n, category }); } finally { setBusy(false); } }
-  return <div className="modal-backdrop" onMouseDown={e => e.target === e.currentTarget && onClose()}>
-    <section className="modal gc-modal" role="dialog" aria-modal="true" aria-labelledby="gsp-title">
-      <button type="button" className="icon-btn gc-x" onClick={onClose} aria-label="Close"><X size={18} /></button>
-      <p className="eyebrow">SAVINGS GOAL</p>
-      <h2 id="gsp-title">Spend from {goal.name}</h2>
-      <p className="gc-sub">You have {fmt(saved)} saved in this goal. The goal stays open with what is left.</p>
-      <label className="gc-field"><span>Amount spent ({currency})</span><input type="number" inputMode="decimal" min="0" step="0.01" autoFocus value={amount} onChange={e => setAmount(e.target.value)} placeholder="0" /></label>
-      {tooMuch && <p className="gc-note">That is more than the {fmt(saved)} saved in this goal.</p>}
-      <label className="gc-field"><span>Category</span><select value={category} onChange={e => setCategory(e.target.value)}>{expenseCats.map(c => <option key={c}>{c}</option>)}</select></label>
-      <p className="gc-note">Recorded as one expense paid from savings. No account changes, and your net cash flow does not drop.</p>
-      <div className="gc-actions">
-        <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
-        <button type="button" className="btn btn-primary" disabled={busy || !ok} onClick={go}>{busy ? 'Saving…' : 'Record spending'}</button>
-      </div>
-    </section>
-  </div>;
+  return <ModalShell title={`Spend from ${goal.name}`} subtitle={`You have ${fmt(saved)} saved in this goal. The goal stays open with what is left.`} onClose={onClose}>
+    <div className="form-grid">
+      <Field label={`Amount spent (${currency})`} wide><input type="number" inputMode="decimal" min="0" step="0.01" autoFocus value={amount} onChange={e => setAmount(e.target.value)} placeholder="Enter amount" /></Field>
+      <Field label="Category" wide><select value={category} onChange={e => setCategory(e.target.value)}>{expenseCats.map(c => <option key={c}>{c}</option>)}</select></Field>
+    </div>
+    {tooMuch ? <div className="cc-error" role="alert">That is more than the {fmt(saved)} saved in this goal.</div>
+      : <p className="small-muted" style={{ margin: '12px 0 0' }}>Recorded as one expense paid from savings. No account changes, and your net cash flow does not drop.</p>}
+    <div className="modal-actions" style={{ marginTop: 16 }}><button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button><button type="button" className="btn btn-primary" disabled={busy || !ok} onClick={go}>{busy ? 'Saving…' : 'Record spending'}</button></div>
+  </ModalShell>;
 }

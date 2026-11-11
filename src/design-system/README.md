@@ -26,3 +26,15 @@ The single source of truth for look and feel. Change a value in `tokens.css` and
 3. Text on a brand or danger fill uses `--ds-on-brand`.
 4. Fonts only through `--ds-font-display` and `--ds-font-ui`.
 5. Add a new reusable pattern to `patterns.css` and to the Patterns section of `docs.js`.
+
+## Rule for new popups and forms
+
+Every new popup or form is built from the shared pieces, never from one-off classes:
+
+- `ModalShell` for the frame, title, subtitle and close button.
+- `Field` inside a `form-grid` for every input and select (use `wide` for a full-width field).
+- `cc-options` and `cc-option` for a choice between cards.
+- `modal-actions` with `btn btn-secondary` and `btn btn-primary` for the buttons.
+- `small-muted` for helper text and `cc-error` for an error line.
+
+The goal popups (add money, spend, finish) and the "Add by typing" card follow this rule.

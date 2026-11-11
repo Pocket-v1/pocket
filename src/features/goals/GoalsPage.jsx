@@ -27,8 +27,8 @@ export function GoalsPage(p){
    <div className="progress-track big"><span style={{width:`${progress}%`,background:reached?'var(--ds-ok)':palette[i%palette.length]}}/></div>
    <div className="progress-caption"><span>{progress}% complete</span><span>{reached?'Fully funded':`${fmt(remaining)} to go`}</span></div>
    {reached
-    ?<button type="button" className="goal-complete-btn" onClick={()=>onCompleteGoal(g,savedAmount)}><Trophy size={16} aria-hidden="true"/> Finish this goal</button>
-    :<><div className="goal-btn-row"><button type="button" className="goal-add-btn" onClick={()=>onAddMoney(g)}><Plus size={15} aria-hidden="true"/> Add money</button>{savedAmount>0.005&&<button type="button" className="goal-add-btn" onClick={()=>onSpend(g,savedAmount)}><ShoppingBag size={15} aria-hidden="true"/> Spend</button>}</div><div className="goal-footer"><span><CalendarDays size={14}/>{months?`${months} months left`:'Flexible timeline'}</span><b>{months?`${fmt(remaining/months)}/mo`:'—'}</b></div></>}
+    ?<div className="goal-btn-row"><button type="button" className="btn btn-primary" onClick={()=>onCompleteGoal(g,savedAmount)}><Trophy size={16} aria-hidden="true"/> Finish this goal</button></div>
+    :<><div className="goal-btn-row"><button type="button" className="btn btn-primary" onClick={()=>onAddMoney(g)}><Plus size={15} aria-hidden="true"/> Add money</button>{savedAmount>0.005&&<button type="button" className="btn btn-secondary" onClick={()=>onSpend(g,savedAmount)}><ShoppingBag size={15} aria-hidden="true"/> Spend</button>}</div><div className="goal-footer"><span><CalendarDays size={14}/>{months?`${months} months left`:'Flexible timeline'}</span><b>{months?`${fmt(remaining/months)}/mo`:'—'}</b></div></>}
    {g.notes&&<p className="goal-note">{g.notes}</p>}
   </div>})}
  {goals.length===0&&<div className="panel empty-large"><EmptyState icon={Target} title="Every goal starts somewhere" text="Create your first savings goal and watch your progress grow." action={()=>{setEditing(null);setModal('goal')}} actionLabel="Create a goal"/></div>}</div>
