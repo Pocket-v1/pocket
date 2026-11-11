@@ -716,8 +716,11 @@ function App(){
         if(!ok)return;
       }
       if(mode==='spend'){
-        const ok=await submitTransaction({...base,type:'Expense',category:category||'Other',description:goal.name,amount:Number(amount),need_want:'Want',account_id:accountId,notes:'Goal spent when completed'});
-        if(!ok){setToast('The goal money was moved, but the expense could not be added. Add it from Transactions.');return;}
+        // Saved directly: the balance check in submitTransaction cannot see the transfer made a moment ago.
+        const acc=accounts.find(a=>String(a.id)===String(accountId));
+        const exp=await saveRecord('transactions',{transaction_date:localISODate(),type:'Expense',category:category||'Other',subcategory:null,description:goal.name,amount:Number(amount),need_want:'Want',fixed_variable:'Variable',payment_method:acc?.name||'Unassigned',account_id:accountId,to_account_id:null,goal_id:null,debt_id:null,recurring:false,notes:'Goal spent when completed'});
+        if(!exp){setToast('The goal money was moved, but the expense could not be added. Add it from Transactions.');return;}
+        setTransactions(old=>[exp,...old]);
       }
     }
     const saved=await saveRecord('savings_goals',{completed_at:new Date().toISOString()},goal.id);
