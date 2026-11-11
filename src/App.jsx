@@ -27,6 +27,7 @@ import { DebtsPage } from './features/debts/DebtsPage.jsx';
 import { GoalModal } from './features/goals/GoalModal.jsx';
 import { GoalsPage } from './features/goals/GoalsPage.jsx';
 import { GoalCompleteModal } from './features/goals/GoalCompleteModal.jsx';
+import { GoalAddMoneyModal } from './features/goals/GoalAddMoneyModal.jsx';
 import { goalSaved, isGoalDone } from './lib/goals.js';
 import { InsightsReportsPage } from './features/insights/InsightsReportsPage.jsx';
 import { CashFlowCalendar } from './features/overview/CashFlowCalendar.jsx';
@@ -117,7 +118,9 @@ function App(){
   const [budgets,setBudgets] = useState([]);
   const [goals,setGoals] = useState([]);
   const [recurring,setRecurring] = useState([]);
-  const [accounts,setAccounts] = useState([]);
+  const [rawAccounts,setAccounts] = useState([]);
+  // The Goals account also holds money added by hand to goals (cash kept outside Pocket's other accounts).
+  const accounts = useMemo(()=>{const manual=goals.reduce((sum,g)=>sum+Number(g.saved_amount||0),0);return rawAccounts.map(a=>isGoalsAccount(a)?{...a,opening_balance:Number(a.opening_balance||0)+manual,_manualGoalMoney:manual}:a)},[rawAccounts,goals]);
   const [defaultAccountId,setDefaultAccountId] = useState(()=>{try{return null||''}catch{return ''}});
   const [debts,setDebts] = useState([]);
   const [month,setMonth] = useState(monthNow);
@@ -135,6 +138,7 @@ function App(){
   const [debtPresetProvider,setDebtPresetProvider] = useState('');
   const [convertTx,setConvertTx] = useState(null);
   const [completeGoalTarget,setCompleteGoalTarget] = useState(null);
+  const [addMoneyGoal,setAddMoneyGoal] = useState(null);
   const [txPresetAccount,setTxPresetAccount] = useState('');
   const [cardPay,setCardPay] = useState(null);
   const [providerPay,setProviderPay] = useState(null);
@@ -705,7 +709,7 @@ function App(){
     const base={transaction_date:localISODate(),subcategory:'',fixed_variable:'Variable',account_id:'',to_account_id:'',goal_id:'',debt_id:'',recurring:false,loan_mode:'none'};
     if(mode==='move'||mode==='spend'){
       if(!accountId){setToast('Choose an account first.');return;}
-      const toMove=Math.min(Number(backed)||0,Number(amount)||0);
+      const toMove=Number(amount)||0;
       if(toMove>0.005){
         if(!goalsAcc){setToast('The Goals account was not found.');return;}
         const ok=await submitTransaction({...base,type:'Transfer',category:'Transfer',description:`Goal completed · ${goal.name}`,amount:toMove,need_want:'Need',account_id:goalsAcc.id,to_account_id:accountId,goal_id:goal.id,notes:'Moved when the goal was completed'});
@@ -719,6 +723,15 @@ function App(){
     const saved=await saveRecord('savings_goals',{completed_at:new Date().toISOString()},goal.id);
     if(!saved){setToast('The goal could not be closed. Try again.');return;}
     setGoals(old=>old.map(x=>x.id===goal.id?saved:x));setCompleteGoalTarget(null);setToast(`${goal.name} completed. Well done!`);
+  }
+  async function addToGoal(goal,{amount,source}){
+    if(source==='outside'){
+      const saved=await saveRecord('savings_goals',{saved_amount:Number(goal.saved_amount||0)+Number(amount)},goal.id);if(!saved)return;
+      setGoals(old=>old.map(x=>x.id===goal.id?saved:x));setAddMoneyGoal(null);setToast(`Added to ${goal.name}`);return;
+    }
+    const goalsAcc=accounts.find(isGoalsAccount);if(!goalsAcc){setToast('The Goals account was not found.');return;}
+    const ok=await submitTransaction({transaction_date:localISODate(),type:'Transfer',category:'Transfer',subcategory:'',description:`Saved for ${goal.name}`,amount:Number(amount),need_want:'Need',fixed_variable:'Variable',account_id:source,to_account_id:goalsAcc.id,goal_id:goal.id,debt_id:'',recurring:false,notes:'Added from the goal',loan_mode:'none'});
+    if(ok){setAddMoneyGoal(null);setToast(`Added to ${goal.name}`);}
   }
   async function reopenGoal(goal){
     const saved=await saveRecord('savings_goals',{completed_at:null},goal.id);if(!saved)return;
@@ -1115,14 +1128,15 @@ function App(){
         {canSeeCurrentPage&&page==='Debts & installments'&&<DebtsPage {...{debts,accounts,transactions,debtFocus,setDebtFocus,credit:creditActions,setAccounts,setModal,setEditing,removeRecord,setDebts,currency,requestConfirm,recordDebtInstallment,closeDebt,reopenDebt,setDebtPaymentTarget,setToast}}/>}
         {canSeeCurrentPage&&(page==='Insights & reports'||page==='Insights & forecast'||page==='Reports')&&<InsightsReportsPage {...{transactions:reportTx,month,setMonth,budgets,recurring:activeRecurring,goals,debts,currency,setPage,accounts,showVehicles:allowedFeatures.includes('vehicle_management')}}/>}
         {canSeeCurrentPage&&page==='Budgets'&&<BudgetsPage {...{budgets,transactions:reportTx,month,setMonth,setModal,setEditing,setToast,removeRecord,setBudgets,requestConfirm}}/>}
-        {canSeeCurrentPage&&page==='Savings goals'&&<GoalsPage {...{onCompleteGoal:(g,saved)=>setCompleteGoalTarget({goal:g,saved}),onReopenGoal:reopenGoal,goals,transactions,accounts,setModal,setEditing,setToast,removeRecord,setGoals,totalSaved,goalTarget,requestConfirm}}/>}
+        {canSeeCurrentPage&&page==='Savings goals'&&<GoalsPage {...{onAddMoney:g=>setAddMoneyGoal(g),onCompleteGoal:(g,saved)=>setCompleteGoalTarget({goal:g,saved}),onReopenGoal:reopenGoal,goals,transactions,accounts,setModal,setEditing,setToast,removeRecord,setGoals,totalSaved,goalTarget,requestConfirm}}/>}
         {canSeeCurrentPage&&(page==='Recurring payments'||page==='Subscriptions & bills')&&<RecurringPage {...{accounts,recurring,toggleRecurringActive,setModal,setEditing,setToast,removeRecord,setRecurring,markRecurringPaid,paidBusy,deleteRecurringPayment}}/>}
         </>}
       </div>
       <footer className="footer"><span>Pocket Finance <span className="footer-dot">•</span> Make room for what matters.</span><span>Currency: {currency}</span></footer>
     </main>
     {(modal==='transaction'||modal==='account-from-transaction')&&<TransactionModal presetAccountId={txPresetAccount} transactions={transactions} currency={currency} accounts={accounts} goals={goals} debts={debts} recordDebtInstallment={recordDebtInstallment} defaultAccountId={defaultAccountId} gender={session?.user?.user_metadata?.gender||''} session={session} initial={editing} onClose={()=>{setModal(null);setEditing(null);setTxPresetAccount('')}} onSave={submitTransaction} onAddAccount={()=>setModal('account-from-transaction')}/>}
-    {completeGoalTarget&&<GoalCompleteModal goal={completeGoalTarget.goal} saved={completeGoalTarget.saved} backed={Math.max(0,completeGoalTarget.saved-Number(completeGoalTarget.goal.saved_amount||0))} expenseCats={getCategoriesForType('Expense',session?.user?.user_metadata?.gender||'')} accounts={accounts} currency={currency} onClose={()=>setCompleteGoalTarget(null)} onConfirm={opts=>completeGoal(completeGoalTarget.goal,opts)}/>}
+    {addMoneyGoal&&<GoalAddMoneyModal goal={addMoneyGoal} accounts={accounts} currency={currency} onClose={()=>setAddMoneyGoal(null)} onConfirm={opts=>addToGoal(addMoneyGoal,opts)}/>}
+    {completeGoalTarget&&<GoalCompleteModal goal={completeGoalTarget.goal} saved={completeGoalTarget.saved} backed={completeGoalTarget.saved} expenseCats={getCategoriesForType('Expense',session?.user?.user_metadata?.gender||'')} accounts={accounts} currency={currency} onClose={()=>setCompleteGoalTarget(null)} onConfirm={opts=>completeGoal(completeGoalTarget.goal,opts)}/>}
     {modal==='goal'&&<GoalModal currency={currency} initial={editing} onClose={()=>{setModal(null);setEditing(null)}} onSave={addGoal}/>}
     {modal==='recurring'&&<RecurringModal currency={currency} accounts={accounts} initial={editing} onClose={()=>{setModal(null);setEditing(null)}} onSave={addRecurring}/>}
     {modal==='budget'&&<BudgetModal currency={currency} initial={editing} month={month} onClose={()=>{setModal(null);setEditing(null)}} onSave={addBudget}/>}
