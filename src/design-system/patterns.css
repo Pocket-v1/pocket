@@ -270,3 +270,5 @@
 .chat-card .field>span{text-transform:none}
 .chat-fields{display:flex;flex-direction:column;gap:14px}
 .emoji-grid button,.emoji-current,.ww-emoji,.setup-type-emoji,.tx-choice-icon{color:var(--ds-text)}.emoji-grid button.on{color:var(--ds-brand)}
+/* The card already has its own padding, so its header must not add more (keeps title and fields on one line). */
+.category-wizard-card>.modal-header{padding:0}
