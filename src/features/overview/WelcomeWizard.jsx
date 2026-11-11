@@ -1,3 +1,4 @@
+import { IconGlyph } from '../../components/ui/CategoryIcon.jsx';
 import { useMemo, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, X } from '../../lib/icons.jsx';
 
@@ -27,17 +28,17 @@ export function WelcomeWizard({ name, currency = 'EGP', canAccount, steps, onCre
       <div className="ww-dots">{screens.map((s, n) => <i key={s.key} className={n <= i ? 'on' : ''} />)}</div>
       <small className="ww-count">Step {i + 1} of {screens.length}</small>
 
-      {cur.key === 'welcome' && <div className="ww-body"><div className="ww-emoji">👋</div><h2>Welcome{name ? `, ${name}` : ''}!</h2><p>Let’s set up Pocket in a couple of minutes. You can skip anything and come back later.</p></div>}
+      {cur.key === 'welcome' && <div className="ww-body"><div className="ww-emoji"><IconGlyph value={'👋'} size={44}/></div><h2>Welcome{name ? `, ${name}` : ''}!</h2><p>Let’s set up Pocket in a couple of minutes. You can skip anything and come back later.</p></div>}
 
-      {cur.key === 'account' && <div className="ww-body"><div className="ww-emoji">🏦</div><h2>Add your first account</h2><p>Where does your money live?</p>
+      {cur.key === 'account' && <div className="ww-body"><div className="ww-emoji"><IconGlyph value={'🏦'} size={44}/></div><h2>Add your first account</h2><p>Where does your money live?</p>
         <div className="ww-chips">{ACCOUNT_TYPES.map(([t, e]) => <button type="button" key={t} className={form.type === t ? 'on' : ''} onClick={() => set('type', t)}>{e} {t}</button>)}</div>
         <label className="ww-field"><span>Account name</span><input value={form.name} onChange={e => set('name', e.target.value)} placeholder="e.g. CIB, Cash, Vodafone Cash" autoFocus /></label>
         <label className="ww-field"><span>Current balance ({currency})</span><input inputMode="decimal" value={form.opening_balance} onChange={e => set('opening_balance', e.target.value.replace(/[^0-9.]/g, ''))} placeholder="0" /></label></div>}
 
-      {!['welcome', 'account', 'finish'].includes(cur.key) && <div className="ww-body"><div className="ww-emoji">{cur.emoji}</div><h2>{cur.title}</h2><p>{cur.desc}</p>
+      {!['welcome', 'account', 'finish'].includes(cur.key) && <div className="ww-body"><div className="ww-emoji"><IconGlyph value={cur.emoji} size={44}/></div><h2>{cur.title}</h2><p>{cur.desc}</p>
         <button type="button" className="btn btn-primary ww-cta" onClick={() => { cur.action(); onClose(true); }}>{cur.cta}</button></div>}
 
-      {cur.key === 'finish' && <div className="ww-body"><div className="ww-emoji">🎉</div><h2>You’re all set</h2><p>{made ? 'Your account is ready.' : 'You can finish the rest from the checklist on your Overview.'}</p></div>}
+      {cur.key === 'finish' && <div className="ww-body"><div className="ww-emoji"><IconGlyph value={'🎉'} size={44}/></div><h2>You’re all set</h2><p>{made ? 'Your account is ready.' : 'You can finish the rest from the checklist on your Overview.'}</p></div>}
 
       <div className="ww-foot">
         {i > 0 && !last ? <button type="button" className="btn" onClick={() => setI(n => n - 1)}><ArrowLeft size={15} /> Back</button> : <button type="button" className="btn" onClick={() => onClose(false)}>{last ? '' : 'Skip setup'}</button>}

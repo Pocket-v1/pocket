@@ -269,3 +269,4 @@
 .goal-finish-badge{width:48px;height:48px;flex:none;border-radius:50%;background:var(--ds-surface);color:var(--ds-ok);display:grid;place-items:center}
 .chat-card .field>span{text-transform:none}
 .chat-fields{display:flex;flex-direction:column;gap:14px}
+.emoji-grid button,.emoji-current,.ww-emoji,.setup-type-emoji,.tx-choice-icon{color:var(--ds-text)}.emoji-grid button.on{color:var(--ds-brand)}
