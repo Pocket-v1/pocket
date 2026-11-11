@@ -700,15 +700,24 @@ function App(){
     if(d.kind==='bill'){const r=recurring.find(x=>String(x.id)===String(d.billId));if(!r)return false;return !!(await markRecurringPaid(r,{accountId:d.accountId,amount:d.amount}));}
     return false;
   }
-  async function completeGoal(goal,{mode,accountId,amount}){
+  async function completeGoal(goal,{mode,accountId,amount,backed,category}){
     const goalsAcc=accounts.find(isGoalsAccount);
-    if(mode==='move'&&amount>0){
-      if(!goalsAcc||!accountId){setToast('Choose where to move the money.');return;}
-      const ok=await submitTransaction({transaction_date:localISODate(),type:'Transfer',category:'Transfer',subcategory:'',description:`Goal completed · ${goal.name}`,amount:Number(amount),need_want:'Need',fixed_variable:'Variable',account_id:goalsAcc.id,to_account_id:accountId,goal_id:goal.id,debt_id:'',recurring:false,notes:'Moved when the goal was completed',loan_mode:'none'});
-      if(!ok)return;
+    const base={transaction_date:localISODate(),subcategory:'',fixed_variable:'Variable',account_id:'',to_account_id:'',goal_id:'',debt_id:'',recurring:false,loan_mode:'none'};
+    if(mode==='move'||mode==='spend'){
+      if(!accountId){setToast('Choose an account first.');return;}
+      const toMove=Math.min(Number(backed)||0,Number(amount)||0);
+      if(toMove>0.005){
+        if(!goalsAcc){setToast('The Goals account was not found.');return;}
+        const ok=await submitTransaction({...base,type:'Transfer',category:'Transfer',description:`Goal completed · ${goal.name}`,amount:toMove,need_want:'Need',account_id:goalsAcc.id,to_account_id:accountId,goal_id:goal.id,notes:'Moved when the goal was completed'});
+        if(!ok)return;
+      }
+      if(mode==='spend'){
+        const ok=await submitTransaction({...base,type:'Expense',category:category||'Other',description:goal.name,amount:Number(amount),need_want:'Want',account_id:accountId,notes:'Goal spent when completed'});
+        if(!ok){setToast('The goal money was moved, but the expense could not be added. Add it from Transactions.');return;}
+      }
     }
     const saved=await saveRecord('savings_goals',{completed_at:new Date().toISOString()},goal.id);
-    if(!saved){setToast('The money was moved, but the goal could not be closed. Try again.');return;}
+    if(!saved){setToast('The goal could not be closed. Try again.');return;}
     setGoals(old=>old.map(x=>x.id===goal.id?saved:x));setCompleteGoalTarget(null);setToast(`${goal.name} completed. Well done!`);
   }
   async function reopenGoal(goal){
@@ -1113,7 +1122,7 @@ function App(){
       <footer className="footer"><span>Pocket Finance <span className="footer-dot">•</span> Make room for what matters.</span><span>Currency: {currency}</span></footer>
     </main>
     {(modal==='transaction'||modal==='account-from-transaction')&&<TransactionModal presetAccountId={txPresetAccount} transactions={transactions} currency={currency} accounts={accounts} goals={goals} debts={debts} recordDebtInstallment={recordDebtInstallment} defaultAccountId={defaultAccountId} gender={session?.user?.user_metadata?.gender||''} session={session} initial={editing} onClose={()=>{setModal(null);setEditing(null);setTxPresetAccount('')}} onSave={submitTransaction} onAddAccount={()=>setModal('account-from-transaction')}/>}
-    {completeGoalTarget&&<GoalCompleteModal goal={completeGoalTarget.goal} saved={completeGoalTarget.saved} accounts={accounts} currency={currency} onClose={()=>setCompleteGoalTarget(null)} onConfirm={opts=>completeGoal(completeGoalTarget.goal,opts)}/>}
+    {completeGoalTarget&&<GoalCompleteModal goal={completeGoalTarget.goal} saved={completeGoalTarget.saved} backed={Math.max(0,completeGoalTarget.saved-Number(completeGoalTarget.goal.saved_amount||0))} expenseCats={getCategoriesForType('Expense',session?.user?.user_metadata?.gender||'')} accounts={accounts} currency={currency} onClose={()=>setCompleteGoalTarget(null)} onConfirm={opts=>completeGoal(completeGoalTarget.goal,opts)}/>}
     {modal==='goal'&&<GoalModal currency={currency} initial={editing} onClose={()=>{setModal(null);setEditing(null)}} onSave={addGoal}/>}
     {modal==='recurring'&&<RecurringModal currency={currency} accounts={accounts} initial={editing} onClose={()=>{setModal(null);setEditing(null)}} onSave={addRecurring}/>}
     {modal==='budget'&&<BudgetModal currency={currency} initial={editing} month={month} onClose={()=>{setModal(null);setEditing(null)}} onSave={addBudget}/>}
