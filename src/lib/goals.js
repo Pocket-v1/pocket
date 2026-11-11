@@ -17,3 +17,6 @@ export function goalSaved(g, transactions = [], accounts = []) {
 }
 export const isGoalDone = g => Boolean(g && g.completed_at);
 export const isGoalReached = (g, saved) => Number(g.target_amount) > 0 && saved >= Number(g.target_amount) - 0.005;
+// Money already spent out of a goal (expenses tagged with the goal).
+export const goalSpent = (g, transactions = []) => transactions.filter(t => t.type === 'Expense' && String(t.goal_id) === String(g.id)).reduce((s, t) => s + Number(t.amount || 0), 0);
+export const isFromSavings = t => t.type === 'Expense' && (Boolean(t.goal_id) || String(t.notes || '').startsWith('Goal spent'));

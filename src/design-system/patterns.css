@@ -283,3 +283,5 @@ svg.lucide{stroke-width:var(--ds-icon-stroke)}
 .gc-modal{max-height:calc(100dvh - 24px);overflow-y:auto}
 .goal-add-btn{width:100%;min-height:44px;margin-top:12px;border:1.5px dashed var(--ds-border-strong,var(--ds-border));border-radius:12px;background:transparent;color:var(--ds-brand);font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;gap:6px;text-transform:none}
 .goal-add-btn:hover{background:var(--ds-brand-soft)}
+.goal-btn-row{display:flex;gap:8px;margin-top:12px}.goal-btn-row .goal-add-btn{flex:1 1 0;min-width:0;margin-top:0;padding:0 6px;font-size:12.5px;white-space:nowrap}
+.goal-spent{display:block;margin-top:2px;font-size:11.5px;font-weight:700;color:var(--ds-text-muted,var(--ds-secondary-text));text-transform:none}
