@@ -26,6 +26,8 @@ import { DebtPaymentChoiceModal } from './features/debts/DebtPaymentChoiceModal.
 import { DebtsPage } from './features/debts/DebtsPage.jsx';
 import { GoalModal } from './features/goals/GoalModal.jsx';
 import { GoalsPage } from './features/goals/GoalsPage.jsx';
+import { GoalCompleteModal } from './features/goals/GoalCompleteModal.jsx';
+import { goalSaved, isGoalDone } from './lib/goals.js';
 import { InsightsReportsPage } from './features/insights/InsightsReportsPage.jsx';
 import { CashFlowCalendar } from './features/overview/CashFlowCalendar.jsx';
 import { Overview } from './features/overview/Overview.jsx';
@@ -132,6 +134,7 @@ function App(){
   const [creditKind,setCreditKind] = useState('card');
   const [debtPresetProvider,setDebtPresetProvider] = useState('');
   const [convertTx,setConvertTx] = useState(null);
+  const [completeGoalTarget,setCompleteGoalTarget] = useState(null);
   const [txPresetAccount,setTxPresetAccount] = useState('');
   const [cardPay,setCardPay] = useState(null);
   const [providerPay,setProviderPay] = useState(null);
@@ -426,8 +429,9 @@ function App(){
   const wants=monthTx.filter(t=>t.type==='Expense'&&t.need_want==='Want').reduce((s,t)=>s+Number(t.amount),0);
   const monthBudgets=budgets.filter(b=>(b.month||'').slice(0,7)===month);
   const totalBudget=monthBudgets.reduce((s,b)=>s+Number(b.amount||0),0);
-  const totalSaved=goals.reduce((s,g)=>s+Number(g.saved_amount||0)+transactions.filter(t=>t.type==='Transfer'&&String(t.goal_id)===String(g.id)).reduce((v,t)=>{const from=accounts.find(a=>String(a.id)===String(t.account_id)),to=accounts.find(a=>String(a.id)===String(t.to_account_id));if(isGoalsAccount(from))return v-Number(t.amount||0);if(isGoalsAccount(to))return v+Number(t.amount||0);const fs=String(from?.type||'').toLowerCase().includes('saving'),ts=String(to?.type||'').toLowerCase().includes('saving');return v+(fs&&!ts?-1:1)*Number(t.amount||0)},0),0);
-  const goalTarget=goals.reduce((s,g)=>s+Number(g.target_amount||0),0);
+  const activeGoals=goals.filter(g=>!isGoalDone(g));
+  const totalSaved=activeGoals.reduce((s,g)=>s+goalSaved(g,transactions,accounts),0);
+  const goalTarget=activeGoals.reduce((s,g)=>s+Number(g.target_amount||0),0);
   const activeRecurring=recurring.filter(r=>r.is_active!==false);
   const upcoming=activeRecurring.filter(r=>!r.paid_this_cycle).sort((a,b)=>(a.next_due_date||'').localeCompare(b.next_due_date||'')).slice(0,4);
   const todayISO=localISODate();
@@ -695,6 +699,21 @@ function App(){
     if(d.kind==='debt'){const debt=debts.find(x=>String(x.id)===String(d.debtId));if(!debt)return false;return !!(await recordDebtInstallment(debt,{accountId:d.accountId,amount:d.amount,paymentDate:d.date}));}
     if(d.kind==='bill'){const r=recurring.find(x=>String(x.id)===String(d.billId));if(!r)return false;return !!(await markRecurringPaid(r,{accountId:d.accountId,amount:d.amount}));}
     return false;
+  }
+  async function completeGoal(goal,{mode,accountId,amount}){
+    const goalsAcc=accounts.find(isGoalsAccount);
+    if(mode==='move'&&amount>0){
+      if(!goalsAcc||!accountId){setToast('Choose where to move the money.');return;}
+      const ok=await submitTransaction({transaction_date:localISODate(),type:'Transfer',category:'Transfer',subcategory:'',description:`Goal completed · ${goal.name}`,amount:Number(amount),need_want:'Need',fixed_variable:'Variable',account_id:goalsAcc.id,to_account_id:accountId,goal_id:goal.id,debt_id:'',recurring:false,notes:'Moved when the goal was completed',loan_mode:'none'});
+      if(!ok)return;
+    }
+    const saved=await saveRecord('savings_goals',{completed_at:new Date().toISOString()},goal.id);
+    if(!saved){setToast('The money was moved, but the goal could not be closed. Try again.');return;}
+    setGoals(old=>old.map(x=>x.id===goal.id?saved:x));setCompleteGoalTarget(null);setToast(`${goal.name} completed. Well done!`);
+  }
+  async function reopenGoal(goal){
+    const saved=await saveRecord('savings_goals',{completed_at:null},goal.id);if(!saved)return;
+    setGoals(old=>old.map(x=>x.id===goal.id?saved:x));setToast(`${goal.name} is active again`);
   }
   async function signIn(e){
     e.preventDefault(); if(!supabase)return;
@@ -1081,19 +1100,20 @@ function App(){
         {['Access management','Admin access','Access requests'].includes(page)&&isAdmin&&<AccessManagementPage supabase={supabase} onToast={setToast} users={adminUsers} loading={adminLoading} profile={profile} onUpdate={updateUserAccess} onDelete={deleteManagedUser} onCreate={createManagedUser} onRefresh={refreshAdminUsers} initialTab={page==='Admin access'?'users':'requests'}/>}
         {canSeeCurrentPage&&page==='Overview'&&<Overview {...{recurring:activeRecurring,onboardingKey:`pocket-onboarding-${session?.user?.id||'local'}`,onboardingSteps:[{key:'account',feat:'accounts',title:'Add an account or wallet',hint:'Cash, bank or e-wallet — where your money lives',done:accounts.some(a=>!isLiability(a)),action:()=>{setEditing(null);setModal('account')}},{key:'tx',feat:'transactions',title:'Record your first transaction',hint:'An expense or income, takes 20 seconds',done:transactions.length>0,action:()=>{if(!accounts.length){setToast('Add an account first, then record a transaction.');return}setEditing(null);setModal('transaction')}},{key:'sms',feat:'bank_sms',title:'Connect your bank SMS',hint:'Bank messages become transactions after your approval',done:transactions.some(t=>String(t.notes||'').startsWith('From bank SMS')),action:()=>setPage('Bank SMS')},{key:'credit',feat:'accounts',title:'Add a credit card or installment app',hint:'Valu, Halan, Aman, your cards…',done:accounts.some(a=>isLiability(a)),action:()=>creditActions.addCard()},{key:'budget',feat:'budgets',title:'Set a monthly budget',hint:'Pick a category and a limit',done:budgets.length>0,action:()=>{setEditing(null);setModal('budget')}},{key:'goal',feat:'goals',title:'Create a savings goal',hint:'Something to save towards',done:goals.length>0,action:()=>{setEditing(null);setModal('goal')}},{key:'bill',feat:'subscriptions',title:'Add a recurring bill',hint:'Rent, subscriptions, installments',done:recurring.length>0,action:()=>{setEditing(null);setModal('recurring')}}].filter(st=>allowedFeatures.includes(st.feat)),debts,creditActions,month,setMonth,transactions,accounts,monthTx,income,expenses,net,savingsRate,monthlySeries,categoryData,needs,wants,monthBudgets,totalBudget,totalSaved,goalTarget,upcoming,goals,setPage,setModal,setEditing,setToast,displayName,greeting,profileAvatar,session,supabase,currency,setVehicleSidebarTab,canViewVehicles:allowedFeatures.includes('vehicle_management')}}/>}
         {canSeeCurrentPage&&page==='Transactions'&&<TransactionsPage {...{transactions,reportTx,accounts,debts,filtered,search,setSearch,typeFilter,setTypeFilter,categoryFilter,setCategoryFilter,amountSort,setAmountSort,setModal,setEditing,setPage,setToast,removeRecord,setTransactions,handleImport,exportCSV,exportTransactionsAs,downloadTemplateAs,currency,requestConfirm,recordDebtInstallment,activeCategoryOptions:getExpenseCategories(profile?.gender)}}/>}
-        {canSeeCurrentPage&&page==='Accounts'&&<AccountsPage {...{debts,creditActions,accountsView,setAccountsView,accounts,transactions,setModal,setEditing,removeRecord,setAccounts,currency,requestConfirm,defaultAccountId,setDefaultAccountId,pendingSms}} openSms={allowedFeatures.includes('bank_sms')?(from,id)=>{if(id)setSmsFocusAccount(id);setPage('Bank SMS')}:null}/>}
+        {canSeeCurrentPage&&page==='Accounts'&&<AccountsPage {...{goals,debts,creditActions,accountsView,setAccountsView,accounts,transactions,setModal,setEditing,removeRecord,setAccounts,currency,requestConfirm,defaultAccountId,setDefaultAccountId,pendingSms}} openSms={allowedFeatures.includes('bank_sms')?(from,id)=>{if(id)setSmsFocusAccount(id);setPage('Bank SMS')}:null}/>}
         {canSeeCurrentPage&&page==='Bank SMS'&&<SmsPage focusAccount={smsFocusAccount} onFocusDone={()=>setSmsFocusAccount(null)} debts={debts} recurring={recurring} onPayDebt={recordDebtInstallment} onPayBill={markRecurringPaid} accounts={accounts} transactions={transactions} session={session} supabase={supabase} currency={currency} gender={session?.user?.user_metadata?.gender||''} setToast={setToast} onPendingChange={setPendingSms} onUndoTx={async ids=>{for(const id of ids)await removeRecord('transactions',id,setTransactions,transactions);}} onApprove={async payload=>{const saved=await saveRecord('transactions',payload);if(saved)setTransactions(o=>[saved,...o]);return saved}}/>}
         {canSeeCurrentPage&&page==='Cash flow calendar'&&<CashFlowCalendar {...{transactions,recurring:activeRecurring,accounts,debts,month,setMonth,currency}}/>}
         {canSeeCurrentPage&&page==='Debts & installments'&&<DebtsPage {...{debts,accounts,transactions,debtFocus,setDebtFocus,credit:creditActions,setAccounts,setModal,setEditing,removeRecord,setDebts,currency,requestConfirm,recordDebtInstallment,closeDebt,reopenDebt,setDebtPaymentTarget,setToast}}/>}
         {canSeeCurrentPage&&(page==='Insights & reports'||page==='Insights & forecast'||page==='Reports')&&<InsightsReportsPage {...{transactions:reportTx,month,setMonth,budgets,recurring:activeRecurring,goals,debts,currency,setPage,accounts,showVehicles:allowedFeatures.includes('vehicle_management')}}/>}
         {canSeeCurrentPage&&page==='Budgets'&&<BudgetsPage {...{budgets,transactions:reportTx,month,setMonth,setModal,setEditing,setToast,removeRecord,setBudgets,requestConfirm}}/>}
-        {canSeeCurrentPage&&page==='Savings goals'&&<GoalsPage {...{goals,transactions,accounts,setModal,setEditing,setToast,removeRecord,setGoals,totalSaved,goalTarget,requestConfirm}}/>}
+        {canSeeCurrentPage&&page==='Savings goals'&&<GoalsPage {...{onCompleteGoal:(g,saved)=>setCompleteGoalTarget({goal:g,saved}),onReopenGoal:reopenGoal,goals,transactions,accounts,setModal,setEditing,setToast,removeRecord,setGoals,totalSaved,goalTarget,requestConfirm}}/>}
         {canSeeCurrentPage&&(page==='Recurring payments'||page==='Subscriptions & bills')&&<RecurringPage {...{accounts,recurring,toggleRecurringActive,setModal,setEditing,setToast,removeRecord,setRecurring,markRecurringPaid,paidBusy,deleteRecurringPayment}}/>}
         </>}
       </div>
       <footer className="footer"><span>Pocket Finance <span className="footer-dot">•</span> Make room for what matters.</span><span>Currency: {currency}</span></footer>
     </main>
     {(modal==='transaction'||modal==='account-from-transaction')&&<TransactionModal presetAccountId={txPresetAccount} transactions={transactions} currency={currency} accounts={accounts} goals={goals} debts={debts} recordDebtInstallment={recordDebtInstallment} defaultAccountId={defaultAccountId} gender={session?.user?.user_metadata?.gender||''} session={session} initial={editing} onClose={()=>{setModal(null);setEditing(null);setTxPresetAccount('')}} onSave={submitTransaction} onAddAccount={()=>setModal('account-from-transaction')}/>}
+    {completeGoalTarget&&<GoalCompleteModal goal={completeGoalTarget.goal} saved={completeGoalTarget.saved} accounts={accounts} currency={currency} onClose={()=>setCompleteGoalTarget(null)} onConfirm={opts=>completeGoal(completeGoalTarget.goal,opts)}/>}
     {modal==='goal'&&<GoalModal currency={currency} initial={editing} onClose={()=>{setModal(null);setEditing(null)}} onSave={addGoal}/>}
     {modal==='recurring'&&<RecurringModal currency={currency} accounts={accounts} initial={editing} onClose={()=>{setModal(null);setEditing(null)}} onSave={addRecurring}/>}
     {modal==='budget'&&<BudgetModal currency={currency} initial={editing} month={month} onClose={()=>{setModal(null);setEditing(null)}} onSave={addBudget}/>}
@@ -1112,7 +1132,7 @@ function App(){
     {modal==='import'&&<ImportModal rows={importPreview} onClose={()=>{setModal(null);setImportPreview([])}} onConfirm={confirmImport}/>}
     {confirmDialog&&<ConfirmActionModal dialog={confirmDialog} onCancel={()=>setConfirmDialog(null)} onConfirm={async()=>{const action=confirmDialog.onConfirm;setConfirmDialog(null);await action?.()}}/>}
     <GlobalSearch open={searchOpen} onClose={()=>setSearchOpen(false)} {...{transactions,accounts,debts,recurring,goals,currency}} loadVehicles={allowedFeatures.includes('vehicle_management')&&cloudReady&&session?.user?async()=>{const {data}=await supabase.from('vehicles').select('id,name,make,model,plate');return data||[]}:null} onPick={r=>{if(r.kind==='transaction'){setSearch(r.title||'');setPage('Transactions')}else if(r.kind==='account'){const a=accounts.find(x=>String(x.id)===String(r.id));if(a&&isLiability(a))openCredit(a.id);else setPage('Accounts')}else if(r.kind==='debt')setPage('Debts & installments');else if(r.kind==='recurring')setPage('Subscriptions & bills');else if(r.kind==='goal')setPage('Savings goals');else if(r.kind==='vehicle'){setVehicleSidebarTab('vehicles');setPage('Vehicle Management')}}}/>
-    {<ChatSheet accounts={accounts} debts={debts} recurring={activeRecurring} goals={goals} currency={currency} defaultAccountId={defaultAccountId} expenseCats={getCategoriesForType('Expense',session?.user?.user_metadata?.gender||'')} incomeCats={incomeCategories} onSave={chatSave}/>}
+    {<ChatSheet accounts={accounts} debts={debts} recurring={activeRecurring} goals={activeGoals} currency={currency} defaultAccountId={defaultAccountId} expenseCats={getCategoriesForType('Expense',session?.user?.user_metadata?.gender||'')} incomeCats={incomeCategories} onSave={chatSave}/>}
     <QuickAdd showVehicles={allowedFeatures.includes('vehicle_management')} onTransaction={()=>{if(!accounts.length){setToast('Add an account or wallet first. Go to Accounts → Add account.');setPage('Accounts');return}setEditing(null);setModal('transaction')}} onFuel={()=>{setVehicleSidebarTab('fuel');setPage('Vehicle Management');setQuickAction({type:'fuel',n:Date.now()})}} onService={()=>{setVehicleSidebarTab('history');setPage('Vehicle Management');setQuickAction({type:'service',n:Date.now()})}}/>
     {toast&&<div className={`toast ${/insufficient balance|error|failed|could not/i.test(toast)?'toast-error':'toast-success'}`} role="status">{/insufficient balance|error|failed|could not/i.test(toast)?<XCircle size={18}/>:<Check size={17}/>}<span>{toast}</span></div>}
     {notificationToast&&<div role="button" tabIndex={0} className="notification-toast" onClick={()=>{setPage(notificationToast.target);setNotificationToast(null)}} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){setPage(notificationToast.target);setNotificationToast(null)}}} aria-label={`Open notification: ${notificationToast.name}`}><span className={`notification-toast-icon ${notificationToast.kind}`}><Bell size={17}/></span><span className="notification-toast-copy"><b>New notification</b><strong>{notificationToast.name}</strong><small>{notificationToast.detail}</small></span><button type="button" className="notification-toast-close" aria-label="Dismiss notification" onClick={e=>{e.stopPropagation();setNotificationToast(null)}}><X size={15}/></button></div>}

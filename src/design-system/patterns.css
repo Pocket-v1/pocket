@@ -248,3 +248,34 @@ svg.lucide{stroke-width:var(--ds-icon-stroke)}
   .chat-field input,.chat-input input{font-size:16px}
 }
 @media(prefers-reduced-motion:no-preference){.chat-sheet{animation:mo-rise .25s ease both}}
+
+/* ===== Goals: reached state, completion modal, per-goal split ===== */
+.goal-card.is-reached{border-color:var(--ds-ok);background:linear-gradient(180deg,var(--ds-ok-soft),var(--ds-surface) 55%)}
+.goal-reached-pill{display:inline-flex;align-items:center;gap:5px;background:var(--ds-ok-soft);color:var(--ds-ok);border:1px solid var(--ds-ok);border-radius:999px;padding:4px 10px;font-size:11px;font-weight:800;text-transform:none}
+.goal-complete-btn{width:100%;min-height:48px;margin-top:14px;border:0;border-radius:14px;background:var(--ds-ok);color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;gap:8px;text-transform:none}
+.goal-complete-btn:hover{filter:brightness(.95)}
+.goal-done{margin-top:20px}
+.goal-done-head{width:100%;min-height:48px;display:flex;justify-content:space-between;align-items:center;padding:0 16px;border:1px solid var(--ds-border);border-radius:14px;background:var(--ds-surface);color:var(--ds-text);font-weight:800}
+.goal-done-head span{display:flex;align-items:center;gap:8px}.goal-done-head b{background:var(--ds-ok-soft);color:var(--ds-ok);border-radius:999px;padding:2px 9px;font-size:12px}
+.goal-done-head svg.open{transform:rotate(180deg)}
+.goal-done-list{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.goal-done-row{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--ds-border);border-radius:14px;background:var(--ds-surface)}
+.goal-done-row>div{flex:1;min-width:0}.goal-done-row b{display:block}.goal-done-row small{color:var(--ds-text-muted,var(--ds-secondary-text));text-transform:none}
+.goal-done-icon{width:36px;height:36px;border-radius:50%;background:var(--ds-ok-soft);color:var(--ds-ok);display:grid;place-items:center;flex:none}
+.gc-modal{max-width:440px;position:relative;text-transform:none}
+.gc-x{position:absolute;right:12px;top:12px}
+.gc-hero{text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 8px 4px}
+.gc-badge{width:68px;height:68px;border-radius:50%;background:var(--ds-ok-soft);color:var(--ds-ok);display:grid;place-items:center;box-shadow:0 0 0 8px color-mix(in srgb,var(--ds-ok) 12%,transparent)}
+.gc-hero h2{margin:2px 0 0;font-size:20px;line-height:1.25}.gc-amount{font-size:30px;font-weight:800;letter-spacing:-.03em;color:var(--ds-ok)}.gc-sub{font-size:13px;color:var(--ds-text-muted,var(--ds-secondary-text))}
+.gc-q{margin:16px 0 8px;font-weight:800;font-size:14px}
+.gc-choices{display:flex;flex-direction:column;gap:8px}
+.gc-choice{display:flex;gap:12px;align-items:center;text-align:left;min-height:64px;padding:12px 14px;border:1.5px solid var(--ds-border);border-radius:14px;background:var(--ds-surface);color:var(--ds-text)}
+.gc-choice span{display:flex;flex-direction:column;gap:2px}.gc-choice small{color:var(--ds-text-muted,var(--ds-secondary-text));font-size:12px;font-weight:500}
+.gc-choice.on{border-color:var(--ds-ok);background:var(--ds-ok-soft)}.gc-choice:disabled{opacity:.5}
+.gc-field{display:flex;flex-direction:column;gap:4px;margin-top:12px;font-size:12px;font-weight:700}
+.gc-field select{height:44px;border:1px solid var(--ds-control-border,var(--ds-border));border-radius:12px;background:var(--ds-control-bg,var(--ds-surface));color:var(--ds-text);padding:0 12px;font-size:14px}
+.gc-actions{display:flex;gap:8px;margin-top:18px}.gc-actions .btn{flex:1;min-height:46px;justify-content:center}
+.acc-goals-split{margin:12px 0 4px;padding:12px;border:1px solid var(--ds-border);border-radius:14px;background:var(--ds-surface-soft,var(--ds-soft));display:flex;flex-direction:column;gap:10px;text-transform:none}
+.acc-goals-title{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ds-text-muted,var(--ds-secondary-text))}
+.acc-goal-row{display:flex;flex-direction:column;gap:4px}.acc-goal-line{display:flex;justify-content:space-between;gap:8px;font-size:13px}
+.acc-goal-row small{font-size:11px;color:var(--ds-text-muted,var(--ds-secondary-text))}
