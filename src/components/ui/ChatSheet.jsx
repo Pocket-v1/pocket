@@ -10,7 +10,10 @@ function Draft({ m, ctx, onChange, onSave, onCancel }) {
   const set = patch => onChange({ ...d, ...patch, catChanged: d.catChanged || 'category' in patch });
   const { accounts, goals, currency, expenseCats, incomeCats } = ctx;
   const usable = accounts.filter(a => !a.is_system && !/^goals$/i.test(a.name));
-  const acct = (value, key, label) => <label className="chat-field"><span>{label}</span><select value={value || ''} onChange={e => set({ [key]: e.target.value })}>{!value && <option value="">Choose…</option>}{usable.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>;
+  const withGoals = accounts.filter(a => !['Credit card', 'Installment app'].includes(a.type));
+  const goalsAccId = accounts.find(a => a.is_system === true)?.id;
+  const goalsInvolved = d.kind === 'transfer' && goalsAccId && [d.accountId, d.toAccountId].some(x => String(x) === String(goalsAccId));
+  const acct = (value, key, label) => <label className="chat-field"><span>{label}</span><select value={value || ''} onChange={e => set({ [key]: e.target.value })}>{!value && <option value="">Choose…</option>}{(d.kind === 'transfer' ? withGoals : usable).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>;
   const amountField = <label className="chat-field"><span>Amount</span><input inputMode="decimal" value={d.amount ?? ''} onChange={e => set({ amount: e.target.value.replace(/[^0-9.]/g, '') })} /></label>;
   const title = { expense: 'Expense', income: 'Income', transfer: 'Transfer', debt: 'Debt payment', bill: 'Bill payment', goal: 'Goal deposit' }[d.kind];
   const saved = m.status === 'saved';
@@ -26,7 +29,8 @@ function Draft({ m, ctx, onChange, onSave, onCancel }) {
       {(d.kind === 'expense' || d.kind === 'income') && <label className="chat-field"><span>Note</span><input value={d.description || ''} onChange={e => set({ description: e.target.value })} /></label>}
       {d.kind === 'goal' && <label className="chat-field"><span>Goal</span><select value={d.goalId || ''} onChange={e => set({ goalId: e.target.value })}>{!d.goalId && <option value="">Choose a goal…</option>}{goals.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}</select></label>}
       {acct(d.accountId, 'accountId', d.kind === 'transfer' || d.kind === 'goal' ? 'From account' : d.kind === 'income' ? 'Into account' : 'Pay from')}
-      {d.kind === 'transfer' && <label className="chat-field"><span>To account</span><select value={d.toAccountId || ''} onChange={e => set({ toAccountId: e.target.value })}>{!d.toAccountId && <option value="">Choose…</option>}{usable.filter(a => String(a.id) !== String(d.accountId)).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>}
+      {d.kind === 'transfer' && <label className="chat-field"><span>To account</span><select value={d.toAccountId || ''} onChange={e => set({ toAccountId: e.target.value })}>{!d.toAccountId && <option value="">Choose…</option>}{withGoals.filter(a => String(a.id) !== String(d.accountId)).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>}
+      {d.kind === 'transfer' && goalsInvolved && <label className="chat-field"><span>Which goal?</span><select value={d.goalId || ''} onChange={e => set({ goalId: e.target.value })}>{!d.goalId && <option value="">Choose a goal…</option>}{goals.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}</select></label>}
       <label className="chat-field"><span>Date</span><input type="date" value={d.date} max={todayISO()} onChange={e => set({ date: e.target.value })} /></label>
     </div>}
     {!saved && <div className="chat-actions">

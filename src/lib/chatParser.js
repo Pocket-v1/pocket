@@ -142,16 +142,20 @@ export function parseChat(text, ctx = {}) {
   if (!amt) return { error: 'amount' };
 
   // Goal deposit: "7ottet 300 fl hadaf bta3 l safar"
-  if (isGoal && goalsAcc) {
+  const goalsNamed = goalsAcc && findAccounts(t, [goalsAcc]).length > 0;
+  if (isGoal && goalsAcc && !isTransfer && !goalsNamed) {
     const g = goalM?.item || (goals.length === 1 ? goals[0] : null);
     return { ...base, kind: 'goal', amount: amt.amount, goalId: g?.id || '', goalName: g?.name || '', accountId: (found[0]?.a || defAcc)?.id || '', goalsAccountId: goalsAcc.id };
   }
   // Transfer between accounts
-  if (isTransfer || (found.length >= 2 && !isIncome && !isPay && /\b(mn|from|men|min)\b|من/.test(t))) {
-    let from = found[0]?.a, to = found[1]?.a;
+  if (isTransfer || (findAccounts(t, accounts).length >= 2 && !isIncome && !isPay && /\b(mn|from|men|min)\b|من/.test(t))) {
+    const foundAll = findAccounts(t, accounts.filter(a => !(a.type === 'Credit card' || a.type === 'Installment app')));
+    let from = foundAll[0]?.a, to = foundAll[1]?.a;
     const fi = t.search(/\b(mn|men|min|from)\b|من/), ti = t.search(/\b(l|le|lel|ela|ila|to)\b|(^|\s)(الي|الى|ل)/);
-    if (found.length >= 2 && fi >= 0 && ti >= 0 && ti < fi) { [from, to] = [to, from]; }
-    return { ...base, kind: 'transfer', amount: amt.amount, accountId: from?.id || defAcc?.id || '', toAccountId: to?.id || '', description: 'Transfer' };
+    if (foundAll.length >= 2 && fi >= 0 && ti >= 0 && ti < fi) { [from, to] = [to, from]; }
+    const goalsInvolved = [from, to].some(a => a && goalsAcc && String(a.id) === String(goalsAcc.id));
+    const gg = goalM?.item || (goals.length === 1 ? goals[0] : null);
+    return { ...base, kind: 'transfer', amount: amt.amount, accountId: from?.id || defAcc?.id || '', toAccountId: to?.id || '', description: 'Transfer', goalId: goalsInvolved ? (gg?.id || '') : '' };
   }
 
   const type = isIncome ? 'Income' : 'Expense';

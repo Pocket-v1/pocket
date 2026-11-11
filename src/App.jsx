@@ -690,7 +690,7 @@ function App(){
   async function chatSave(d){
     const base={transaction_date:d.date,subcategory:'',description:d.description||'',need_want:'Need',fixed_variable:'Variable',account_id:d.accountId||'',to_account_id:'',goal_id:'',debt_id:'',recurring:false,notes:'Added by typing',loan_mode:'none'};
     if(d.kind==='expense'||d.kind==='income')return !!(await submitTransaction({...base,type:d.type,category:d.category,amount:d.amount}));
-    if(d.kind==='transfer')return !!(await submitTransaction({...base,type:'Transfer',category:'Transfer',description:'Transfer',amount:d.amount,to_account_id:d.toAccountId||''}));
+    if(d.kind==='transfer')return !!(await submitTransaction({...base,type:'Transfer',category:'Transfer',description:'Transfer',amount:d.amount,to_account_id:d.toAccountId||'',goal_id:d.goalId||''}));
     if(d.kind==='goal'){if(!d.goalId){setToast('Choose a goal first.');return false;}return !!(await submitTransaction({...base,type:'Transfer',category:'Transfer',description:'Goal deposit',amount:d.amount,to_account_id:d.goalsAccountId,goal_id:d.goalId}));}
     if(d.kind==='debt'){const debt=debts.find(x=>String(x.id)===String(d.debtId));if(!debt)return false;return !!(await recordDebtInstallment(debt,{accountId:d.accountId,amount:d.amount,paymentDate:d.date}));}
     if(d.kind==='bill'){const r=recurring.find(x=>String(x.id)===String(d.billId));if(!r)return false;return !!(await markRecurringPaid(r,{accountId:d.accountId,amount:d.amount}));}
