@@ -924,7 +924,7 @@ body .btn.btn-sm{font-size:13px!important;min-height:34px!important}
 .cfd{margin-bottom:18px}
 .cfd-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;font-size:15px}
 .cfd-hint{margin-inline-start:auto;font-size:12px;color:var(--muted,var(--ds-text-muted))}
-.cfd-row{display:flex;gap:12px;perspective:1200px;overflow-x:auto;padding:4px 2px 10px;scroll-snap-type:x proximity}
+.cfd-row{display:flex;gap:12px;perspective:1200px;overflow-x:auto;padding:16px 6px 12px;margin:-12px -4px -2px;scroll-snap-type:x proximity}
 .cfd-card{flex:1 0 118px;min-height:250px;border-radius:22px;padding:16px 14px;display:flex;flex-direction:column;gap:10px;text-align:start;position:relative;overflow:hidden;cursor:pointer;font:inherit;color:inherit;border:1px solid var(--line,#e5e7eb);background:var(--card,var(--ds-surface));scroll-snap-align:start;transform-origin:50% 100%;animation:cfdFan .9s cubic-bezier(.2,.9,.25,1) both;animation-delay:calc(var(--i)*.09s)}
 .cfd-card:disabled{opacity:.4;cursor:default}
 .cfd-card:before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.14) 50%,transparent 65%);transform:translateX(-120%);animation:cfdShine 6s ease-in-out infinite;animation-delay:calc(var(--i)*.7s)}
