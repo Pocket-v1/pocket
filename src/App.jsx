@@ -28,7 +28,7 @@ import { GoalModal } from './features/goals/GoalModal.jsx';
 import { GoalsPage } from './features/goals/GoalsPage.jsx';
 import { GoalCompleteModal } from './features/goals/GoalCompleteModal.jsx';
 import { GoalAddMoneyModal } from './features/goals/GoalAddMoneyModal.jsx';
-import { goalSaved, isGoalDone, isFromSavings } from './lib/goals.js';
+import { goalSaved, goalSpent, isGoalDone, isFromSavings } from './lib/goals.js';
 import { GoalSpendModal } from './features/goals/GoalSpendModal.jsx';
 import { InsightsReportsPage } from './features/insights/InsightsReportsPage.jsx';
 import { CashFlowCalendar } from './features/overview/CashFlowCalendar.jsx';
@@ -549,7 +549,7 @@ function App(){
     if(form.type==='Transfer'&&(isGoalsAccount(source)||isGoalsAccount(destination))&&(!form.goal_id||!goals.some(g=>String(g.id)===String(form.goal_id)))){setToast('Choose which savings goal this transfer belongs to.');return;}
     if(form.type==='Transfer'&&isGoalsAccount(source)){
       const selectedGoal=goals.find(g=>String(g.id)===String(form.goal_id));
-      const goalBalance=Number(selectedGoal?.saved_amount||0)+transactions.filter(t=>t.type==='Transfer'&&String(t.goal_id)===String(form.goal_id)&&String(t.id)!==String(editing?.id)).reduce((sum,t)=>{const from=accounts.find(a=>String(a.id)===String(t.account_id)),to=accounts.find(a=>String(a.id)===String(t.to_account_id));if(isGoalsAccount(from))return sum-Number(t.amount||0);if(isGoalsAccount(to))return sum+Number(t.amount||0);return sum+Number(t.amount||0)},0);
+      const goalBalance=selectedGoal?goalSaved(selectedGoal,transactions.filter(t=>String(t.id)!==String(editing?.id)),accounts):0;
       if(Number(form.amount)>goalBalance){setToast(`This goal only has ${new Intl.NumberFormat('en-EG',{style:'currency',currency,maximumFractionDigits:2}).format(Math.max(0,goalBalance))} available to withdraw.`);return;}
     }
     const sourceIn=transactions.filter(t=>(t.type==='Income'&&String(t.account_id)===String(source?.id))||(t.type==='Transfer'&&String(t.to_account_id)===String(source?.id))).reduce((sum,t)=>sum+Number(t.amount||0),0);
@@ -577,7 +577,7 @@ function App(){
   async function addGoal(form){
     const p={name:form.name,goal_type:form.goal_type||'Other',target_amount:Number(form.target_amount),saved_amount:Number(form.saved_amount||0),target_date:form.target_date||null,notes:form.notes||''};
     const saved=await saveRecord('savings_goals',p,editing?.id);if(!saved)return;
-    setGoals(old=>editing?old.map(x=>x.id===editing.id?saved:x):[saved,...old]);setModal(null);setEditing(null);setToast('Goal saved');
+    setGoals(old=>editing?old.map(x=>x.id===editing.id?saved:x):[saved,...old]);setModal(null);setEditing(null);setToast('Goal saved');if(!editing)setAddMoneyGoal(saved);
   }
   async function addRecurring(form){
     const p={name:form.name,category:form.category,subcategory:form.subcategory||null,amount:Number(form.amount),frequency:form.frequency,next_due_date:form.next_due_date||null,account_id:form.account_id||null,auto_pay:form.auto_pay,paid_this_cycle:form.paid_this_cycle,last_paid_date:editing?.last_paid_date||null,pay_by_date:form.pay_by_date||null,paid_amount:Math.min(Number(editing?.paid_amount||0),Number(form.amount)),essential:form.essential,notes:form.notes||''};
@@ -708,23 +708,15 @@ function App(){
     if(d.kind==='bill'){const r=recurring.find(x=>String(x.id)===String(d.billId));if(!r)return false;return !!(await markRecurringPaid(r,{accountId:d.accountId,amount:d.amount}));}
     return false;
   }
-  async function completeGoal(goal,{mode,accountId,amount,backed,category}){
-    const goalsAcc=accounts.find(isGoalsAccount);
-    const base={transaction_date:localISODate(),subcategory:'',fixed_variable:'Variable',account_id:'',to_account_id:'',goal_id:'',debt_id:'',recurring:false,loan_mode:'none'};
-    if(mode==='move'||mode==='spend'){
-      if(!accountId){setToast('Choose an account first.');return;}
-      const toMove=Number(amount)||0;
-      if(toMove>0.005){
-        if(!goalsAcc){setToast('The Goals account was not found.');return;}
-        const ok=await submitTransaction({...base,type:'Transfer',category:'Transfer',description:`Goal completed · ${goal.name}`,amount:toMove,need_want:'Need',account_id:goalsAcc.id,to_account_id:accountId,goal_id:goal.id,notes:'Moved when the goal was completed'});
+  async function completeGoal(goal,{mode,accountId,amount,category}){
+    const left=Number(amount)||0;
+    if(left>0.005){
+      if(mode==='paid'){const exp=await goalExpense(goal,left,category,'Goal spent when completed');if(!exp)return;}
+      else{
+        const goalsAcc=accounts.find(isGoalsAccount);
+        if(!goalsAcc||!accountId){setToast('Choose an account for the money.');return;}
+        const ok=await submitTransaction({transaction_date:localISODate(),type:'Transfer',category:'Transfer',subcategory:'',description:`Goal closed · ${goal.name}`,amount:left,need_want:'Need',fixed_variable:'Variable',account_id:goalsAcc.id,to_account_id:accountId,goal_id:goal.id,debt_id:'',recurring:false,notes:'Money returned when the goal was closed',loan_mode:'none'});
         if(!ok)return;
-      }
-      if(mode==='spend'){
-        // Saved directly: the balance check in submitTransaction cannot see the transfer made a moment ago.
-        const acc=accounts.find(a=>String(a.id)===String(accountId));
-        const exp=await saveRecord('transactions',{transaction_date:localISODate(),type:'Expense',category:category||'Other',subcategory:null,description:goal.name,amount:Number(amount),need_want:'Want',fixed_variable:'Variable',payment_method:acc?.name||'Unassigned',account_id:accountId,to_account_id:null,goal_id:goal.id,debt_id:null,recurring:false,notes:'Goal spent when completed'});
-        if(!exp){setToast('The goal money was moved, but the expense could not be added. Add it from Transactions.');return;}
-        setTransactions(old=>[exp,...old]);
       }
     }
     const saved=await saveRecord('savings_goals',{completed_at:new Date().toISOString()},goal.id);
@@ -740,14 +732,16 @@ function App(){
     const ok=await submitTransaction({transaction_date:localISODate(),type:'Transfer',category:'Transfer',subcategory:'',description:`Saved for ${goal.name}`,amount:Number(amount),need_want:'Need',fixed_variable:'Variable',account_id:source,to_account_id:goalsAcc.id,goal_id:goal.id,debt_id:'',recurring:false,notes:'Added from the goal',loan_mode:'none'});
     if(ok){setAddMoneyGoal(null);setToast(`Added to ${goal.name}`);}
   }
-  async function spendFromGoal(goal,{amount,category,accountId}){
-    const goalsAcc=accounts.find(isGoalsAccount);if(!goalsAcc){setToast('The Goals account was not found.');return;}
-    const ok=await submitTransaction({transaction_date:localISODate(),type:'Transfer',category:'Transfer',subcategory:'',description:`Spent from goal · ${goal.name}`,amount:Number(amount),need_want:'Need',fixed_variable:'Variable',account_id:goalsAcc.id,to_account_id:accountId,goal_id:goal.id,debt_id:'',recurring:false,notes:'Moved to pay for the goal',loan_mode:'none'});
-    if(!ok)return;
-    const acc=accounts.find(a=>String(a.id)===String(accountId));
-    const exp=await saveRecord('transactions',{transaction_date:localISODate(),type:'Expense',category:category||'Other',subcategory:null,description:goal.name,amount:Number(amount),need_want:'Want',fixed_variable:'Variable',payment_method:acc?.name||'Unassigned',account_id:accountId,to_account_id:null,goal_id:goal.id,debt_id:null,recurring:false,notes:'Goal spent early'});
-    if(!exp){setToast('The money was moved, but the expense could not be added. Add it from Transactions.');return;}
-    setTransactions(old=>[exp,...old]);setSpendGoal(null);setToast(`Spending recorded for ${goal.name}`);
+  // One expense paid from the goal itself: no transfer row and no other account changes.
+  async function goalExpense(goal,amount,category,note){
+    const goalsAcc=accounts.find(isGoalsAccount);if(!goalsAcc){setToast('The Goals account was not found.');return null;}
+    const exp=await saveRecord('transactions',{transaction_date:localISODate(),type:'Expense',category:category||'Other',subcategory:null,description:goal.name,amount:Number(amount),need_want:'Want',fixed_variable:'Variable',payment_method:'Savings goal',account_id:goalsAcc.id,to_account_id:null,goal_id:goal.id,debt_id:null,recurring:false,notes:note});
+    if(exp)setTransactions(old=>[exp,...old]);
+    return exp;
+  }
+  async function spendFromGoal(goal,{amount,category}){
+    const exp=await goalExpense(goal,amount,category,'Goal spent early');if(!exp)return;
+    setSpendGoal(null);setToast(`Spending recorded for ${goal.name}`);
   }
   async function reopenGoal(goal){
     const saved=await saveRecord('savings_goals',{completed_at:null},goal.id);if(!saved)return;
@@ -1138,7 +1132,7 @@ function App(){
         {['Access management','Admin access','Access requests'].includes(page)&&isAdmin&&<AccessManagementPage supabase={supabase} onToast={setToast} users={adminUsers} loading={adminLoading} profile={profile} onUpdate={updateUserAccess} onDelete={deleteManagedUser} onCreate={createManagedUser} onRefresh={refreshAdminUsers} initialTab={page==='Admin access'?'users':'requests'}/>}
         {canSeeCurrentPage&&page==='Overview'&&<Overview {...{fromSavings,recurring:activeRecurring,onboardingKey:`pocket-onboarding-${session?.user?.id||'local'}`,onboardingSteps:[{key:'account',feat:'accounts',title:'Add an account or wallet',hint:'Cash, bank or e-wallet — where your money lives',done:accounts.some(a=>!isLiability(a)),action:()=>{setEditing(null);setModal('account')}},{key:'tx',feat:'transactions',title:'Record your first transaction',hint:'An expense or income, takes 20 seconds',done:transactions.length>0,action:()=>{if(!accounts.length){setToast('Add an account first, then record a transaction.');return}setEditing(null);setModal('transaction')}},{key:'sms',feat:'bank_sms',title:'Connect your bank SMS',hint:'Bank messages become transactions after your approval',done:transactions.some(t=>String(t.notes||'').startsWith('From bank SMS')),action:()=>setPage('Bank SMS')},{key:'credit',feat:'accounts',title:'Add a credit card or installment app',hint:'Valu, Halan, Aman, your cards…',done:accounts.some(a=>isLiability(a)),action:()=>creditActions.addCard()},{key:'budget',feat:'budgets',title:'Set a monthly budget',hint:'Pick a category and a limit',done:budgets.length>0,action:()=>{setEditing(null);setModal('budget')}},{key:'goal',feat:'goals',title:'Create a savings goal',hint:'Something to save towards',done:goals.length>0,action:()=>{setEditing(null);setModal('goal')}},{key:'bill',feat:'subscriptions',title:'Add a recurring bill',hint:'Rent, subscriptions, installments',done:recurring.length>0,action:()=>{setEditing(null);setModal('recurring')}}].filter(st=>allowedFeatures.includes(st.feat)),debts,creditActions,month,setMonth,transactions,accounts,monthTx,income,expenses,net,savingsRate,monthlySeries,categoryData,needs,wants,monthBudgets,totalBudget,totalSaved,goalTarget,upcoming,goals,setPage,setModal,setEditing,setToast,displayName,greeting,profileAvatar,session,supabase,currency,setVehicleSidebarTab,canViewVehicles:allowedFeatures.includes('vehicle_management')}}/>}
         {canSeeCurrentPage&&page==='Transactions'&&<TransactionsPage {...{transactions,reportTx,accounts,debts,filtered,search,setSearch,typeFilter,setTypeFilter,categoryFilter,setCategoryFilter,amountSort,setAmountSort,setModal,setEditing,setPage,setToast,removeRecord,setTransactions,handleImport,exportCSV,exportTransactionsAs,downloadTemplateAs,currency,requestConfirm,recordDebtInstallment,activeCategoryOptions:getExpenseCategories(profile?.gender)}}/>}
-        {canSeeCurrentPage&&page==='Accounts'&&<AccountsPage {...{goals,debts,creditActions,accountsView,setAccountsView,accounts,transactions,setModal,setEditing,removeRecord,setAccounts,currency,requestConfirm,defaultAccountId,setDefaultAccountId,pendingSms}} openSms={allowedFeatures.includes('bank_sms')?(from,id)=>{if(id)setSmsFocusAccount(id);setPage('Bank SMS')}:null}/>}
+        {canSeeCurrentPage&&page==='Accounts'&&<AccountsPage {...{openGoals:()=>setPage('Savings goals'),goals,debts,creditActions,accountsView,setAccountsView,accounts,transactions,setModal,setEditing,removeRecord,setAccounts,currency,requestConfirm,defaultAccountId,setDefaultAccountId,pendingSms}} openSms={allowedFeatures.includes('bank_sms')?(from,id)=>{if(id)setSmsFocusAccount(id);setPage('Bank SMS')}:null}/>}
         {canSeeCurrentPage&&page==='Bank SMS'&&<SmsPage focusAccount={smsFocusAccount} onFocusDone={()=>setSmsFocusAccount(null)} debts={debts} recurring={recurring} onPayDebt={recordDebtInstallment} onPayBill={markRecurringPaid} accounts={accounts} transactions={transactions} session={session} supabase={supabase} currency={currency} gender={session?.user?.user_metadata?.gender||''} setToast={setToast} onPendingChange={setPendingSms} onUndoTx={async ids=>{for(const id of ids)await removeRecord('transactions',id,setTransactions,transactions);}} onApprove={async payload=>{const saved=await saveRecord('transactions',payload);if(saved)setTransactions(o=>[saved,...o]);return saved}}/>}
         {canSeeCurrentPage&&page==='Cash flow calendar'&&<CashFlowCalendar {...{transactions,recurring:activeRecurring,accounts,debts,month,setMonth,currency}}/>}
         {canSeeCurrentPage&&page==='Debts & installments'&&<DebtsPage {...{debts,accounts,transactions,debtFocus,setDebtFocus,credit:creditActions,setAccounts,setModal,setEditing,removeRecord,setDebts,currency,requestConfirm,recordDebtInstallment,closeDebt,reopenDebt,setDebtPaymentTarget,setToast}}/>}
@@ -1153,7 +1147,7 @@ function App(){
     {(modal==='transaction'||modal==='account-from-transaction')&&<TransactionModal presetAccountId={txPresetAccount} transactions={transactions} currency={currency} accounts={accounts} goals={goals} debts={debts} recordDebtInstallment={recordDebtInstallment} defaultAccountId={defaultAccountId} gender={session?.user?.user_metadata?.gender||''} session={session} initial={editing} onClose={()=>{setModal(null);setEditing(null);setTxPresetAccount('')}} onSave={submitTransaction} onAddAccount={()=>setModal('account-from-transaction')}/>}
     {addMoneyGoal&&<GoalAddMoneyModal goal={addMoneyGoal} accounts={accounts} currency={currency} onClose={()=>setAddMoneyGoal(null)} onConfirm={opts=>addToGoal(addMoneyGoal,opts)}/>}
     {spendGoal&&<GoalSpendModal goal={spendGoal.goal} saved={spendGoal.saved} accounts={accounts} currency={currency} expenseCats={getCategoriesForType('Expense',session?.user?.user_metadata?.gender||'')} onClose={()=>setSpendGoal(null)} onConfirm={opts=>spendFromGoal(spendGoal.goal,opts)}/>}
-    {completeGoalTarget&&<GoalCompleteModal goal={completeGoalTarget.goal} saved={completeGoalTarget.saved} backed={completeGoalTarget.saved} expenseCats={getCategoriesForType('Expense',session?.user?.user_metadata?.gender||'')} accounts={accounts} currency={currency} onClose={()=>setCompleteGoalTarget(null)} onConfirm={opts=>completeGoal(completeGoalTarget.goal,opts)}/>}
+    {completeGoalTarget&&<GoalCompleteModal goal={completeGoalTarget.goal} saved={completeGoalTarget.saved} spent={goalSpent(completeGoalTarget.goal,transactions)} expenseCats={getCategoriesForType('Expense',session?.user?.user_metadata?.gender||'')} accounts={accounts} currency={currency} onClose={()=>setCompleteGoalTarget(null)} onConfirm={opts=>completeGoal(completeGoalTarget.goal,opts)}/>}
     {modal==='goal'&&<GoalModal currency={currency} initial={editing} onClose={()=>{setModal(null);setEditing(null)}} onSave={addGoal}/>}
     {modal==='recurring'&&<RecurringModal currency={currency} accounts={accounts} initial={editing} onClose={()=>{setModal(null);setEditing(null)}} onSave={addRecurring}/>}
     {modal==='budget'&&<BudgetModal currency={currency} initial={editing} month={month} onClose={()=>{setModal(null);setEditing(null)}} onSave={addBudget}/>}

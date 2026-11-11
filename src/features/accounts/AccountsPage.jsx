@@ -1,4 +1,4 @@
-import { MessageSquare, AlertTriangle, ArrowLeftRight, Download, FileSpreadsheet, FileText, CreditCard, LayoutGrid, List, LockKeyhole, Pencil, Plus, ShoppingBag, Star, Trash2, Wallet } from 'lucide-react';
+import { ChevronRight, MessageSquare, AlertTriangle, ArrowLeftRight, Download, FileSpreadsheet, FileText, CreditCard, LayoutGrid, List, LockKeyhole, Pencil, Plus, ShoppingBag, Star, Trash2, Wallet } from 'lucide-react';
 import { MenuButton } from '../../components/ui/MenuButton.jsx';
 import { exportTable } from '../../lib/transferFile.js';
 import { goalSaved, isGoalDone } from '../../lib/goals.js';
@@ -12,12 +12,15 @@ import { localISODate, shortDate } from '../../lib/format.js';
 import { DueChip, LimitBar, PaymentCard } from '../credit/CreditSummary.jsx';
 import { providerTheme } from '../../lib/providerThemes.js';
 
-export function AccountsPage({goals=[],accounts,transactions,debts=[],setModal,setEditing,removeRecord,setAccounts,currency,requestConfirm,defaultAccountId,setDefaultAccountId,accountsView='grid',setAccountsView=()=>{},creditActions={},openSms=null,pendingSms=0}){
+export function AccountsPage({openGoals=null,goals=[],accounts,transactions,debts=[],setModal,setEditing,removeRecord,setAccounts,currency,requestConfirm,defaultAccountId,setDefaultAccountId,accountsView='grid',setAccountsView=()=>{},creditActions={},openSms=null,pendingSms=0}){
  const fmt=money(currency);
  const view=accountsView==='list'?'list':'grid';
- const rows=accounts.filter(a=>!isLiability(a)).map(a=>{const f=accountFlows(a,transactions);const linked=transactions.filter(t=>String(t.account_id)===String(a.id)||String(t.to_account_id)===String(a.id)).length;return {...a,balance:f.balance,inflow:f.inflow,outflow:f.outflow,linkedCount:linked}});
- const goalsMoney=rows.filter(isGoalsAccount).reduce((s,a)=>s+a.balance,0);
- const total=rows.filter(a=>!isGoalsAccount(a)).reduce((s,a)=>s+a.balance,0);
+ const allRows=accounts.filter(a=>!isLiability(a)).map(a=>{const f=accountFlows(a,transactions);const linked=transactions.filter(t=>String(t.account_id)===String(a.id)||String(t.to_account_id)===String(a.id)).length;return {...a,balance:f.balance,inflow:f.inflow,outflow:f.outflow,linkedCount:linked}});
+ // The Goals account is not shown as an account: goals live on their own page.
+ const rows=allRows.filter(a=>!isGoalsAccount(a));
+ const goalsMoney=allRows.filter(isGoalsAccount).reduce((s,a)=>s+a.balance,0);
+ const activeGoalCount=goals.filter(g=>!isGoalDone(g)).length;
+ const total=rows.reduce((s,a)=>s+a.balance,0);
  const liabilities=accounts.filter(isLiability).map(a=>isCard(a)?{account:a,card:true,s:cardSummary(a,transactions,undefined,debts)}:{account:a,card:false,s:providerSummary(a,debts,undefined,transactions)});
  const owedTotal=liabilities.reduce((sum,x)=>sum+(x.card?x.s.owed:x.s.used),0);
  const standaloneDebt=debts.filter(d=>!d.provider_account_id).reduce((t,d)=>t+Math.max(0,Number(d.remaining_amount||0)),0);
@@ -48,6 +51,7 @@ export function AccountsPage({goals=[],accounts,transactions,debts=[],setModal,s
   {rows.some(a=>a.balance<0)&&<div className="acc-alert" role="alert"><AlertTriangle size={18}/><div><b>{rows.filter(a=>a.balance<0).map(a=>a.name).join(', ')} {rows.filter(a=>a.balance<0).length>1?'are':'is'} below zero</b><small>Usually this means an expense was logged without enough opening balance, or a transfer is missing. Check the account's transactions or edit its opening balance.</small></div></div>}
   <div className="acc-toolbar"><div><h2>Your accounts</h2><p>{rows.length} account{rows.length===1?'':'s'}</p></div><div className="cc-view" role="group" aria-label="Choose how accounts are shown"><button type="button" className={`cc-view-btn ${view==='grid'?'on':''}`} aria-pressed={view==='grid'} onClick={()=>setAccountsView('grid')}><LayoutGrid size={15}/> Grid</button><button type="button" className={`cc-view-btn ${view==='list'?'on':''}`} aria-pressed={view==='list'} onClick={()=>setAccountsView('list')}><List size={15}/> List</button></div></div>
   {rows.length?(view==='grid'?<div className="goal-grid">{rows.map(gridCard)}</div>:<div className="acc-list">{rows.map(listRow)}</div>):<EmptyState icon={Wallet} title="No accounts yet" text="Add a cash, bank, or wallet account to start tracking balances."/>}
+  {(activeGoalCount>0||Math.abs(goalsMoney)>0.005)&&<button type="button" className="acc-goals-link" onClick={()=>openGoals&&openGoals()}><span><b>Saved in goals · {activeGoalCount} goal{activeGoalCount===1?'':'s'}</b><small>Not counted in your total balance</small></span><span className="acc-goals-amt">{fmt(goalsMoney)}<ChevronRight size={16} aria-hidden="true"/></span></button>}
   <div className="cc-section-head"><div><h2>Credit cards &amp; installment apps</h2><p>Not counted in your balance. Manage them in Debts &amp; installments.</p></div><div className="cc-actions"><button className="btn btn-secondary btn-sm" onClick={()=>creditActions.addCard?.()}><Plus size={14}/> Add credit card</button><button className="btn btn-secondary btn-sm" onClick={()=>creditActions.addProviderApp?.()}><Plus size={14}/> Add installment app</button></div></div>
   {liabilities.length?<div className="acc-grid-liability">{liabilities.map(liabGrid)}</div>:<EmptyState panel icon={CreditCard} title="No cards or installment apps yet" text="Add a credit card or an app like Valu, Aman or Halan to see its limit and when to pay."/>}
  </>;

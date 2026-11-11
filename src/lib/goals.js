@@ -13,7 +13,9 @@ export function goalSaved(g, transactions = [], accounts = []) {
     if (ts && !fs) return sum + Number(t.amount || 0);
     return sum + Number(t.amount || 0);
   }, 0);
-  return Number(g.saved_amount || 0) + linked;
+  // Spending recorded straight from the goal (an expense paid from the Goals account).
+  const spentFromGoal = transactions.filter(t => t.type === 'Expense' && String(t.goal_id) === String(g.id) && isGoalsAccount(accounts.find(a => String(a.id) === String(t.account_id)))).reduce((sum, t) => sum + Number(t.amount || 0), 0);
+  return Number(g.saved_amount || 0) + linked - spentFromGoal;
 }
 export const isGoalDone = g => Boolean(g && g.completed_at);
 export const isGoalReached = (g, saved) => Number(g.target_amount) > 0 && saved >= Number(g.target_amount) - 0.005;
