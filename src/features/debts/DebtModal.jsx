@@ -1,4 +1,4 @@
-import { ArrowUpRight, Check, ChevronLeft, CreditCard } from 'lucide-react';
+import { ArrowUpRight, Check, ChevronLeft, CreditCard } from '../../lib/icons.jsx';
 import { useEffect, useState } from 'react';
 import { ModalShell } from '../../components/modals/ModalShell.jsx';
 import { ChoiceCards } from '../../components/ui/ChoiceCards.jsx';

@@ -49,7 +49,7 @@
 .icon-btn:hover svg{scale:1.15}
 .icon-btn:active svg{scale:.9}
 .btn:hover svg:last-child:not(:first-child){translate:3px 0}
-.btn-primary:hover svg.lucide-plus:first-child:last-child{rotate:90deg}
+.btn-primary:hover svg.pk-icon-plus:first-child:last-child{rotate:90deg}
 .metric-card:hover .metric-icon svg{scale:1.2;rotate:-8deg}
 .metric-icon{transition:background var(--mo-base),scale var(--mo-base) var(--mo-ease-spring)}
 .metric-card:hover .metric-icon{scale:1.08}

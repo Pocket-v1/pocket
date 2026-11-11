@@ -1,4 +1,4 @@
-import { Plus } from 'lucide-react';
+import { Plus } from '../../lib/icons.jsx';
 import { MonthPicker } from './MonthPicker.jsx';
 import { ProfileAvatar } from './ProfileAvatar.jsx';
 import { TipButton } from './PageHeading.jsx';

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, ChevronRight, X } from 'lucide-react';
+import { Check, ChevronRight, X } from '../../lib/icons.jsx';
 
 export function OnboardingChecklist({storageKey,steps}){
  const [hidden,setHidden]=useState(()=>{try{return localStorage.getItem(storageKey)==='1'||steps.every(x=>x.done)}catch{return steps.every(x=>x.done)}});

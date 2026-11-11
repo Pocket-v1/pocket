@@ -1,6 +1,6 @@
 import { createPortal } from 'react-dom';
 import { MetricCard } from '../../components/ui/MetricCard.jsx';
-import { ArrowLeftRight, BarChart3, Check, ChevronDown, Copy, Inbox, History, MessageSquare, Pencil, RefreshCw, RotateCcw, Search, Settings2, X, Clock, CheckCircle2, Download, Eye, EyeOff, FileSpreadsheet, FileText, Plus, Scissors, Trash2, TriangleAlert } from 'lucide-react';
+import { ArrowLeftRight, BarChart3, Check, ChevronDown, Copy, Inbox, History, MessageSquare, Pencil, RefreshCw, RotateCcw, Search, Settings2, X, Clock, CheckCircle2, Download, Eye, EyeOff, FileSpreadsheet, FileText, Plus, Scissors, Trash2, TriangleAlert } from '../../lib/icons.jsx';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Field } from '../../components/ui/Field.jsx';
 import { PageHeading } from '../../components/ui/PageHeading.jsx';

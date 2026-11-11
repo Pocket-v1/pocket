@@ -1,4 +1,4 @@
-import { ArrowDownLeft, ArrowUpRight, CalendarDays, CarFront, ChartNoAxesCombined, ChevronRight, CircleDollarSign, Download, PiggyBank, Repeat2, ShieldCheck, Sparkles, Target } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, CalendarDays, CarFront, ChartNoAxesCombined, ChevronRight, CircleDollarSign, Download, PiggyBank, Repeat2, ShieldCheck, Sparkles, Target } from '../../lib/icons.jsx';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import * as XLSX from 'xlsx';
 import { useEffect, useState } from 'react';

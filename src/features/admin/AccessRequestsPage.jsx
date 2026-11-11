@@ -1,4 +1,4 @@
-import { Check, ChevronRight, LoaderCircle, Mail, RefreshCw, Search, ShieldCheck, Users, X } from 'lucide-react';
+import { Check, ChevronRight, LoaderCircle, Mail, RefreshCw, Search, ShieldCheck, Users, X } from '../../lib/icons.jsx';
 import { useEffect, useState } from 'react';
 import { EmptyState } from '../../components/ui/EmptyState.jsx';
 

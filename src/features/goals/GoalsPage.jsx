@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CalendarDays, ChevronDown, Pencil, PiggyBank, Plus, ShoppingBag, RotateCcw, Target, Trash2, TrendingUp, Trophy } from 'lucide-react';
+import { CalendarDays, ChevronDown, Pencil, PiggyBank, Plus, ShoppingBag, RotateCcw, Target, Trash2, TrendingUp, Trophy } from '../../lib/icons.jsx';
 import { EmptyState } from '../../components/ui/EmptyState.jsx';
 import { MetricCard } from '../../components/ui/MetricCard.jsx';
 import { PageHeading } from '../../components/ui/PageHeading.jsx';

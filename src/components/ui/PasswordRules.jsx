@@ -1,4 +1,4 @@
-import { Check, Circle } from 'lucide-react';
+import { Check, Circle } from '../../lib/icons.jsx';
 
 export const passwordRules = pw => [
   { key: 'len', label: 'At least 10 characters', ok: pw.length >= 10 },

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ArrowLeft, ArrowRight, Check, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, X } from '../../lib/icons.jsx';
 
 const ACCOUNT_TYPES = [['Bank account', '🏦'], ['Cash', '💵'], ['Digital wallet', '📱']];
 

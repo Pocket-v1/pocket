@@ -1,4 +1,4 @@
-import { Wallet, ArrowUpRight, CalendarClock, CarFront, Check, ChevronLeft, Fuel, Gauge, History, LoaderCircle, Pencil, Plus, Search, Trash2, Wrench, X } from 'lucide-react';
+import { Wallet, ArrowUpRight, CalendarClock, CarFront, Check, ChevronLeft, Fuel, Gauge, History, LoaderCircle, Pencil, Plus, Search, Trash2, Wrench, X } from '../../lib/icons.jsx';
 import { useEffect, useState } from 'react';
 import { isGoalsAccount } from '../../lib/features.js';
 import { VEHICLE_CATALOG, VEHICLE_TYPES, makeMatchesType, vehicleTypeOfMake } from '../../lib/vehicleCatalog.js';

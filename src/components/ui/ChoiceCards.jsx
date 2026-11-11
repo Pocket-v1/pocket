@@ -1,3 +1,3 @@
-import { Check, CircleDollarSign } from 'lucide-react';
+import { Check, CircleDollarSign } from '../../lib/icons.jsx';
 
 export function ChoiceCards({items,value,onChange,columns=3,list=false}){return <div className={`tx-category-grid ${list?'choice-cards-list':''}`} style={{gridTemplateColumns:`repeat(${columns},minmax(0,1fr))`}}>{items.map(item=><button type="button" key={item.value} className={`tx-choice-card ${value===item.value?'selected':''}`} onClick={()=>onChange(item.value)}><span className="tx-choice-icon">{item.icon||<CircleDollarSign size={17}/>}</span><span className="tx-choice-label">{item.label}</span>{item.description&&<small>{item.description}</small>}{value===item.value&&<span className="tx-choice-check"><Check size={13}/></span>}</button>)}</div>}

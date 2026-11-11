@@ -1,4 +1,4 @@
-import { ArrowUpRight, Check, ChevronLeft, Repeat2 } from 'lucide-react';
+import { ArrowUpRight, Check, ChevronLeft, Repeat2 } from '../../lib/icons.jsx';
 import { useEffect, useState } from 'react';
 import { ModalShell } from '../../components/modals/ModalShell.jsx';
 import { CategoryGlyph } from '../../components/ui/CategoryGlyph.jsx';

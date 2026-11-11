@@ -1,4 +1,4 @@
-import { Check, Clock, Copy, Download, Link2, Eye, EyeOff, Plus, RefreshCw, Smartphone, Trash2, Upload } from 'lucide-react';
+import { Check, Clock, Copy, Download, Link2, Eye, EyeOff, Plus, RefreshCw, Smartphone, Trash2, Upload } from '../../lib/icons.jsx';
 import { useRef, useState } from 'react';
 import { downloadJson } from '../../lib/smsInsights.js';
 

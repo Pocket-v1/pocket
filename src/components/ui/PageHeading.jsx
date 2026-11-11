@@ -1,4 +1,4 @@
-import { Info, X } from 'lucide-react';
+import { Info, X } from '../../lib/icons.jsx';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { PAGE_TIPS } from './pageTips.js';

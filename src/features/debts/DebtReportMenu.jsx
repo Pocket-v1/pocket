@@ -1,4 +1,4 @@
-import { Download, FileSpreadsheet, FileText } from 'lucide-react';
+import { Download, FileSpreadsheet, FileText } from '../../lib/icons.jsx';
 import { MenuButton } from '../../components/ui/MenuButton.jsx';
 import { downloadDebtReport } from '../../lib/debtReport.js';
 

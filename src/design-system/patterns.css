@@ -31,8 +31,7 @@
 .ds-repeat-add{justify-self:start}
 @media(max-width:640px){.ds-repeat-row{grid-template-columns:1fr 1fr}.ds-repeat-row .ds-repeat-unit{grid-column:1}.ds-repeat-row .icon-btn{grid-column:2;justify-self:end}}
 
-/* 3) Icons: one stroke weight for every lucide icon in the app. */
-svg.lucide{stroke-width:var(--ds-icon-stroke)}
+/* 3) Icons: Phosphor, regular weight, from src/lib/icons.jsx. Tiles use duotone. */
 
 /* 4) Month picker: we draw the label ourselves ("Nov 2026") so it never wraps or clips; the native input sits invisibly on top and still opens the picker. */
 .month-picker-label{white-space:nowrap;font-weight:700;font-size:var(--ds-fs-lg)}

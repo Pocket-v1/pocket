@@ -1,5 +1,5 @@
 import { AnimatedNumber } from '../../components/ui/AnimatedNumber.jsx';
-import { ArrowLeft, Check, Pencil, Plus, Trash2, Wallet } from 'lucide-react';
+import { ArrowLeft, Check, Pencil, Plus, Trash2, Wallet } from '../../lib/icons.jsx';
 import { useState } from 'react';
 import { cardCycle, money } from '../../lib/credit.js';
 import { shortDate } from '../../lib/format.js';

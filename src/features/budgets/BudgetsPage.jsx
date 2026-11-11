@@ -1,5 +1,5 @@
 import { EmptyState } from '../../components/ui/EmptyState.jsx';
-import { ArrowUpRight, Pencil, PiggyBank, Plus, Trash2, Wallet } from 'lucide-react';
+import { ArrowUpRight, Pencil, PiggyBank, Plus, Trash2, Wallet } from '../../lib/icons.jsx';
 import { MetricCard } from '../../components/ui/MetricCard.jsx';
 import { MonthPicker } from '../../components/ui/MonthPicker.jsx';
 import { PageHeading } from '../../components/ui/PageHeading.jsx';

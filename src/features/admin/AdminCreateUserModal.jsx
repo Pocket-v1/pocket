@@ -1,4 +1,4 @@
-import { ArrowUpRight, Check, ChevronLeft, LoaderCircle, ShieldCheck, UserPlus, X } from 'lucide-react';
+import { ArrowUpRight, Check, ChevronLeft, LoaderCircle, ShieldCheck, UserPlus, X } from '../../lib/icons.jsx';
 import { useEffect, useState } from 'react';
 import { PasswordInput } from '../../components/ui/PasswordInput.jsx';
 import { FEATURE_OPTIONS } from '../../lib/features.js';

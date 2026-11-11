@@ -10,7 +10,7 @@ import {
   ArrowDownRight, TrendingUp, Download, Upload, CalendarDays, SlidersHorizontal,
   MoreHorizontal, X, Check, XCircle, CircleHelp, PiggyBank, CreditCard, Sparkles, LogOut,
   Pencil, Trash2, Mail, LoaderCircle, FileSpreadsheet, CircleDollarSign, Menu, Users, LockKeyhole, Sun, Moon, UserPlus, RefreshCw, Eye, EyeOff
-} from 'lucide-react';
+} from '../../lib/icons.jsx';
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid,
   PieChart, Pie, Cell, BarChart, Bar

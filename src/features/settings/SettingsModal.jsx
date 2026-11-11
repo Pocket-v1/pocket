@@ -1,4 +1,4 @@
-import { BellRing, ChevronDown, Database, Download, FileJson, FileSpreadsheet, LoaderCircle, LockKeyhole, Pencil, Plus, ShieldCheck, SlidersHorizontal, Trash2, Upload, UserRound, Users, X } from 'lucide-react';
+import { BellRing, ChevronDown, Database, Download, FileJson, FileSpreadsheet, LoaderCircle, LockKeyhole, Pencil, Plus, ShieldCheck, SlidersHorizontal, Trash2, Upload, UserRound, Users, X } from '../../lib/icons.jsx';
 import { useEffect, useState } from 'react';
 import { ModalShell } from '../../components/modals/ModalShell.jsx';
 import { defaultExpenseCategories, getExpenseCategories, getSubcategories, saveCustomSubcategories, setExpenseCategoriesOverride } from '../../lib/categories.js';

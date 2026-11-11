@@ -1,4 +1,4 @@
-import { ArrowUpRight, Check, ChevronLeft, Target, X } from 'lucide-react';
+import { ArrowUpRight, Check, ChevronLeft, Target, X } from '../../lib/icons.jsx';
 import { useEffect, useState } from 'react';
 import { ChoiceCards } from '../../components/ui/ChoiceCards.jsx';
 import { Field } from '../../components/ui/Field.jsx';

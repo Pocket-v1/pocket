@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X } from '../../lib/icons.jsx';
 import { useState } from 'react';
 import { TOUR_STEPS } from './pageTips.js';
 

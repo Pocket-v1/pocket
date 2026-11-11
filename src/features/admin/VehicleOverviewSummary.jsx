@@ -1,4 +1,4 @@
-import { ArrowUpRight, CarFront } from 'lucide-react';
+import { ArrowUpRight, CarFront } from '../../lib/icons.jsx';
 import { useEffect, useState } from 'react';
 
 export function VehicleOverviewSummary({supabase,session,currency,onOpen,enabled}){

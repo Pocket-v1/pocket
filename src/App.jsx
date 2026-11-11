@@ -1,4 +1,4 @@
-import { Search, PanelLeftClose, PanelLeftOpen, ArrowLeftRight, ArrowUpRight, Bell, CalendarDays, CarFront, ChartNoAxesCombined, Check, ChevronDown, CircleDollarSign, CreditCard, Fuel, History, LayoutDashboard, Lock, LogOut, Mail, Menu, MessageSquare, Moon, Repeat2, Settings, SlidersHorizontal, Sun, Target, UserRound, Users, Wallet, Wrench, X, XCircle } from 'lucide-react';
+import { Search, PanelLeftClose, PanelLeftOpen, ArrowLeftRight, ArrowUpRight, Bell, CalendarDays, CarFront, ChartNoAxesCombined, Check, ChevronDown, CircleDollarSign, CreditCard, Fuel, History, LayoutDashboard, Lock, LogOut, Mail, Menu, MessageSquare, Moon, Repeat2, Settings, SlidersHorizontal, Sun, Target, UserRound, Users, Wallet, Wrench, X, XCircle } from './lib/icons.jsx';
 import { useSheetManager } from './hooks/useSheetManager.js';
 import * as XLSX from 'xlsx';
 import { exportTransactions, downloadTemplate } from './lib/transferFile.js';

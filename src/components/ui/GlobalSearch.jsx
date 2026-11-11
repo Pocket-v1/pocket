@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { CarFront, CreditCard, Landmark, Receipt, Repeat2, Search, Target, Wallet, X } from 'lucide-react';
+import { CarFront, CreditCard, Landmark, Receipt, Repeat2, Search, Target, Wallet, X } from '../../lib/icons.jsx';
 import { fmt, shortDate } from '../../lib/format.js';
 
 const KINDS={transaction:{label:'Transactions',icon:Receipt},account:{label:'Accounts',icon:Wallet},debt:{label:'Debts & installments',icon:Landmark},recurring:{label:'Subscriptions & bills',icon:Repeat2},goal:{label:'Savings goals',icon:Target},vehicle:{label:'Vehicles',icon:CarFront}};

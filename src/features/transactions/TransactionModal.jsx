@@ -1,4 +1,4 @@
-import { ArrowDownRight, ArrowLeftRight, ArrowUpRight, Check, ChevronLeft, Plus, Sparkles, Target, X } from 'lucide-react';
+import { ArrowDownRight, ArrowLeftRight, ArrowUpRight, Check, ChevronLeft, Plus, Sparkles, Target, X } from '../../lib/icons.jsx';
 import { useEffect, useState } from 'react';
 import { ModalShell } from '../../components/modals/ModalShell.jsx';
 import { CategoryIcon } from '../../components/ui/CategoryIcon.jsx';

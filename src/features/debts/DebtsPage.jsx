@@ -1,4 +1,4 @@
-import { Check, CreditCard, Download, FileSpreadsheet, FileText, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Check, CreditCard, Download, FileSpreadsheet, FileText, Pencil, Plus, Trash2 } from '../../lib/icons.jsx';
 import { DebtReportMenu } from './DebtReportMenu.jsx';
 import { MenuButton } from '../../components/ui/MenuButton.jsx';
 import { exportTable } from '../../lib/transferFile.js';

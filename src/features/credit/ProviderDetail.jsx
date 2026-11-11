@@ -1,10 +1,10 @@
 import { AnimatedNumber } from '../../components/ui/AnimatedNumber.jsx';
-import { ArrowLeft, Check, Pencil, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Check, Pencil, Plus, Trash2 } from '../../lib/icons.jsx';
 import { useState } from 'react';
 import { money } from '../../lib/credit.js';
 import { shortDate } from '../../lib/format.js';
 import { CardVisual, DueChip, LimitBar } from './CreditSummary.jsx';
-import { ShoppingBag } from 'lucide-react';
+import { ShoppingBag } from '../../lib/icons.jsx';
 import { EmptyState } from '../../components/ui/EmptyState.jsx';
 
 // Installment app page (Valu, Aman, Halan...): limit, what is due next, and every plan under the app.

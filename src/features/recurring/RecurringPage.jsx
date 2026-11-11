@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CalendarDays, CreditCard, Pencil, Plus, Repeat2, Trash2 } from 'lucide-react';
+import { CalendarDays, CreditCard, Pencil, Plus, Repeat2, Trash2 } from '../../lib/icons.jsx';
 import { MetricCard } from '../../components/ui/MetricCard.jsx';
 import { PageHeading } from '../../components/ui/PageHeading.jsx';
 import { isLiability } from '../../lib/credit.js';

@@ -1,4 +1,4 @@
-import { ArrowDownLeft, ArrowUpRight, CalendarClock, Car, Check, CreditCard, Landmark, LoaderCircle, LockKeyhole, Moon, Sun, Target } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, CalendarClock, Car, Check, CreditCard, Landmark, LoaderCircle, LockKeyhole, Moon, Sun, Target } from '../../lib/icons.jsx';
 import { useState } from 'react';
 import { AnimatedNumber } from '../../components/ui/AnimatedNumber.jsx';
 import { PasswordInput } from '../../components/ui/PasswordInput.jsx';

@@ -1,5 +1,5 @@
 import { Fragment } from 'react';
-import { ArrowDownRight, ArrowLeftRight, ArrowUpRight, Pencil, Target, Trash2 } from 'lucide-react';
+import { ArrowDownRight, ArrowLeftRight, ArrowUpRight, Pencil, Target, Trash2 } from '../../lib/icons.jsx';
 import { EmptyState } from '../../components/ui/EmptyState.jsx';
 import { fmt, shortDate } from '../../lib/format.js';
 import { isGoalsAccount } from '../../lib/features.js';

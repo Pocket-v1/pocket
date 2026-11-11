@@ -1,4 +1,4 @@
-import { LoaderCircle, RefreshCw, Settings, ShieldCheck, Trash2, UserPlus, Users } from 'lucide-react';
+import { LoaderCircle, RefreshCw, Settings, ShieldCheck, Trash2, UserPlus, Users } from '../../lib/icons.jsx';
 import { useState } from 'react';
 import { PageHeading } from '../../components/ui/PageHeading.jsx';
 import { AdminAccessWizard } from './AdminAccessWizard.jsx';

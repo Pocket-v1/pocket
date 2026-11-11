@@ -1,4 +1,4 @@
-import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight } from '../../lib/icons.jsx';
 import { useState } from 'react';
 import { MonthPicker } from '../../components/ui/MonthPicker.jsx';
 import { PageHeading } from '../../components/ui/PageHeading.jsx';

@@ -1,5 +1,5 @@
 import { Area, AreaChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { ArrowDownRight, ArrowUpRight, ChartNoAxesCombined, CreditCard, MoreHorizontal, Plus, Repeat2, Sparkles, Target, TrendingUp, Wallet } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, ChartNoAxesCombined, CreditCard, MoreHorizontal, Plus, Repeat2, Sparkles, Target, TrendingUp, Wallet } from '../../lib/icons.jsx';
 import { EmptyState } from '../../components/ui/EmptyState.jsx';
 import { MetricCard } from '../../components/ui/MetricCard.jsx';
 import { MonthPicker } from '../../components/ui/MonthPicker.jsx';
@@ -11,7 +11,7 @@ import { TransactionTable } from '../transactions/TransactionTable.jsx';
 import { fmt, palette, shortDate } from '../../lib/format.js';
 import { cardSummary, isCard, isLiability, isProvider, providerSummary, daysUntil } from '../../lib/credit.js';
 import { DueChip } from '../credit/CreditSummary.jsx';
-import { ShoppingBag, CalendarClock, AlertTriangle } from 'lucide-react';
+import { ShoppingBag, CalendarClock, AlertTriangle } from '../../lib/icons.jsx';
 import { OnboardingChecklist } from './OnboardingChecklist.jsx';
 
 export function Overview(p){

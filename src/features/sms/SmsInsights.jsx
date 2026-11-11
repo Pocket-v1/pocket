@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle2, TriangleAlert } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, TriangleAlert } from '../../lib/icons.jsx';
 import { useMemo } from 'react';
 import { accountFlows } from '../../lib/credit.js';
 import { findBalance } from '../../lib/smsParser.js';

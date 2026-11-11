@@ -1,0 +1,110 @@
+// Pocket's icon set. Every icon in the app comes from here, drawn with Phosphor (phosphoricons.com).
+// Names on the left are the ones the app's code uses; each maps to one Phosphor icon.
+// Weight: regular by default; a tile can switch its icons to duotone with <DuotoneIcons>.
+import { forwardRef } from 'react';
+import { IconContext, ArrowCounterClockwise as PhArrowCounterClockwise, ArrowDownLeft as PhArrowDownLeft, ArrowDownRight as PhArrowDownRight, ArrowLeft as PhArrowLeft, ArrowRight as PhArrowRight, ArrowUpRight as PhArrowUpRight, ArrowsClockwise as PhArrowsClockwise, ArrowsLeftRight as PhArrowsLeftRight, Bank as PhBank, Bell as PhBell, BellRinging as PhBellRinging, CalendarCheck as PhCalendarCheck, CalendarDots as PhCalendarDots, Car as PhCar, CarProfile as PhCarProfile, CaretDown as PhCaretDown, CaretLeft as PhCaretLeft, CaretRight as PhCaretRight, ChartBar as PhChartBar, ChartLineUp as PhChartLineUp, ChatCircle as PhChatCircle, ChatText as PhChatText, Check as PhCheck, CheckCircle as PhCheckCircle, Circle as PhCircle, CircleNotch as PhCircleNotch, Clock as PhClock, ClockCounterClockwise as PhClockCounterClockwise, Copy as PhCopy, CreditCard as PhCreditCard, CurrencyCircleDollar as PhCurrencyCircleDollar, Database as PhDatabase, DeviceMobile as PhDeviceMobile, DotsThree as PhDotsThree, DownloadSimple as PhDownloadSimple, Envelope as PhEnvelope, EnvelopeSimple as PhEnvelopeSimple, Eye as PhEye, EyeSlash as PhEyeSlash, FileArrowDown as PhFileArrowDown, FileCode as PhFileCode, FileText as PhFileText, FileXls as PhFileXls, GasPump as PhGasPump, Gauge as PhGauge, Gear as PhGear, GearSix as PhGearSix, GridFour as PhGridFour, Info as PhInfo, Link as PhLink, List as PhList, ListBullets as PhListBullets, Lock as PhLock, LockKey as PhLockKey, MagnifyingGlass as PhMagnifyingGlass, Moon as PhMoon, PaperPlaneRight as PhPaperPlaneRight, PencilSimple as PhPencilSimple, PiggyBank as PhPiggyBank, Plus as PhPlus, Question as PhQuestion, Receipt as PhReceipt, Repeat as PhRepeat, Scissors as PhScissors, ShieldCheck as PhShieldCheck, ShoppingBag as PhShoppingBag, SidebarSimple as PhSidebarSimple, SignOut as PhSignOut, SlidersHorizontal as PhSlidersHorizontal, Sparkle as PhSparkle, SquaresFour as PhSquaresFour, Stack as PhStack, Star as PhStar, Sun as PhSun, Tag as PhTag, Target as PhTarget, Trash as PhTrash, Tray as PhTray, TrendUp as PhTrendUp, Trophy as PhTrophy, UploadSimple as PhUploadSimple, User as PhUser, UserPlus as PhUserPlus, Users as PhUsers, Wallet as PhWallet, Warning as PhWarning, Wrench as PhWrench, X as PhX, XCircle as PhXCircle } from '@phosphor-icons/react';
+
+const make = (Ph, name) => {
+  const Icon = forwardRef(function Icon({ size = 24, strokeWidth, absoluteStrokeWidth, fill, weight, className = '', ...rest }, ref) {
+    const w = weight || (fill && fill !== 'none' ? 'fill' : undefined);
+    return <Ph ref={ref} size={size} {...(w ? { weight: w } : {})} className={`pk-icon pk-icon-${name} ${className}`.trim()} {...rest} />;
+  });
+  Icon.displayName = name;
+  return Icon;
+};
+
+// Wrap a tile so the icons inside it are drawn in the duotone weight.
+const DUO = { weight: 'duotone' };
+export function DuotoneIcons({ children }) { return <IconContext.Provider value={DUO}>{children}</IconContext.Provider>; }
+
+export const AlertTriangle = make(PhWarning, 'alert-triangle');
+export const ArrowDownLeft = make(PhArrowDownLeft, 'arrow-down-left');
+export const ArrowDownRight = make(PhArrowDownRight, 'arrow-down-right');
+export const ArrowLeft = make(PhArrowLeft, 'arrow-left');
+export const ArrowLeftRight = make(PhArrowsLeftRight, 'arrow-left-right');
+export const ArrowRight = make(PhArrowRight, 'arrow-right');
+export const ArrowUpRight = make(PhArrowUpRight, 'arrow-up-right');
+export const BarChart3 = make(PhChartBar, 'bar-chart-3');
+export const Bell = make(PhBell, 'bell');
+export const BellRing = make(PhBellRinging, 'bell-ring');
+export const CalendarClock = make(PhCalendarCheck, 'calendar-clock');
+export const CalendarDays = make(PhCalendarDots, 'calendar-days');
+export const Car = make(PhCar, 'car');
+export const CarFront = make(PhCarProfile, 'car-front');
+export const ChartNoAxesCombined = make(PhChartLineUp, 'chart-no-axes-combined');
+export const Check = make(PhCheck, 'check');
+export const CheckCircle2 = make(PhCheckCircle, 'check-circle-2');
+export const ChevronDown = make(PhCaretDown, 'chevron-down');
+export const ChevronLeft = make(PhCaretLeft, 'chevron-left');
+export const ChevronRight = make(PhCaretRight, 'chevron-right');
+export const Circle = make(PhCircle, 'circle');
+export const CircleDollarSign = make(PhCurrencyCircleDollar, 'circle-dollar-sign');
+export const CircleHelp = make(PhQuestion, 'circle-help');
+export const Clock = make(PhClock, 'clock');
+export const Copy = make(PhCopy, 'copy');
+export const CreditCard = make(PhCreditCard, 'credit-card');
+export const Database = make(PhDatabase, 'database');
+export const Download = make(PhDownloadSimple, 'download');
+export const Eye = make(PhEye, 'eye');
+export const EyeOff = make(PhEyeSlash, 'eye-off');
+export const FileDown = make(PhFileArrowDown, 'file-down');
+export const FileJson = make(PhFileCode, 'file-json');
+export const FileSpreadsheet = make(PhFileXls, 'file-spreadsheet');
+export const FileText = make(PhFileText, 'file-text');
+export const Fuel = make(PhGasPump, 'fuel');
+export const Gauge = make(PhGauge, 'gauge');
+export const History = make(PhClockCounterClockwise, 'history');
+export const Inbox = make(PhTray, 'inbox');
+export const Info = make(PhInfo, 'info');
+export const Landmark = make(PhBank, 'landmark');
+export const Layers = make(PhStack, 'layers');
+export const LayoutDashboard = make(PhSquaresFour, 'layout-dashboard');
+export const LayoutGrid = make(PhGridFour, 'layout-grid');
+export const Link2 = make(PhLink, 'link-2');
+export const List = make(PhListBullets, 'list');
+export const LoaderCircle = make(PhCircleNotch, 'loader-circle');
+export const Lock = make(PhLock, 'lock');
+export const LockKeyhole = make(PhLockKey, 'lock-keyhole');
+export const LogOut = make(PhSignOut, 'log-out');
+export const Mail = make(PhEnvelope, 'mail');
+export const MailWarning = make(PhEnvelopeSimple, 'mail-warning');
+export const Menu = make(PhList, 'menu');
+export const MessageCircle = make(PhChatCircle, 'message-circle');
+export const MessageSquare = make(PhChatText, 'message-square');
+export const Moon = make(PhMoon, 'moon');
+export const MoreHorizontal = make(PhDotsThree, 'more-horizontal');
+export const PanelLeftClose = make(PhSidebarSimple, 'panel-left-close');
+export const PanelLeftOpen = make(PhSidebarSimple, 'panel-left-open');
+export const Pencil = make(PhPencilSimple, 'pencil');
+export const PiggyBank = make(PhPiggyBank, 'piggy-bank');
+export const Plus = make(PhPlus, 'plus');
+export const Receipt = make(PhReceipt, 'receipt');
+export const RefreshCw = make(PhArrowsClockwise, 'refresh-cw');
+export const Repeat2 = make(PhRepeat, 'repeat-2');
+export const RotateCcw = make(PhArrowCounterClockwise, 'rotate-ccw');
+export const Scissors = make(PhScissors, 'scissors');
+export const Search = make(PhMagnifyingGlass, 'search');
+export const Send = make(PhPaperPlaneRight, 'send');
+export const Settings = make(PhGear, 'settings');
+export const Settings2 = make(PhGearSix, 'settings-2');
+export const ShieldCheck = make(PhShieldCheck, 'shield-check');
+export const ShoppingBag = make(PhShoppingBag, 'shopping-bag');
+export const SlidersHorizontal = make(PhSlidersHorizontal, 'sliders-horizontal');
+export const Smartphone = make(PhDeviceMobile, 'smartphone');
+export const Sparkles = make(PhSparkle, 'sparkles');
+export const Star = make(PhStar, 'star');
+export const Sun = make(PhSun, 'sun');
+export const Tags = make(PhTag, 'tags');
+export const Target = make(PhTarget, 'target');
+export const Trash2 = make(PhTrash, 'trash-2');
+export const TrendingUp = make(PhTrendUp, 'trending-up');
+export const TriangleAlert = make(PhWarning, 'triangle-alert');
+export const Trophy = make(PhTrophy, 'trophy');
+export const Upload = make(PhUploadSimple, 'upload');
+export const UserPlus = make(PhUserPlus, 'user-plus');
+export const UserRound = make(PhUser, 'user-round');
+export const Users = make(PhUsers, 'users');
+export const Wallet = make(PhWallet, 'wallet');
+export const Wrench = make(PhWrench, 'wrench');
+export const X = make(PhX, 'x');
+export const XCircle = make(PhXCircle, 'x-circle');

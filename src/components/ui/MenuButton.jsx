@@ -1,4 +1,4 @@
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown } from '../../lib/icons.jsx';
 import { useEffect, useRef, useState } from 'react';
 
 /* Button that opens a small menu. Items: {label, description, icon, onClick} or {label, description, icon, file:{accept,onFile}} */

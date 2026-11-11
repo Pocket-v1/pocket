@@ -1,4 +1,4 @@
-import { LoaderCircle, Mail, MailWarning, X } from 'lucide-react';
+import { LoaderCircle, Mail, MailWarning, X } from '../../lib/icons.jsx';
 import { useState } from 'react';
 
 /* Slim status bar shown to any signed-in user whose account has no email, or whose email is not verified yet. */

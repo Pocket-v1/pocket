@@ -1,4 +1,4 @@
-import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Download, FileSpreadsheet, FileText, FileDown, Plus, Search, SlidersHorizontal, Upload, X } from 'lucide-react';
+import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Download, FileSpreadsheet, FileText, FileDown, Plus, Search, SlidersHorizontal, Upload, X } from '../../lib/icons.jsx';
 import { useState } from 'react';
 import { MenuButton } from '../../components/ui/MenuButton.jsx';
 import { MetricCard } from '../../components/ui/MetricCard.jsx';

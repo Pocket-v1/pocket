@@ -1,4 +1,4 @@
-import { Layers, LoaderCircle, Pencil, Plus, Tags, Trash2, X } from 'lucide-react';
+import { Layers, LoaderCircle, Pencil, Plus, Tags, Trash2, X } from '../../lib/icons.jsx';
 import { PageHeading } from '../../components/ui/PageHeading.jsx';
 import { MetricCard } from '../../components/ui/MetricCard.jsx';
 import { useEffect, useState } from 'react';

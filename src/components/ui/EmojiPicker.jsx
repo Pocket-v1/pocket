@@ -1,15 +1,15 @@
 import { useState } from 'react';
-import { EMOJI_GROUPS, firstEmoji } from '../../lib/categoryIcons.js';
+import { toIcon } from '../../lib/categoryIcons.js';
+import { CATEGORY_ICON_GROUPS, CATEGORY_ICON_SET } from '../../lib/categoryIconSet.jsx';
+import { IconGlyph } from './CategoryIcon.jsx';
 
-// Big emoji grid + a box to type or paste any emoji from the phone/computer keyboard.
+// Phosphor icon picker for categories: the chosen icon, group tabs and a grid. Value is "ph:IconName".
 export function EmojiPicker({ value, onChange }) {
-  const [tab, setTab] = useState(0);
-  const [typed, setTyped] = useState('');
-  const take = text => { const em = firstEmoji(text); setTyped(''); if (em) onChange(em); else if (text.trim()) setTyped(''); };
+  const current = toIcon(value) || 'ph:Tag';
+  const [tab, setTab] = useState(() => Math.max(0, CATEGORY_ICON_GROUPS.findIndex(([, list]) => list.includes(current.slice(3)))));
   return <div className="emoji-picker">
-    <div className="emoji-custom"><span className="emoji-current" aria-label="Selected icon">{value || '🏷️'}</span>
-      <input value={typed} inputMode="text" placeholder="Type or paste any emoji from your keyboard" aria-label="Type an emoji" onChange={e => { setTyped(e.target.value); const em = firstEmoji(e.target.value); if (em) { onChange(em); } }} onBlur={() => setTyped('')} /></div>
-    <div className="emoji-tabs" role="tablist">{EMOJI_GROUPS.map(([g], i) => <button type="button" role="tab" aria-selected={tab === i} className={tab === i ? 'on' : ''} key={g} onClick={() => setTab(i)}>{g}</button>)}</div>
-    <div className="emoji-grid" role="listbox" aria-label="Icons">{EMOJI_GROUPS[tab][1].map(em => <button type="button" key={em} role="option" aria-selected={value === em} className={value === em ? 'on' : ''} onClick={() => onChange(em)}>{em}</button>)}</div>
+    <div className="emoji-custom"><span className="emoji-current" aria-label="Selected icon"><IconGlyph value={current} size={26} /></span><small className="small-muted">Pick an icon below</small></div>
+    <div className="emoji-tabs" role="tablist">{CATEGORY_ICON_GROUPS.map(([g], i) => <button type="button" role="tab" aria-selected={tab === i} className={tab === i ? 'on' : ''} key={g} onClick={() => setTab(i)}>{g}</button>)}</div>
+    <div className="emoji-grid" role="listbox" aria-label="Icons">{CATEGORY_ICON_GROUPS[tab][1].map(n => { const Ph = CATEGORY_ICON_SET[n]; const v = `ph:${n}`; return <button type="button" key={n} role="option" aria-label={n} aria-selected={current === v} className={current === v ? 'on' : ''} onClick={() => onChange(v)}><Ph size={22} /></button>; })}</div>
   </div>;
 }

@@ -1,5 +1,5 @@
 import { AnimatedNumber } from '../../components/ui/AnimatedNumber.jsx';
-import { CreditCard, ShoppingBag } from 'lucide-react';
+import { CreditCard, ShoppingBag } from '../../lib/icons.jsx';
 import { dueLabel, dueTone, daysUntil, money } from '../../lib/credit.js';
 import { shortDate } from '../../lib/format.js';
 import { providerTheme } from '../../lib/providerThemes.js';

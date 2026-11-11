@@ -1,6 +1,6 @@
 import { AnimatedNumber } from './ui/AnimatedNumber.jsx';
 import React from 'react';
-import { CalendarDays, Check, CircleDollarSign, Wallet, ArrowLeftRight, FileSpreadsheet, CircleHelp, CreditCard, Sparkles, Target, ArrowUpRight, PiggyBank, Settings, UserRound, FileJson, ChartNoAxesCombined } from 'lucide-react';
+import { CalendarDays, Check, CircleDollarSign, Wallet, ArrowLeftRight, FileSpreadsheet, CircleHelp, CreditCard, Sparkles, Target, ArrowUpRight, PiggyBank, Settings, UserRound, FileJson, ChartNoAxesCombined } from '../lib/icons.jsx';
 import { PROFILE_AVATARS } from '../lib/domain.js';
 
 function ProfileAvatar({value,className=''}){const isRemotePhoto=typeof value==='string'&&/^https?:\/\//i.test(value);const avatar=PROFILE_AVATARS.find(a=>a.id===value)||PROFILE_AVATARS[0];return <img className={`profile-avatar-image ${className}`} src={isRemotePhoto?value:avatar.src} alt="Profile avatar" referrerPolicy="no-referrer" onError={e=>{if(isRemotePhoto){e.currentTarget.onerror=null;e.currentTarget.src=avatar.src;}}}/>;}

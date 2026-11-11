@@ -1,4 +1,4 @@
-import { ArrowUpRight, Check, LoaderCircle, Wallet } from 'lucide-react';
+import { ArrowUpRight, Check, LoaderCircle, Wallet } from '../../lib/icons.jsx';
 import { useEffect, useState } from 'react';
 import { Field } from '../../components/ui/Field.jsx';
 import { fmt, localISODate } from '../../lib/format.js';

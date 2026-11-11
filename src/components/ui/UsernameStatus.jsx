@@ -1,4 +1,4 @@
-import { Check, LoaderCircle, X } from 'lucide-react';
+import { Check, LoaderCircle, X } from '../../lib/icons.jsx';
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase.js';
 

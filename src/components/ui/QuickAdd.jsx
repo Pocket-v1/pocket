@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Fuel, Plus, Receipt, Wrench, X } from 'lucide-react';
+import { Fuel, Plus, Receipt, Wrench, X } from '../../lib/icons.jsx';
 
 export function QuickAdd({onTransaction,onFuel,onService,showVehicles}){
  const [open,setOpen]=useState(false);const ref=useRef(null);
