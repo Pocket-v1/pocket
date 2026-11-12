@@ -335,3 +335,13 @@
 .sms-sheet input[type=date],.chat-sheet input[type=date],.category-wizard-card input[type=date]{-webkit-appearance:none;appearance:none;max-width:100%;width:100%;min-width:0}
 .modal .form-grid,.modal-shell .form-grid{min-width:0}
 .modal .form-grid>*,.modal-shell .form-grid>*{min-width:0}
+
+/* Popup consistency (Nov 12): one look for every popup */
+/* No progress bar under the step labels — the step numbers already show where you are */
+.modal .tx-wizard-track,.modal .setup-progress{display:none}
+.modal .tx-wizard-progress{margin-bottom:16px}
+/* Vehicle and admin popups: same header and body as ModalShell popups */
+.modal.admin-access-wizard>.modal-head .eyebrow{display:none}
+.modal.vehicle-add-wizard .admin-wizard-content{padding:0;background:transparent;border:0;box-shadow:none}
+/* Icon picker group chips: keep full words, scroll sideways instead of squeezing */
+.emoji-tabs button{flex:none}
