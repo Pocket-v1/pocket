@@ -305,3 +305,17 @@
 .seg-tabs button{flex:1;min-height:40px;border:0;border-radius:9px;background:transparent;color:var(--ds-text-muted,var(--ds-secondary-text));font-weight:800;font-size:13px;text-transform:none;white-space:nowrap}
 .seg-tabs button.on{background:var(--ds-surface);color:var(--ds-text);box-shadow:0 1px 3px rgba(20,28,60,.12)}
 .seg-tabs button span{font-weight:600;opacity:.75}
+/* Bank SMS: connection pill, setup checklist, history header */
+.sms-conn-pill{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 14px;border:1px solid var(--ds-ok);border-radius:99px;background:var(--ds-ok-soft);color:var(--ds-ok);font-weight:800;font-size:13px;text-transform:none}
+.sms-conn-pill .dot{width:8px;height:8px;border-radius:50%;background:var(--ds-ok)}
+.sms-checklist{padding:6px 18px 12px;margin-bottom:16px}
+.sms-checklist-sub{margin:12px 0 4px;font-size:13px;color:var(--ds-text-muted,var(--ds-secondary-text));text-transform:none}
+.sms-check-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--ds-border)}
+.sms-check-row>div{flex:1;min-width:0}.sms-check-row b{display:block;font-size:14px}.sms-check-row small{display:block;font-size:12.5px;color:var(--ds-text-muted,var(--ds-secondary-text));text-transform:none;margin-top:2px}
+.sms-check-num{width:28px;height:28px;flex:none;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:12px;background:var(--ds-surface-soft,var(--ds-soft));color:var(--ds-text-muted,var(--ds-secondary-text))}
+.sms-check-num.done{background:var(--ds-ok-soft);color:var(--ds-ok)}.sms-check-num.now{background:var(--ds-brand);color:#fff}
+.sms-checklist-more{margin-top:8px;min-height:40px;border:0;background:transparent;color:var(--ds-brand);font-weight:700;font-size:13px;padding:0;text-transform:none}
+.sms-hist-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.sms-hist-chips{display:flex;gap:6px}.sms-chipbtn.on{border-color:var(--ds-brand);background:var(--ds-brand-soft);color:var(--ds-brand)}
+@media(max-width:680px){.sms-check-row{flex-wrap:wrap}.sms-check-row .btn{width:100%;min-height:44px}}
+.debt-paid-ask small,.debt-paid-step b,.sms-check-row b,.sms-check-row small,.overview-setup-btn b,.overview-setup-btn small{text-transform:none}

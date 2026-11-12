@@ -167,7 +167,7 @@ export function SmsPage({ focusAccount = null, onFocusDone, debts = [], recurrin
   const [bulk, setBulk] = useState({ cat: '', acc: '' });
   const [fAcc, setFAcc] = useState('');
   const [q, setQ] = useState('');
-  const [hStatus, setHStatus] = useState('all');
+  const [hStatus, setHStatus] = useState('approved');
   const [hFrom, setHFrom] = useState('');
   const [platform, setPlatform] = useState(/android/i.test(navigator.userAgent) ? 'android' : 'iphone');
   const [test, setTest] = useState({ sender: '', body: '' });
@@ -437,6 +437,11 @@ export function SmsPage({ focusAccount = null, onFocusDone, debts = [], recurrin
 
   const jsonBody = `{"token":"${token || 'YOUR_TOKEN'}","sender":"<Sender>","body":"<Message>"}`;
   const inSettings = ['banks', 'connect', 'test', 'devices', 'rules', 'setup'].includes(tab);
+  const phoneCount = devices.filter(d => d.last_seen_at).length + (mainSeen ? 1 : 0);
+  const stepBanks = configs.length > 0;
+  const stepPhone = Boolean(mainSeen || lastSms || devices.some(d => d.last_seen_at));
+  const stepFirst = Boolean(lastSms || items.length || hist.length);
+  const isConnected = stepPhone && stepFirst;
   const cur = inSettings ? main : tab;
   useEffect(() => { if (!inSettings && !insOpen) return; const o = document.body.style.overflow; document.body.style.overflow = 'hidden'; return () => { document.body.style.overflow = o; }; }, [inSettings, insOpen]);
   const isTab = k => ['inbox', 'insights', 'history'].includes(k) ? tab === k : inSettings;
@@ -449,9 +454,14 @@ export function SmsPage({ focusAccount = null, onFocusDone, debts = [], recurrin
   </div>;
 
   return <div className="sms-page">
-    <PageHeading eyebrow="AUTOMATIC TRACKING" title="Bank SMS" titleExtra={<span className={`sms-conn ${lastSms ? "ok" : ""}`} title={lastSms ? `Last SMS ${ago(lastSms)}` : "Open Setup to connect your phone"}>{lastSms ? "Connected" : "Not connected"}</span>} subtitle="Bank messages land here first. You review them before they become transactions." actions={<><MenuButton label="Export" icon={Download} items={[{ label: 'CSV', description: 'Plain text, opens anywhere', icon: FileText, onClick: () => exportHist('csv') }, { label: 'Excel', description: '.xlsx spreadsheet', icon: FileSpreadsheet, onClick: () => exportHist('xlsx') }]} disabled={!histShown.length} /><button type="button" className="btn btn-secondary" onClick={() => setInsOpen(true)}><BarChart3 size={17} /> Insights</button><button type="button" className="btn btn-primary" onClick={() => setTab('connect')}><Settings2 size={17} /> Setup</button></>}/>
+    <PageHeading eyebrow="AUTOMATIC TRACKING" title="Bank SMS" subtitle="Bank messages land here first. You review them before they become transactions." actions={isConnected ? <button type="button" className="sms-conn-pill" onClick={() => setTab('connect')} title="Phones, banks and rules"><span className="dot" aria-hidden="true" />Connected{phoneCount ? ` · ${phoneCount} phone${phoneCount === 1 ? '' : 's'}` : ''}<Settings2 size={15} aria-hidden="true" /></button> : <span className="sms-conn">Not connected</span>}/>
+    {!isConnected && <section className="panel sms-checklist" aria-label="Connect bank SMS">
+      <p className="sms-checklist-sub">Three steps. Pocket ticks each one by itself.</p>
+      {[[stepBanks, 'Pick your banks', stepBanks ? `${configs.length} bank${configs.length === 1 ? '' : 's'} linked` : 'Which sender belongs to which account.', 'banks'], [stepPhone, 'Add the Pocket Shortcut on your phone', stepPhone ? 'Your phone checked in.' : 'One tap. Your link is copied, paste it when Shortcuts asks.', 'connect'], [stepFirst, 'Wait for the first message', stepFirst ? 'First bank SMS arrived.' : 'Turns green when the first bank SMS arrives.', null]].map(([done, title, sub, open], n) => { const now = !done && [stepBanks, stepPhone, stepFirst].findIndex(x => !x) === n; return <div key={title} className="sms-check-row"><span className={`sms-check-num ${done ? 'done' : now ? 'now' : ''}`}>{done ? <Check size={14} /> : n + 1}</span><div><b>{title}</b><small>{sub}</small></div>{now && open && <button type="button" className="btn btn-primary btn-sm" onClick={() => setTab(open)}>{open === 'banks' ? 'Pick banks' : 'Set up phone'}</button>}</div>; })}
+      <button type="button" className="sms-checklist-more" onClick={() => setTab('connect')}>Devices, daily check and rules</button>
+    </section>}
     <section className="sms-main">
-    <div className="period-switch" role="group" aria-label="Message status"><div className="period-seg">{[['inbox', 'To review', items.length], ['approved', 'Approved', hist.filter(h => h.status === 'approved').length], ['dismissed', 'Dismissed', hist.filter(h => h.status === 'dismissed').length]].map(([k, l, n]) => { const on = k === 'inbox' ? cur === 'inbox' : cur === 'history' && hStatus === k; return <button type="button" key={k} className={on ? 'on' : ''} aria-pressed={on} onClick={() => { if (k === 'inbox') setTab('inbox'); else { setHStatus(k); setTab('history'); } }}>{l} {n}</button>; })}</div></div>
+    <div className="seg-tabs sms-tabs" role="tablist" aria-label="Bank SMS">{[['inbox', 'Inbox', items.length], ['history', 'History', hist.length], ['insights', 'Insights', 0]].map(([k, l, n]) => <button type="button" role="tab" key={k} aria-selected={k === 'insights' ? false : cur === k} className={k !== 'insights' && cur === k ? 'on' : ''} onClick={() => { if (k === 'insights') setInsOpen(true); else setTab(k); }}>{l}{n > 0 && <span> · {n}</span>}</button>)}</div>
     {cur === 'inbox' && <section className="sms-pane">
       {filters}
       {groups.length > 0 && shown.length > 1 && <div className="smx-groups"><span>Quick groups</span>{groups.map(g => <button type="button" key={g.key} className="sms-chipbtn" onClick={() => approveGroup(g)}>{g.label} ×{g.ids.length} · Approve</button>)}</div>}
@@ -472,6 +482,7 @@ export function SmsPage({ focusAccount = null, onFocusDone, debts = [], recurrin
     </section>}
 
     {cur === 'history' && <section className="sms-pane">
+      <div className="sms-hist-top"><div className="sms-hist-chips" role="group" aria-label="Status">{[['approved', 'Approved'], ['dismissed', 'Dismissed']].map(([k, l]) => <button type="button" key={k} aria-pressed={hStatus === k} className={`sms-chipbtn ${hStatus === k ? 'on' : ''}`} onClick={() => setHStatus(k)}>{l} {hist.filter(h => h.status === k).length}</button>)}</div><MenuButton label="Export" icon={Download} items={[{ label: 'CSV', description: 'Plain text, opens anywhere', icon: FileText, onClick: () => exportHist('csv') }, { label: 'Excel', description: '.xlsx spreadsheet', icon: FileSpreadsheet, onClick: () => exportHist('xlsx') }]} disabled={!histShown.length} /></div>
       {filters}
       {!histShown.length ? <div className="sms-empty"><History size={26} /><b>Nothing here</b><small>Approved and dismissed messages appear here.</small></div> :
         <div className="smx-list">{histShown.map(x => <article className="smx-row" key={x.id}>
