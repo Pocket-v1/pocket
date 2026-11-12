@@ -322,3 +322,8 @@
 
 /* Sidebar labels stay on one line at every width. */
 .nav-item>span:not([class]){white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
+/* Add transaction sheet never scrolls sideways (long category names or the date field on iOS). */
+.tx-single,.tx-single .tx-wizard-page{max-width:100%;min-width:0;overflow-x:clip}
+.modal:has(.tx-single),.modal-shell:has(.tx-single),.modal-body:has(.tx-single){overflow-x:hidden}
+.tx-single input[type=date]{min-width:0;max-width:100%;-webkit-appearance:none;appearance:none}
+.tx-single .category-choice,.tx-single [class*="category-card"]{max-width:100%}
