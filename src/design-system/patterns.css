@@ -345,3 +345,8 @@
 .modal.vehicle-add-wizard .admin-wizard-content{padding:0;background:transparent;border:0;box-shadow:none}
 /* Icon picker group chips: keep full words, scroll sideways instead of squeezing */
 .emoji-tabs button{flex:none}
+
+/* Vehicles History/Fuel: rows animate in without pushing past the screen edge (caused sideways scroll on phones) */
+@keyframes vmSlide{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.vehicle-section,.vehicle-record-list,.svc-share,.fuel-type-stats{max-width:100%;min-width:0;overflow-x:hidden}
+.main-area{overflow-x:hidden}
