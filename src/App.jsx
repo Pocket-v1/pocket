@@ -2,7 +2,7 @@ import { Search, PanelLeftClose, PanelLeftOpen, ArrowLeftRight, ArrowUpRight, Be
 import { useSheetManager } from './hooks/useSheetManager.js';
 import * as XLSX from 'xlsx';
 import { exportTransactions, downloadTemplate } from './lib/transferFile.js';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ConfirmActionModal } from './components/modals/ConfirmActionModal.jsx';
 import { ProfileAvatar } from './components/ui/ProfileAvatar.jsx';
 import { storedTheme, saveTheme, bootTheme } from './lib/theme.js';
@@ -143,7 +143,7 @@ function App(){
   const [completeGoalTarget,setCompleteGoalTarget] = useState(null);
   const [addMoneyGoal,setAddMoneyGoal] = useState(null);
   const [spendGoal,setSpendGoal] = useState(null);
-  const [chatOpen,setChatOpen] = useState(false);
+  const [chatOpen,setChatOpen] = useState(false);const [chatStart,setChatStart]=useState('');
   const [txPresetAccount,setTxPresetAccount] = useState('');
   const [cardPay,setCardPay] = useState(null);
   const [providerPay,setProviderPay] = useState(null);
@@ -564,6 +564,7 @@ function App(){
     if(editing && String(editing.account_id)===String(source?.id) && (editing.type==='Expense'||editing.type==='Transfer')) available+=Number(editing.amount||0);
     if((form.type==='Expense'||form.type==='Transfer') && Number(form.amount)>available){const shown=new Intl.NumberFormat('en-EG',{style:'currency',currency,maximumFractionDigits:2}).format(Math.max(0,available));setToast((isCard(source)||isProvider(source))?`Could not add: this is over the limit on ${source.name}. Available credit: ${shown}.`:`Insufficient balance in ${source?.name||'this account'}. Available: ${shown}.`);return;}
     const payload={transaction_date:form.transaction_date,type:form.type,category:form.type==='Transfer'?'Transfer':form.category,subcategory:form.type==='Transfer'?(form.goal_id?(goals.find(g=>String(g.id)===String(form.goal_id))?.name||'Transfer'):'Transfer'):(form.subcategory||null),description:form.description,amount:Number(form.amount),need_want:form.type==='Expense'?form.need_want:null,fixed_variable:form.fixed_variable,payment_method:accounts.find(a=>String(a.id)===String(form.account_id))?.name||'Unassigned',account_id:form.account_id||null,to_account_id:form.type==='Transfer'?form.to_account_id||null:null,goal_id:form.type==='Transfer'?(form.goal_id||null):null,debt_id:form.type==='Income'&&form.loan_mode==='new'?null:(form.debt_id||null),recurring:form.type==='Transfer'?false:form.recurring,notes:form.notes};
+    if(form.receipt_path)payload.receipt_path=form.receipt_path;
     const saved=await saveRecord('transactions',payload,editing?.id);if(!saved)return;
     setTransactions(old=>editing?old.map(x=>x.id===editing.id?saved:x):[saved,...old]);
     if(form.type==='Income'&&form.loan_mode==='new'){setEditing(null);setTxPresetAccount('');setConvertTx(saved);setDebtPresetProvider('');setModal('debt');setToast(editing?'Income saved · now add the debt details':'Income added · now add the debt details');return true;}
@@ -703,9 +704,40 @@ function App(){
     if(txSaved)setTransactions(old=>[txSaved,...old]);setDebts(old=>old.map(x=>x.id===debt.id?saved:x));setToast(mode==='transaction'?`Installment recorded from ${account.name}${actualPaid>installmentAmount?' including extra fees':''}`:'Installment recorded without creating a transaction');return true;
   }
 
+  async function uploadReceipt(blob){
+    try{const uid=session?.user?.id;if(!uid||!supabase)return '';const ext=(blob.type||'image/jpeg').includes('png')?'png':'jpg';const path=`${uid}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;const {error}=await supabase.storage.from('receipts').upload(path,blob,{contentType:blob.type||'image/jpeg',upsert:false});return error?'':path;}catch{return '';}
+  }
+  useEffect(()=>{const h=e=>openReceipt(e.detail);window.addEventListener('pocket-open-receipt',h);return()=>window.removeEventListener('pocket-open-receipt',h)},[]);
+  async function openReceipt(path){
+    try{const {data,error}=await supabase.storage.from('receipts').createSignedUrl(path,300);if(error||!data?.signedUrl){setToast('Could not open the receipt.');return;}window.open(data.signedUrl,'_blank','noopener');}catch{setToast('Could not open the receipt.');}
+  }
+  const [chatVehicles,setChatVehicles]=useState({vehicles:[],fuel:[],services:[],lastFuelType:''});
+  useEffect(()=>{if(!chatOpen||!supabase||!session?.user?.id||!allowedFeatures.includes('vehicle_management'))return;let alive=true;(async()=>{const uid=session.user.id;const [v,f,sv,st]=await Promise.all([supabase.from('vehicles').select('*').eq('user_id',uid),supabase.from('vehicle_fuel_logs').select('fill_date,cost,vehicle_id,fuel_type').eq('user_id',uid),supabase.from('vehicle_service_records').select('service_date,cost,vehicle_id').eq('user_id',uid),supabase.from('user_settings').select('settings').eq('user_id',uid).maybeSingle()]);if(!alive)return;setChatVehicles({vehicles:v.data||[],fuel:f.data||[],services:sv.data||[],lastFuelType:st.data?.settings?.lastFuelType||''});})();return()=>{alive=false}},[chatOpen,session?.user?.id]);
+  const vehicleSpend=useCallback((from,to)=>{const inR=d=>d&&d>=from&&d<=to;const fuel=chatVehicles.fuel.filter(x=>inR(x.fill_date)).reduce((s,x)=>s+Number(x.cost||0),0);const service=chatVehicles.services.filter(x=>inR(x.service_date)).reduce((s,x)=>s+Number(x.cost||0),0);return {fuel,service,total:fuel+service};},[chatVehicles]);
+  async function chatSaveVehicle(d){
+    const uid=session?.user?.id;if(!uid)return false;
+    const v=chatVehicles.vehicles.find(x=>String(x.id)===String(d.vehicleId));if(!v){setToast('Choose the vehicle first.');return false;}
+    const acc=accounts.find(a=>String(a.id)===String(d.accountId));if(!acc||isGoalsAccount(acc)){setToast('Choose the account you paid from.');return false;}
+    const cats=getCategoriesForType('Expense',session?.user?.user_metadata?.gender||'');const category=cats.find(c=>c==='Transportation')||cats.find(c=>/transport|car|vehicle/i.test(c))||'Transportation';
+    const isFuel=d.kind==='fuel';
+    const tx=await saveRecord('transactions',{transaction_date:d.date,type:'Expense',category,subcategory:isFuel?'Fuel':'Car maintenance',description:isFuel?`Fuel: ${v.name}`:`${d.title||'Service'}: ${v.name}`,amount:Number(d.amount),need_want:'Need',fixed_variable:'Variable',payment_method:acc.name,account_id:acc.id,to_account_id:null,goal_id:null,debt_id:null,recurring:false,notes:'Added by typing'});
+    if(!tx)return false;
+    setTransactions(o=>[tx,...o]);
+    const odo=Number(d.odometer)||null;
+    let res;
+    if(isFuel){const liters=Number(d.liters)||0;res=await supabase.from('vehicle_fuel_logs').insert({user_id:uid,vehicle_id:v.id,fill_date:d.date,odometer:odo??Number(v.current_odometer||0),liters:liters||null,cost:Number(d.amount),price_per_liter:liters?Number((Number(d.amount)/liters).toFixed(2)):null,fuel_type:d.fuelType||'92 Octane',tank_id:null,station:null,full_tank:Boolean(d.fullTank),notes:'Added by typing',transaction_id:tx.id});}
+    else res=await supabase.from('vehicle_service_records').insert({user_id:uid,vehicle_id:v.id,service_type:d.serviceType||'Routine maintenance',title:d.title||'Service',service_date:d.date,odometer:odo,cost:Number(d.amount),provider:null,notes:'Added by typing',transaction_id:tx.id,debt_id:null});
+    if(res.error){await supabase.from('transactions').delete().eq('id',tx.id).eq('user_id',uid);setTransactions(o=>o.filter(x=>x.id!==tx.id));setToast(res.error.message||'Could not save.');return false;}
+    if(odo&&odo>Number(v.current_odometer||0)){await supabase.from('vehicles').update({current_odometer:odo}).eq('id',v.id).eq('user_id',uid);setChatVehicles(o=>({...o,vehicles:o.vehicles.map(x=>x.id===v.id?{...x,current_odometer:odo}:x)}));}
+    setChatVehicles(o=>isFuel?{...o,fuel:[...o.fuel,{fill_date:d.date,cost:Number(d.amount),vehicle_id:v.id}]}:{...o,services:[...o.services,{service_date:d.date,cost:Number(d.amount),vehicle_id:v.id}]});
+    setToast(isFuel?`Fuel saved for ${v.name}`:`Service saved for ${v.name}`);return true;
+  }
   async function chatSave(d){
     const base={transaction_date:d.date,subcategory:'',description:d.description||'',need_want:'Need',fixed_variable:'Variable',account_id:d.accountId||'',to_account_id:'',goal_id:'',debt_id:'',recurring:false,notes:'Added by typing',loan_mode:'none'};
-    if(d.kind==='expense'||d.kind==='income')return !!(await submitTransaction({...base,type:d.type,category:d.category,amount:d.amount}));
+    if(d.kind==='expense'||d.kind==='income'){let receipt_path='';if(d.receiptFile){receipt_path=await uploadReceipt(d.receiptFile);if(!receipt_path)setToast('The receipt photo could not be uploaded. Saving the transaction without it.');}return !!(await submitTransaction({...base,type:d.type,category:d.category,amount:d.amount,notes:d.receiptFile?'Added from a receipt photo':base.notes,receipt_path}));}
+    if(d.kind==='budget'){const m=monthStart(d.month);const old=budgets.find(b=>b.category===d.category&&String(b.month||'').slice(0,7)===String(d.month));const saved=await saveRecord('budgets',{category:d.category,month:m,amount:Number(d.amount)},old?.id);if(!saved)return false;setBudgets(o=>[saved,...o.filter(x=>String(x.id)!==String(saved.id)&&!(x.category===saved.category&&String(x.month||'').slice(0,7)===String(saved.month||'').slice(0,7)))]);setToast(`Budget for ${d.category} saved`);return true;}
+    if(d.kind==='newbill'){const saved=await saveRecord('recurring_payments',{name:d.name||'Bill',category:d.category||'Bills & Utilities',subcategory:null,amount:Number(d.amount),frequency:'Monthly',next_due_date:d.nextDue||null,account_id:d.accountId||null,auto_pay:false,paid_this_cycle:false,last_paid_date:null,pay_by_date:null,paid_amount:0});if(!saved)return false;setRecurring(o=>[saved,...o]);setToast(`${saved.name} added to Subscriptions & bills`);return true;}
+    if(d.kind==='fuel'||d.kind==='service')return await chatSaveVehicle(d);
     if(d.kind==='transfer')return !!(await submitTransaction({...base,type:'Transfer',category:'Transfer',description:'Transfer',amount:d.amount,to_account_id:d.toAccountId||'',goal_id:d.goalId||''}));
     if(d.kind==='goal'){if(!d.goalId){setToast('Choose a goal first.');return false;}return !!(await submitTransaction({...base,type:'Transfer',category:'Transfer',description:'Goal deposit',amount:d.amount,to_account_id:d.goalsAccountId,goal_id:d.goalId}));}
     if(d.kind==='debt'){const debt=debts.find(x=>String(x.id)===String(d.debtId));if(!debt)return false;return !!(await recordDebtInstallment(debt,{accountId:d.accountId,amount:d.amount,paymentDate:d.date}));}
@@ -1171,8 +1203,8 @@ function App(){
     {modal==='import'&&<ImportModal rows={importPreview} onClose={()=>{setModal(null);setImportPreview([])}} onConfirm={confirmImport}/>}
     {confirmDialog&&<ConfirmActionModal dialog={confirmDialog} onCancel={()=>setConfirmDialog(null)} onConfirm={async()=>{const action=confirmDialog.onConfirm;setConfirmDialog(null);await action?.()}}/>}
     <GlobalSearch open={searchOpen} onClose={()=>setSearchOpen(false)} {...{transactions,accounts,debts,recurring,goals,currency}} loadVehicles={allowedFeatures.includes('vehicle_management')&&cloudReady&&session?.user?async()=>{const {data}=await supabase.from('vehicles').select('id,name,make,model,plate');return data||[]}:null} onPick={r=>{if(r.kind==='transaction'){setSearch(r.title||'');setPage('Transactions')}else if(r.kind==='account'){const a=accounts.find(x=>String(x.id)===String(r.id));if(a&&isLiability(a))openCredit(a.id);else setPage('Accounts')}else if(r.kind==='debt')setPage('Debts & installments');else if(r.kind==='recurring')setPage('Subscriptions & bills');else if(r.kind==='goal')setPage('Savings goals');else if(r.kind==='vehicle'){setVehicleSidebarTab('vehicles');setPage('Vehicle Management')}}}/>
-    {<ChatSheet open={chatOpen} onOpenChange={setChatOpen} accounts={accounts} debts={debts} recurring={activeRecurring} goals={activeGoals} currency={currency} defaultAccountId={defaultAccountId} expenseCats={getCategoriesForType('Expense',session?.user?.user_metadata?.gender||'')} incomeCats={incomeCategories} onSave={chatSave}/>}
-    <QuickAdd onType={()=>setChatOpen(true)} onSms={allowedFeatures.includes('bank_sms')?()=>setPage('Bank SMS'):null} smsPending={Number(pendingSms)||0} showVehicles={allowedFeatures.includes('vehicle_management')} onTransaction={()=>{if(!accounts.length){setToast('Add an account or wallet first. Go to Accounts → Add account.');setPage('Accounts');return}setEditing(null);setModal('transaction')}} onFuel={()=>{setVehicleSidebarTab('fuel');setPage('Vehicle Management');setQuickAction({type:'fuel',n:Date.now()})}} onService={()=>{setVehicleSidebarTab('history');setPage('Vehicle Management');setQuickAction({type:'service',n:Date.now()})}}/>
+    {<ChatSheet open={chatOpen} onOpenChange={setChatOpen} accounts={accounts} debts={debts} recurring={activeRecurring} goals={activeGoals} currency={currency} defaultAccountId={defaultAccountId} expenseCats={getCategoriesForType('Expense',session?.user?.user_metadata?.gender||'')} incomeCats={incomeCategories} onSave={chatSave} transactions={transactions} budgets={budgets} page={page} pages={visibleNavGroups.flatMap(g=>g.items).filter(([,,locked])=>!locked).map(([name])=>name).concat(allowedFeatures.includes('vehicle_management')?['Vehicles']:[])} onNavigate={p=>setPage(p)} vehicles={chatVehicles.vehicles} vehicleSpend={vehicleSpend} lastFuelType={chatVehicles.lastFuelType} startWith={chatStart}/>}
+    <QuickAdd onType={()=>{setChatStart('');setChatOpen(true)}} onVoice={()=>{setChatStart('voice');setChatOpen(true)}} onPhoto={()=>{setChatStart('photo');setChatOpen(true)}} onSms={allowedFeatures.includes('bank_sms')?()=>setPage('Bank SMS'):null} smsPending={Number(pendingSms)||0} showVehicles={allowedFeatures.includes('vehicle_management')} onTransaction={()=>{if(!accounts.length){setToast('Add an account or wallet first. Go to Accounts → Add account.');setPage('Accounts');return}setEditing(null);setModal('transaction')}} onFuel={()=>{setVehicleSidebarTab('fuel');setPage('Vehicle Management');setQuickAction({type:'fuel',n:Date.now()})}} onService={()=>{setVehicleSidebarTab('history');setPage('Vehicle Management');setQuickAction({type:'service',n:Date.now()})}}/>
     {toast&&<div className={`toast ${/insufficient balance|error|failed|could not/i.test(toast)?'toast-error':'toast-success'}`} role="status">{/insufficient balance|error|failed|could not/i.test(toast)?<XCircle size={18}/>:<Check size={17}/>}<span>{toast}</span></div>}
     {notificationToast&&<div role="button" tabIndex={0} className="notification-toast" onClick={()=>{setPage(notificationToast.target);setNotificationToast(null)}} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){setPage(notificationToast.target);setNotificationToast(null)}}} aria-label={`Open notification: ${notificationToast.name}`}><span className={`notification-toast-icon ${notificationToast.kind}`}><Bell size={17}/></span><span className="notification-toast-copy"><b>New notification</b><strong>{notificationToast.name}</strong><small>{notificationToast.detail}</small></span><button type="button" className="notification-toast-close" aria-label="Dismiss notification" onClick={e=>{e.stopPropagation();setNotificationToast(null)}}><X size={15}/></button></div>}
   </div>;
