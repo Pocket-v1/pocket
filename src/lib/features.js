@@ -15,8 +15,9 @@ export const FEATURE_OPTIONS = [
   {key:'expense_categories',label:'Expense categories',description:'Manage your own expense categories and subcategories'},
   {key:'bank_sms',label:'Bank SMS',description:'Read bank text messages and approve them as transactions'},
   {key:'vehicle_management',label:'Vehicle Management',description:'Manage vehicles, maintenance schedules, service history and vehicle expenses'},
+  {key:'chat',label:'Chat (type, talk, receipt photo)',description:'Add things by typing, speaking or snapping a receipt, and ask questions'},
 ];
 
-export const PAGE_FEATURE = {'Overview':'overview','Transactions':'transactions','Bank SMS':'bank_sms','Accounts':'accounts','Cash flow calendar':'calendar','Budgets':'budgets','Savings goals':'goals','Subscriptions & bills':'subscriptions','Recurring payments':'subscriptions','Debts & installments':'debts','Insights & forecast':'insights','Reports':'insights','Insights & reports':'insights','Expense categories':'expense_categories','Vehicle Management':'vehicle_management'};
+export const PAGE_FEATURE = {'Overview':'overview','Transactions':'transactions','Bank SMS':'bank_sms','Accounts':'accounts','Cash flow calendar':'calendar','Budgets':'budgets','Savings goals':'goals','Subscriptions & bills':'subscriptions','Recurring payments':'subscriptions','Debts & installments':'debts','Insights & forecast':'insights','Reports':'insights','Insights & reports':'insights','Expense categories':'expense_categories','Vehicle Management':'vehicle_management','Vehicles':'vehicle_management'};
 
 export const POCKET_VALID_PAGES = new Set(['Overview','Transactions','Bank SMS','Accounts','Cash flow calendar','Budgets','Savings goals','Subscriptions & bills','Recurring payments','Debts & installments','Insights & forecast','Insights & reports','Reports','Admin access','Expense categories','Vehicle Management']);
