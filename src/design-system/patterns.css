@@ -354,3 +354,15 @@
 /* Add transaction "More options": the extra fields live inside the review box — show them, hide only the summary rows */
 .tx-single .tx-review-details{display:block!important;padding:0;border:0;background:transparent}
 .tx-single .tx-review-details>div:not(.tx-review-extra){display:none}
+
+/* Log service + Add fuel: one screen, same look as Add transaction */
+.vehicle-one-screen .admin-wizard-content{padding:0 0 18px;margin:0;border:0;background:transparent}
+.vehicle-one-screen .admin-wizard-content+.admin-wizard-content{padding-top:18px;border-top:1px solid var(--ds-border,var(--border))}
+.vehicle-one-screen .admin-wizard-title{margin:0 0 12px}
+.vehicle-one-screen .admin-wizard-title h3{font-size:14px;margin:0}
+.vehicle-one-screen .admin-wizard-title p,.vehicle-one-screen .vehicle-review-card{display:none}
+.vehicle-one-screen .vehicle-wizard-grid,.vehicle-one-screen .vehicle-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 16px}
+.vehicle-one-screen .field{margin:0;min-width:0}
+.vehicle-one-screen .vehicle-wizard-grid+.field,.vehicle-one-screen .field-hint{margin-top:12px}
+.vehicle-one-screen .admin-wizard-actions{display:flex;justify-content:flex-end;gap:10px;position:sticky;bottom:0;background:var(--ds-surface,var(--surface));padding:14px 0 4px;margin:0;border-top:1px solid var(--ds-border,var(--border))}
+@media (max-width:640px){.vehicle-one-screen .vehicle-wizard-grid,.vehicle-one-screen .vehicle-form-grid{grid-template-columns:1fr}.vehicle-one-screen .admin-wizard-actions>.btn{flex:1}}
