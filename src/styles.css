@@ -1038,7 +1038,8 @@ body { background: var(--ds-soft); color: var(--ink); }
 .local-demo-auth-page .auth-form .auth-submit{width:100%;margin-top:3px}
 
 /* Pocket UI copy uses consistent Title Case. User-entered data remains untouched. */
-body { text-transform: capitalize; }
+/* Sentence case everywhere; only page titles use Title Case (see design-system README). */
+.page-heading h1{text-transform:capitalize}
 input, textarea, select, code, pre, .admin-mini-email, .account-email, [type="email"], [type="password"] { text-transform: none; }
 .admin-create-review-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
 .admin-create-review-grid>div { display:flex; flex-direction:column; gap:6px; min-width:0; padding:12px; border:1px solid var(--border,#e9ecf3); border-radius:10px; }

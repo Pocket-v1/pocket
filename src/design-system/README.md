@@ -38,3 +38,7 @@ Every new popup or form is built from the shared pieces, never from one-off clas
 - `small-muted` for helper text and `cc-error` for an error line.
 
 The goal popups (add money, spend, finish) and the "Add by typing" card follow this rule.
+
+## Text case
+
+Sentence case for everything (buttons, labels, cards, popups). Only the page title (`.page-heading h1`) uses Title Case. There is no global capitalize rule any more, so write copy exactly as it should read.

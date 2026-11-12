@@ -319,3 +319,6 @@
 .sms-hist-chips{display:flex;gap:6px}.sms-chipbtn.on{border-color:var(--ds-brand);background:var(--ds-brand-soft);color:var(--ds-brand)}
 @media(max-width:680px){.sms-check-row{flex-wrap:wrap}.sms-check-row .btn{width:100%;min-height:44px}}
 .debt-paid-ask small,.debt-paid-step b,.sms-check-row b,.sms-check-row small,.overview-setup-btn b,.overview-setup-btn small{text-transform:none}
+
+/* Sidebar labels stay on one line at every width. */
+.nav-item>span:not([class]){white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}

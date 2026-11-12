@@ -1,3 +1,4 @@
+import { isFromSavings } from '../../lib/goals.js';
 import { ArrowDownLeft, ArrowUpRight, CalendarDays, CarFront, ChartNoAxesCombined, ChevronRight, CircleDollarSign, Download, PiggyBank, Repeat2, ShieldCheck, Sparkles, Target } from '../../lib/icons.jsx';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import * as XLSX from 'xlsx';
@@ -14,7 +15,7 @@ export function InsightsReportsPage({transactions,month,setMonth,budgets,recurri
  useEffect(()=>{setYear(String((month||localISODate().slice(0,7)).slice(0,4)))},[month]);
  const [y,m]=month.split('-').map(Number); const nowKey=localISODate().slice(0,7); const daysInMonth=new Date(y,m,0).getDate();
  const monthTx=transactions.filter(t=>(t.transaction_date||'').slice(0,7)===month); const prevDate=new Date(y,m-2,15); const prevKey=`${prevDate.getFullYear()}-${String(prevDate.getMonth()+1).padStart(2,'0')}`; const prevTx=transactions.filter(t=>(t.transaction_date||'').slice(0,7)===prevKey);
- const sum=(arr,type)=>arr.filter(t=>t.type===type).reduce((a,t)=>a+Number(t.amount||0),0); const monthOpening=accounts.filter(a=>a.type!=='Credit card'&&a.type!=='Installment app').filter(a=>String(a.opening_balance_date||(a.created_at||'').slice(0,10)||'').slice(0,7)===month).reduce((v,a)=>v+Number(a.opening_balance||0),0); const income=sum(monthTx,'Income')+monthOpening,expenses=sum(monthTx,'Expense'),net=income-expenses,prevExpenses=sum(prevTx,'Expense');
+ const sum=(arr,type)=>arr.filter(t=>t.type===type&&!(type==='Expense'&&isFromSavings(t))).reduce((a,t)=>a+Number(t.amount||0),0); const monthOpening=accounts.filter(a=>a.type!=='Credit card'&&a.type!=='Installment app').filter(a=>String(a.opening_balance_date||(a.created_at||'').slice(0,10)||'').slice(0,7)===month).reduce((v,a)=>v+Number(a.opening_balance||0),0); const income=sum(monthTx,'Income')+monthOpening,expenses=sum(monthTx,'Expense'),net=income-expenses,prevExpenses=sum(prevTx,'Expense');
  const elapsed=month===nowKey?Math.max(1,new Date().getDate()):month<nowKey?daysInMonth:1; const forecast=month<nowKey?expenses:expenses/elapsed*daysInMonth;
  const recurringMonthly=recurring.reduce((a,r)=>a+Number(r.amount||0)*(r.frequency==='Weekly'?4.33:r.frequency==='Quarterly'?1/3:r.frequency==='Yearly'?1/12:1),0);
  const limits=budgets.filter(b=>(b.month||'').slice(0,7)===month).map(b=>{const spent=sum(monthTx.filter(t=>t.category===b.category),'Expense');return {...b,spent,pct:Number(b.amount)?spent/Number(b.amount)*100:0}}).filter(b=>b.pct>=80).sort((a,b)=>b.pct-a.pct);

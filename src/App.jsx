@@ -455,7 +455,7 @@ function App(){
   const cardAlertLimit=(()=>{const date=new Date(`${todayISO}T12:00:00`);date.setDate(date.getDate()+3);return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`})();
   const cardAlerts=accounts.filter(isCard).flatMap(c=>cardSummary(c,transactions,todayISO,debts).groups.filter(g=>g.due<=cardAlertLimit).map(g=>({id:`card-${c.id}-${g.due}`,kind:'debt',name:`${c.name} payment`,detail:`${g.due<todayISO?'Overdue':g.due===todayISO?'Due today':'Due soon'} · ${g.due}`,target:'Debts & installments',amount:g.remaining})));
   const notificationPayments=activeRecurring.filter(r=>!r.paid_this_cycle&&r.next_due_date&&r.next_due_date<=notificationDueLimit).sort((a,b)=>(a.next_due_date||'').localeCompare(b.next_due_date||''));
-  const notificationItems=[...budgetAlerts,...debtAlerts,...cardAlerts,...notificationPayments.map(r=>({id:`recurring-${r.id}`,kind:'recurring',name:r.name,detail:r.next_due_date?`${r.next_due_date<todayISO?'Overdue':r.next_due_date===todayISO?'Due today':'Due soon'} · ${new Date(r.next_due_date+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})} · ${r.frequency||'Recurring'}`:'Upcoming payment',target:'Recurring payments',amount:Math.max(0,Number(r.amount||0)-Number(r.paid_amount||0))}))];
+  const notificationItems=[...budgetAlerts,...debtAlerts,...cardAlerts,...notificationPayments.map(r=>({id:`recurring-${r.id}`,kind:'recurring',name:r.name,detail:r.next_due_date?`${r.next_due_date<todayISO?'Overdue':r.next_due_date===todayISO?'Due today':'Due soon'} · ${new Date(r.next_due_date+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})} · ${r.frequency||'Recurring'}`:'Upcoming payment',target:'Subscriptions & bills',amount:Math.max(0,Number(r.amount||0)-Number(r.paid_amount||0))}))];
   const allNotificationItems=[...notificationItems,...vehicleReminderNotifications];
   useEffect(()=>{
     const currentIds=new Set(notificationItems.map(item=>String(item.id)));
@@ -520,7 +520,7 @@ function App(){
   }
   async function deleteRecurringPayment(payment){
     if(!payment?.id)return;
-    requestConfirm('Delete recurring payment?', `“${payment.name||'This recurring payment'}” will be permanently removed. This action cannot be undone.`, async()=>{
+    requestConfirm('Delete this bill?', `“${payment.name||'This bill'}” will be permanently removed. This action cannot be undone.`, async()=>{
     try{
       if(cloudReady && session?.user){
         // Do not request a returned row: DELETE + SELECT can fail when a project's
@@ -529,7 +529,7 @@ function App(){
         if(error){setToast(`Could not delete payment: ${error.message}`);return;}
       }
       setRecurring(old=>old.filter(item=>String(item.id)!==String(payment.id)));
-      setToast('Recurring payment deleted');
+      setToast('Bill deleted');
     }catch(error){setToast(error?.message||'Could not delete payment. Please try again.');}
     });
   }
