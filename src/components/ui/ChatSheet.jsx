@@ -10,7 +10,7 @@ function Draft({ m, ctx, onChange, onSave, onCancel }) {
   const set = patch => onChange({ ...d, ...patch, catChanged: d.catChanged || 'category' in patch });
   const { accounts, goals, currency, expenseCats, incomeCats } = ctx;
   const usable = accounts.filter(a => !a.is_system && !/^goals$/i.test(a.name));
-  const withGoals = accounts.filter(a => !['Credit card', 'Installment app'].includes(a.type));
+  const withGoals = accounts.filter(a => !['Credit card', 'Installment app'].includes(a.type) && (!a.is_system || [d.accountId, d.toAccountId].some(x => String(x) === String(a.id))));
   const goalsAccId = accounts.find(a => a.is_system === true)?.id;
   const goalsInvolved = d.kind === 'transfer' && goalsAccId && [d.accountId, d.toAccountId].some(x => String(x) === String(goalsAccId));
   const acct = (value, key, label) => <label className="field"><span>{label}</span><select value={value || ''} onChange={e => set({ [key]: e.target.value })}>{!value && <option value="">Choose…</option>}{(d.kind === 'transfer' ? withGoals : usable).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>;

@@ -272,3 +272,15 @@
 .emoji-grid button,.emoji-current,.ww-emoji,.setup-type-emoji,.tx-choice-icon{color:var(--ds-text)}.emoji-grid button.on{color:var(--ds-brand)}
 /* The card already has its own padding, so its header must not add more (keeps title and fields on one line). */
 .category-wizard-card>.modal-header{padding:0}
+.debt-paid-ask{background:var(--ds-warn-soft);border-radius:var(--ds-radius-md,12px);padding:12px 14px}
+.debt-paid-ask>span{color:var(--ds-text)!important;text-transform:none}
+.debt-paid-step{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:8px 0 4px}
+.debt-paid-step .btn{min-width:44px;min-height:44px;justify-content:center;font-size:18px}
+.debt-paid-step b{font-size:20px}
+/* Add transaction on one screen: the old step intros, step buttons and review summary are hidden. */
+.tx-single .tx-wizard-intro,.tx-single .tx-wizard-actions,.tx-single .tx-review-card,.tx-single .tx-review-details{display:none}
+.tx-single .tx-wizard-page{padding-top:0}
+.tx-single .tx-wizard-page+.tx-wizard-page{margin-top:14px}
+.tx-more-toggle{width:100%;min-height:44px;margin-top:14px;border:1px dashed var(--ds-border);border-radius:var(--ds-radius-md,10px);background:transparent;color:var(--ds-text-muted,var(--ds-secondary-text));font-weight:700;font-size:13px;text-transform:none}
+.tx-single-actions{margin-top:14px}
+.modal:has(.tx-single) .tx-wizard-steps,.modal-shell:has(.tx-single) .tx-wizard-steps{display:none}
