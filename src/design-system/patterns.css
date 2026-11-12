@@ -327,3 +327,11 @@
 .modal:has(.tx-single),.modal-shell:has(.tx-single),.modal-body:has(.tx-single){overflow-x:hidden}
 .tx-single input[type=date]{min-width:0;max-width:100%;-webkit-appearance:none;appearance:none}
 .tx-single .category-choice,.tx-single [class*="category-card"]{max-width:100%}
+/* Every popup and sheet: never scroll sideways, and date/time fields fit their column on iPhone. */
+.modal,.modal-shell,.modal-backdrop>section,.sms-sheet,.chat-sheet,.category-wizard-card{overflow-x:hidden;max-width:100%}
+.modal *,.modal-shell *,.sms-sheet *,.chat-sheet *,.category-wizard-card *{min-width:0}
+.modal input[type=date],.modal input[type=time],.modal input[type=datetime-local],.modal input[type=month],
+.modal-shell input[type=date],.modal-shell input[type=time],.modal-shell input[type=month],
+.sms-sheet input[type=date],.chat-sheet input[type=date],.category-wizard-card input[type=date]{-webkit-appearance:none;appearance:none;max-width:100%;width:100%;min-width:0}
+.modal .form-grid,.modal-shell .form-grid{min-width:0}
+.modal .form-grid>*,.modal-shell .form-grid>*{min-width:0}
