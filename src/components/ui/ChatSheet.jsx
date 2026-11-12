@@ -41,8 +41,11 @@ function Draft({ m, ctx, onChange, onSave, onCancel }) {
   </div>;
 }
 
-export function ChatSheet({ accounts, debts, recurring, goals, expenseCats, incomeCats, currency, defaultAccountId, onSave }) {
-  const [open, setOpen] = useState(false);
+export function ChatSheet({ open: openProp, onOpenChange, accounts, debts, recurring, goals, expenseCats, incomeCats, currency, defaultAccountId, onSave }) {
+  const [openLocal, setOpenLocal] = useState(false);
+  const controlled = openProp !== undefined;
+  const open = controlled ? openProp : openLocal;
+  const setOpen = v => { const next = typeof v === 'function' ? v(open) : v; controlled ? onOpenChange?.(next) : setOpenLocal(next); };
   const [text, setText] = useState('');
   const [msgs, setMsgs] = useState([]);
   const bodyRef = useRef(null); const inputRef = useRef(null);
@@ -84,7 +87,7 @@ export function ChatSheet({ accounts, debts, recurring, goals, expenseCats, inco
   }
 
   return <>
-    {!open && <button type="button" className="chat-fab" onClick={() => setOpen(true)} aria-label="Add by typing"><MessageCircle size={20} aria-hidden="true" /><span>Add by typing</span></button>}
+    {!open && !controlled && <button type="button" className="chat-fab" onClick={() => setOpen(true)} aria-label="Add by typing"><MessageCircle size={20} aria-hidden="true" /><span>Add by typing</span></button>}
     {open && <div className="chat-scrim" onClick={() => setOpen(false)} aria-hidden="true" />}
     {open && <section className="chat-sheet" role="dialog" aria-label="Add by typing" style={vv ? { bottom: vv.bottom, height: vv.height } : undefined}>
       <header className="chat-head"><h2>Add by typing</h2><button type="button" className="chat-x" onClick={() => setOpen(false)} aria-label="Close"><X size={18} aria-hidden="true" /></button></header>

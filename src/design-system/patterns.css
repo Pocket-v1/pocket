@@ -237,7 +237,6 @@
 .chat-send{width:48px;height:48px;border:0;border-radius:14px;background:var(--ds-brand);color:var(--ds-on-brand,#fff);display:grid;place-items:center}
 @media(max-width:680px){
   .chat-fab{right:16px;bottom:calc(14px + env(safe-area-inset-bottom));height:48px}
-  .quick-add{bottom:calc(14px + 48px + 12px + env(safe-area-inset-bottom))!important}
   .chat-sheet{right:0;left:0;bottom:0;width:auto;height:88vh;max-height:calc(100dvh - 8px);border-radius:22px 22px 0 0;border-width:1px 0 0}
   .chat-input input{font-size:16px}
 }
@@ -284,3 +283,16 @@
 .tx-more-toggle{width:100%;min-height:44px;margin-top:14px;border:1px dashed var(--ds-border);border-radius:var(--ds-radius-md,10px);background:transparent;color:var(--ds-text-muted,var(--ds-secondary-text));font-weight:700;font-size:13px;text-transform:none}
 .tx-single-actions{margin-top:14px}
 .modal:has(.tx-single) .tx-wizard-steps,.modal-shell:has(.tx-single) .tx-wizard-steps{display:none}
+
+/* One add button on every screen: the + menu holds typing, the form and bank SMS. */
+.quick-add{display:block!important;position:fixed;right:24px;bottom:24px;z-index:60}
+@media(max-width:680px){.quick-add{right:16px;bottom:calc(18px + env(safe-area-inset-bottom))}}
+.quick-add-item b{display:flex;flex-direction:column;align-items:flex-start;gap:1px;font-weight:700;text-align:left;text-transform:none}
+.quick-add-item small{font-size:12px;font-weight:500;color:var(--ds-text-muted,var(--ds-secondary-text))}
+.quick-add-item{border-radius:16px;min-height:56px;padding:8px 16px 8px 8px;min-width:240px}
+.quick-add-fab{width:56px;height:56px;border-radius:50%;border:0;display:grid;place-items:center;background:var(--ds-brand);color:#fff;box-shadow:0 10px 24px color-mix(in srgb,var(--ds-brand) 33%,transparent)}
+.quick-add-fab.open{background:#1f2a44}
+.quick-add-menu{position:absolute;right:0;bottom:68px;display:flex;flex-direction:column;gap:8px;align-items:stretch}
+.quick-add-scrim{position:fixed;inset:0;border:0;background:#0b122066;z-index:-1}
+.quick-add-item{display:flex;align-items:center;gap:12px;border:1px solid var(--ds-border);background:var(--ds-surface);color:var(--ds-text);font-size:14px;box-shadow:0 8px 20px #0b122026;text-transform:none;white-space:nowrap}
+.quick-add-item span{display:grid;place-items:center;flex:none;width:36px;height:36px;border-radius:50%;background:var(--ds-brand-soft);color:var(--ds-brand)}
