@@ -5,6 +5,7 @@ import { cardCycle, money } from '../../lib/credit.js';
 import { shortDate } from '../../lib/format.js';
 import { CardVisual, DueChip, LimitBar } from './CreditSummary.jsx';
 import { EmptyState } from '../../components/ui/EmptyState.jsx';
+import { Tabs } from '../../components/ui/Tabs.jsx';
 
 // Credit card page: what to pay next up top, then tabs for what you owe, what you paid, and card info.
 export function CardDetail({ card, summary, accounts = [], currency, onBack, onPay, onAddPurchase, onConvert, onPayPlan, onEditPlan, onDeletePlan, onEdit, onDelete, renderReport }) {
@@ -40,9 +41,7 @@ export function CardDetail({ card, summary, accounts = [], currency, onBack, onP
     </div>
     <section className="panel" style={{ padding: '16px 20px' }}><LimitBar used={summary.owed} limit={summary.limit} currency={currency} /></section>
 
-    <div className="cc-tabs" role="tablist" aria-label="Card sections">
-      {[['pay', `To pay${summary.groups.length ? ` (${summary.groups.length})` : ''}`], ['paid', `Payments${summary.payments.length ? ` (${summary.payments.length})` : ''}`], ['about', 'About this card']].map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} className={`cc-tab ${tab === k ? 'on' : ''}`} onClick={() => setTab(k)}>{l}</button>)}
-    </div>
+    <Tabs label="Card sections" value={tab} onChange={setTab} items={[{ key: 'pay', label: 'To pay', count: summary.groups.length }, { key: 'paid', label: 'Payments', count: summary.payments.length }, { key: 'about', label: 'About' }]} />
 
     {summary.activePlans.length > 0 && <section className="panel" style={{ padding: 0, overflow: 'hidden', marginBottom: 14 }}>
       <div className="cc-line" style={{ borderTop: 0 }}><span><b>Installment plans on this card</b><small>Not part of the statement. Pay them month by month.</small></span><span><b>{fmt(summary.planOwed)}</b></span></div>

@@ -27,6 +27,21 @@ The single source of truth for look and feel. Change a value in `tokens.css` and
 4. Fonts only through `--ds-font-display` and `--ds-font-ui`.
 5. Add a new reusable pattern to `patterns.css` and to the Patterns section of `docs.js`.
 
+## Before adding anything new
+
+Check this design system first. If a piece already exists (Tabs, ModalShell, Field, buttons, chips), use it. If it does not exist, add it here (component + `components.css` or `patterns.css` + this README) and then use it. Never style a one-off copy inside a page.
+
+## Components in code
+
+| Need | Use | Where |
+| --- | --- | --- |
+| Sections on a page or popup | `<Tabs items value onChange label />` | `src/components/ui/Tabs.jsx`, styles `.ds-tabs` in `components.css` |
+| Popup frame | `ModalShell` | `src/components/modals/ModalShell.jsx` |
+| Input or select | `Field` in a `form-grid` | see below |
+
+### Tabs
+The only tab style in Pocket: a soft track with equal-width tabs; the open tab is a raised white pill. Counts show as a small badge (`count`). Used on Bank SMS, Vehicles, Debts, Card details and Installment app details. Keep labels to one or two words; 2 to 4 tabs. Do not use underline tabs or page-specific tab classes.
+
 ## Rule for new popups and forms
 
 Every new popup or form is built from the shared pieces, never from one-off classes:

@@ -6,6 +6,7 @@ import { shortDate } from '../../lib/format.js';
 import { CardVisual, DueChip, LimitBar } from './CreditSummary.jsx';
 import { ShoppingBag } from '../../lib/icons.jsx';
 import { EmptyState } from '../../components/ui/EmptyState.jsx';
+import { Tabs } from '../../components/ui/Tabs.jsx';
 
 // Installment app page (Valu, Aman, Halan...): limit, what is due next, and every plan under the app.
 export function ProviderDetail({ provider, summary, accounts = [], currency, onBack, onPay, onPayPlan, onAddPlan, onConvert, onEdit, onDelete, onEditPlan, onDeletePlan, renderReport }) {
@@ -34,9 +35,7 @@ export function ProviderDetail({ provider, summary, accounts = [], currency, onB
       <div className="cc-row-between"><span className="cc-sub">&nbsp;</span><button className="btn btn-primary btn-sm" onClick={() => onPay(provider, { due: '', plans: [{ id: 'loose', name: 'Purchases on ' + provider.name }], amount: summary.looseOwed, looseAmount: summary.looseOwed })}>Pay {fmt(summary.looseOwed)}</button></div></section>}
     <section className="panel" style={{ padding: '16px 20px' }}><LimitBar used={summary.used} limit={summary.limit} usedLabel="committed" currency={currency} /></section>
 
-    <div className="cc-tabs" role="tablist" aria-label="Installment app sections">
-      {[['active', `Active plans${summary.active.length ? ` (${summary.active.length})` : ''}`], ['done', `Completed${summary.done.length ? ` (${summary.done.length})` : ''}`], ['about', 'About this app']].map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} className={`cc-tab ${tab === k ? 'on' : ''}`} onClick={() => setTab(k)}>{l}</button>)}
-    </div>
+    <Tabs label="Installment app sections" value={tab} onChange={setTab} items={[{ key: 'active', label: 'Active plans', count: summary.active.length }, { key: 'done', label: 'Completed', count: summary.done.length }, { key: 'about', label: 'About' }]} />
 
     {tab === 'active' && (sorted.length ? sorted.map(d => {
       const term = Number(d.term_months || 0), paid = Number(d.paid_installments || 0), total = Number(d.total_repayment || d.original_amount || 0), done = Number(d.amount_paid || 0), pct = total > 0 ? Math.min(100, done / total * 100) : 0;

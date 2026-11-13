@@ -15,6 +15,7 @@ import { BANKS } from '../../lib/smsBanks.js';
 import { confidence, detectTransfers, groupsByMerchant, merchantKey, suggestAuto } from '../../lib/smsInsights.js';
 import { SmsInsights } from './SmsInsights.jsx';
 import { DailyCheck, SmsDevices, SmsRulesBackup } from './SmsDevices.jsx';
+import { Tabs } from '../../components/ui/Tabs.jsx';
 
 const TEST_SENDER = 'Pocket Test';
 const csv = v => String(v || '').split(/[,\n،]/).map(x => x.trim()).filter(Boolean);
@@ -461,7 +462,7 @@ export function SmsPage({ focusAccount = null, onFocusDone, debts = [], recurrin
       <button type="button" className="sms-checklist-more" onClick={() => setTab('connect')}>Devices, daily check and rules</button>
     </section>}
     <section className="sms-main">
-    <div className="seg-tabs sms-tabs" role="tablist" aria-label="Bank SMS">{[['inbox', 'Inbox', items.length], ['history', 'History', hist.length], ['insights', 'Insights', 0]].map(([k, l, n]) => <button type="button" role="tab" key={k} aria-selected={k === 'insights' ? false : cur === k} className={k !== 'insights' && cur === k ? 'on' : ''} onClick={() => { if (k === 'insights') setInsOpen(true); else setTab(k); }}>{l}{n > 0 && <span> · {n}</span>}</button>)}</div>
+    <Tabs label="Bank SMS" value={cur} onChange={k => { if (k === 'insights') setInsOpen(true); else setTab(k); }} items={[{ key: 'inbox', label: 'Inbox', count: items.length }, { key: 'history', label: 'History', count: hist.length }, { key: 'insights', label: 'Insights' }]} />
     {cur === 'inbox' && <section className="sms-pane">
       {filters}
       {groups.length > 0 && shown.length > 1 && <div className="smx-groups"><span>Quick groups</span>{groups.map(g => <button type="button" key={g.key} className="sms-chipbtn" onClick={() => approveGroup(g)}>{g.label} ×{g.ids.length} · Approve</button>)}</div>}
