@@ -39,7 +39,7 @@ const FAQ = [
 const CONTACT_TOPICS = [['problem', 'Something is wrong'], ['plus', 'Plus & payment'], ['idea', 'An idea'], ['other', 'Something else']];
 
 // The message form: sent to Pocket support with the user's details, reply comes by email.
-function ContactModal({ supabase, userEmail, fromPage, onClose, onSent }) {
+export function ContactModal({ supabase, userEmail, fromPage, onClose, onSent }) {
   const [topic, setTopic] = useState('problem');
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
@@ -53,7 +53,7 @@ function ContactModal({ supabase, userEmail, fromPage, onClose, onSent }) {
       onSent();
     } catch { setErr('Could not send. Check your connection and try again.'); setBusy(false); }
   }
-  return <ModalShell title="Send us a message" subtitle="A real person reads every message. We reply by email within a day." onClose={onClose}>
+  return <ModalShell title="Send us a message" subtitle="A real person reads every message. Our reply shows up in your Inbox, next to the bell." onClose={onClose}>
     <div className="help-form">
       <div className="cc-options help-topics" role="radiogroup" aria-label="What is it about?">
         {CONTACT_TOPICS.map(([k, label]) => <button key={k} type="button" role="radio" aria-checked={topic === k} className={`cc-option ${topic === k ? 'on' : ''}`} onClick={() => setTopic(k)}><span><b>{label}</b></span></button>)}
@@ -61,7 +61,7 @@ function ContactModal({ supabase, userEmail, fromPage, onClose, onSent }) {
       <div className="form-grid">
         <Field label="Your message" wide><textarea className="pocket-textarea" rows="6" maxLength={4000} value={text} onChange={e => setText(e.target.value)} placeholder={topic === 'problem' ? 'Tell us what happened and what you expected…' : topic === 'plus' ? 'Which plan, how you paid and when…' : 'Tell us more…'} /></Field>
       </div>
-      <p className="small-muted help-form-note">We reply to <b>{userEmail || 'your account email'}</b>. Your name, plan and the page you were on are sent with it, so you don't need to explain.</p>
+      <p className="small-muted help-form-note">Your name, plan and the page you were on are sent with it, so you don't need to explain.</p>
       {err && <p className="cc-error" role="alert">{err}</p>}
     </div>
     <div className="modal-actions"><button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button><button type="button" className="btn btn-primary" disabled={busy} onClick={send}>{busy ? 'Sending…' : 'Send message'}</button></div>
@@ -97,11 +97,11 @@ export function HelpPage({ supabase = null, userEmail = '', fromPage = '', onToa
         }) : <EmptyState inline icon={Search} title="No answer found" text="Try other words, or send us a message." />}
       </section>
       <aside className="help-contact" aria-label="Contact us">
-        <div className="help-contact-head"><span className="help-contact-ic"><Mail size={20} /></span><span><b>Still need help?</b><small>We reply within a day</small></span></div>
+        <div className="help-contact-head"><span className="help-contact-ic"><Mail size={20} /></span><span><b>Still need help?</b><small>We reply in your Inbox within a day</small></span></div>
         {supabase ? <button type="button" className="btn help-contact-btn" onClick={() => setContactOpen(true)}>Send us a message</button> : <a className="btn help-contact-btn" href={mailto}>Send us a message</a>}
         <button type="button" className="help-contact-mail" onClick={copy}>{copied ? <><Check size={14} /> Copied</> : <>or email {SUPPORT_EMAIL} <Copy size={14} /></>}</button>
       </aside>
     </div>
-    {contactOpen && <ContactModal supabase={supabase} userEmail={userEmail} fromPage={fromPage} onClose={() => setContactOpen(false)} onSent={() => { setContactOpen(false); onToast?.('Message sent. We will reply to your email within a day.'); }} />}
+    {contactOpen && <ContactModal supabase={supabase} userEmail={userEmail} fromPage={fromPage} onClose={() => setContactOpen(false)} onSent={() => { setContactOpen(false); onToast?.('Message sent. Our reply shows up in your Inbox.'); }} />}
   </div>;
 }
