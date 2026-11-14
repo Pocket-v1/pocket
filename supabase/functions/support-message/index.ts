@@ -45,8 +45,8 @@ Deno.serve(async req => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   if (req.method !== 'POST') return json({ ok: false, error: 'Method not allowed' }, 405);
   const url = Deno.env.get('SUPABASE_URL'), anon = Deno.env.get('SUPABASE_ANON_KEY'), role = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  const resendKey = Deno.env.get('RESEND_API_KEY');
-  const from = Deno.env.get('EMAIL_FROM') || 'Pocket <onboarding@resend.dev>';
+  const resendKey = Deno.env.get('SUPPORT_RESEND_API_KEY') || Deno.env.get('RESEND_API_KEY');
+  const from = Deno.env.get('SUPPORT_RESEND_API_KEY') ? 'Pocket Support <onboarding@resend.dev>' : (Deno.env.get('EMAIL_FROM') || 'Pocket <onboarding@resend.dev>');
   const to = Deno.env.get('SUPPORT_EMAIL') || 'pocket.egypt.app@gmail.com';
   const appUrl = Deno.env.get('APP_URL') || 'https://pocket-egypt.vercel.app';
   const auth = req.headers.get('authorization') || '';
