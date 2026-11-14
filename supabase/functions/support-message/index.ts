@@ -45,8 +45,6 @@ Deno.serve(async req => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   if (req.method !== 'POST') return json({ ok: false, error: 'Method not allowed' }, 405);
   const url = Deno.env.get('SUPABASE_URL'), anon = Deno.env.get('SUPABASE_ANON_KEY'), role = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  const resendKey = Deno.env.get('SUPPORT_RESEND_API_KEY') || Deno.env.get('RESEND_API_KEY');
-  const from = Deno.env.get('SUPPORT_RESEND_API_KEY') ? 'Pocket Support <onboarding@resend.dev>' : (Deno.env.get('EMAIL_FROM') || 'Pocket <onboarding@resend.dev>');
   const to = Deno.env.get('SUPPORT_EMAIL') || 'pocket.egypt.app@gmail.com';
   const appUrl = Deno.env.get('APP_URL') || 'https://pocket-egypt.vercel.app';
   const auth = req.headers.get('authorization') || '';
@@ -55,6 +53,10 @@ Deno.serve(async req => {
   const { data: { user } } = await asUser.auth.getUser();
   if (!user) return json({ ok: false, error: 'Sign in first.' }, 401);
   const service = createClient(url, role, { auth: { persistSession: false } });
+  // The support inbox's own Resend key: an Edge Function secret if set, else the server-only private_secrets table.
+  let resendKey = Deno.env.get('SUPPORT_RESEND_API_KEY') || '';
+  if (!resendKey) { const { data: sk } = await service.from('private_secrets').select('value').eq('name', 'SUPPORT_RESEND_API_KEY').maybeSingle(); resendKey = sk?.value || ''; }
+  const from = 'Pocket Support <onboarding@resend.dev>';
 
   const { data: allowed } = await service.rpc('check_rate_limit', { p_key: `support:${user.id}`, p_max: 5, p_window_seconds: 3600 });
   if (allowed === false) return json({ ok: false, error: 'You sent a few messages already. Please wait a little and try again.' }, 429);
