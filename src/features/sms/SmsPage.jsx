@@ -462,7 +462,8 @@ export function SmsPage({ focusAccount = null, onFocusDone, debts = [], recurrin
       <button type="button" className="sms-checklist-more" onClick={() => setTab('connect')}>Devices, daily check and rules</button>
     </section>}
     <section className="sms-main">
-    <Tabs label="Bank SMS" value={cur} onChange={k => { if (k === 'insights') setInsOpen(true); else setTab(k); }} items={[{ key: 'inbox', label: 'Inbox', count: items.length }, { key: 'history', label: 'History', count: hist.length }, { key: 'insights', label: 'Insights' }]} />
+    <Tabs label="Bank SMS" value={cur} onChange={setTab} items={[{ key: 'inbox', label: 'Inbox', count: items.length }, { key: 'history', label: 'History', count: hist.length }, { key: 'insights', label: 'Insights' }]} />
+    {cur === 'insights' && <section className="sms-pane sms-insights-pane"><SmsInsights items={items} hist={hist} configs={configs} usable={usable} accounts={accounts} transactions={transactions} fmt={fmt} flagged={flagged} /></section>}
     {cur === 'inbox' && <section className="sms-pane">
       {filters}
       {groups.length > 0 && shown.length > 1 && <div className="smx-groups"><span>Quick groups</span>{groups.map(g => <button type="button" key={g.key} className="sms-chipbtn" onClick={() => approveGroup(g)}>{g.label} ×{g.ids.length} · Approve</button>)}</div>}
@@ -497,7 +498,7 @@ export function SmsPage({ focusAccount = null, onFocusDone, debts = [], recurrin
 
     </section>
 
-    {insOpen && createPortal(<div className="sms-sheet-wrap"><div className="sms-scrim" onClick={() => setInsOpen(false)} /><aside className="sms-sheet" role="dialog" aria-label="SMS insights"><div className="sms-sheet-top"><h3>SMS insights</h3><button type="button" className="icon-btn" aria-label="Close insights" onClick={() => setInsOpen(false)}><X size={18} /></button></div><div className="sms-sheet-body"><SmsInsights items={items} hist={hist} configs={configs} usable={usable} accounts={accounts} transactions={transactions} fmt={fmt} flagged={flagged} /></div></aside></div>, document.body)}
+
 
     {inSettings && createPortal(<div className="sms-sheet-wrap"><div className="sms-scrim" onClick={() => setTab(main)} />
     <aside className="sms-sheet" role="dialog" aria-label="SMS setup">
