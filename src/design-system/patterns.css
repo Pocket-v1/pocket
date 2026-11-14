@@ -394,3 +394,49 @@
 /* Bank SMS Insights: a normal tab page now (was a bottom sheet) */
 .sms-insights-pane{display:grid;gap:12px;align-content:start}
 .sms-insights-pane>*{margin:0}
+
+/* ── SMS Insights (tab page) ─ uses metric-card, panel, sms-pill ── */
+.smi{display:grid;gap:16px}
+.smi .smi-metrics{margin:0}
+.smi-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.smi-wide{grid-column:1/-1}
+.smi-panel{margin:0;padding:18px 20px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.smi-panel>.panel-header{margin:0;padding:0;border:0}
+.smi-panel .panel-header h2{margin:0}
+.smi-panel .panel-header p{margin:2px 0 0;color:var(--ds-text-muted);font-size:13px}
+/* bars */
+.smi-bars{display:grid;grid-template-columns:repeat(14,minmax(0,1fr));align-items:end;gap:6px;height:120px}
+.smi-bar-col{position:relative;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center}
+.smi-bar-col i{display:block;width:100%;max-width:26px;border-radius:6px 6px 3px 3px;background:var(--ds-brand-soft,#eaf0ff)}
+.smi-bar-col.is-today i,.smi-bar-col i:hover{background:var(--ds-brand)}
+.smi-bar-col em{font:700 11px var(--ds-font-ui);font-style:normal;color:var(--ds-text-muted);margin-bottom:4px}
+.smi-axis{display:flex;justify-content:space-between;margin-top:-6px}
+.smi-axis small{font-size:11.5px;color:var(--ds-text-muted)}
+/* rows */
+.smi-list{display:grid;gap:10px;margin:0;padding:0;list-style:none}
+.smi-row{display:flex;align-items:center;gap:12px;min-width:0}
+.smi-row-ic{flex:none;width:36px;height:36px;border-radius:11px;display:grid;place-items:center}
+.smi-row-ic.warn{background:var(--ds-warn-soft);color:var(--ds-warn)}
+.smi-row-ic.bad{background:var(--ds-bad-soft,color-mix(in srgb,var(--ds-danger) 12%,transparent));color:var(--ds-danger)}
+.smi-row-ic.brand{background:var(--ds-brand-soft,#eaf0ff);color:var(--ds-brand)}
+.smi-row-t{flex:1;min-width:0}
+.smi-row-t b{display:block;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.smi-row-t small{display:block;margin-top:2px;font-size:12.5px;color:var(--ds-text-muted)}
+.smi-row-amt{flex:none;font:800 14px var(--ds-font-display);color:var(--ds-danger)}
+.smi-row>.sms-pill{flex:none;white-space:nowrap}
+/* top merchants */
+.smi-top{display:flex;gap:12px;align-items:flex-start}
+.smi-rank{flex:none;width:24px;height:24px;border-radius:8px;display:grid;place-items:center;background:var(--ds-surface-soft,var(--ds-soft));font:800 12px var(--ds-font-ui);color:var(--ds-text-muted)}
+.smi-top:first-child .smi-rank{background:var(--ds-brand);color:#fff}
+.smi-top-t{flex:1;min-width:0;display:grid;gap:5px}
+.smi-top-t>div{display:flex;justify-content:space-between;gap:10px}
+.smi-top-t b{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.smi-top-t span{flex:none;font:700 13px var(--ds-font-ui)}
+.smi-top-t i{display:block;height:6px;border-radius:99px;background:var(--ds-surface-soft,var(--ds-soft));overflow:hidden}
+.smi-top-t u{display:block;height:100%;border-radius:99px;background:var(--ds-brand)}
+.smi-top-t small{font-size:12px;color:var(--ds-text-muted)}
+/* empty state */
+.smi-empty{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;background:var(--ds-surface-soft,var(--ds-soft))}
+.smi-empty-ic{flex:none;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--ds-surface);color:var(--ds-text-muted)}
+.smi-empty p{margin:0;font-size:13px;line-height:1.45;color:var(--ds-text-muted)}
+@media (max-width:760px){.smi-grid{grid-template-columns:1fr}.smi-panel{padding:16px}.smi-bars{gap:4px;height:100px}.smi-bar-col em{display:none}}
