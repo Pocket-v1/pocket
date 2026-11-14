@@ -448,3 +448,49 @@
 .smx-swipe:has(>.smx-card.smx-hint)>.smx-bg.ap{animation:smxHintAp 2.6s ease-in-out .8s 2}
 .smx-swipe:has(>.smx-card.smx-hint)>.smx-bg.di{animation:smxHintDi 2.6s ease-in-out .8s 2}
 @media (prefers-reduced-motion:reduce){.smx-swipe:has(>.smx-card.smx-hint)>.smx-bg{animation:none}}
+
+/* ── Pocket Plus (user page + owner page) ─ panel, MetricCard, Tabs, cc-options, sms-pill ── */
+.nav-plus{margin-left:auto;padding:2px 8px;border-radius:99px;background:var(--ds-brand-soft,#eaf0ff);color:var(--ds-brand);font:800 10.5px var(--ds-font-ui);letter-spacing:.02em}
+.plus-page,.plus-admin{display:grid;gap:16px}
+.plus-status{margin:0;display:flex;align-items:center;gap:14px;padding:16px 18px}
+.plus-status-ic{flex:none;width:42px;height:42px;border-radius:12px;display:grid;place-items:center}
+.plus-status-ic.brand{background:var(--ds-brand-soft,#eaf0ff);color:var(--ds-brand)}
+.plus-status-ic.ok{background:var(--ds-ok-soft,#e3f6ee);color:var(--ds-ok,#187d55)}
+.plus-status-ic.warn{background:var(--ds-warn-soft);color:var(--ds-warn)}
+.plus-status-ic.bad{background:var(--ds-bad-soft,#fdeaec);color:var(--ds-danger)}
+.plus-status-t{flex:1;min-width:0;display:grid;gap:3px}
+.plus-status-t b{font-size:15px}
+.plus-status-t small{font-size:13px;color:var(--ds-text-muted)}
+.plus-status>.sms-pill{flex:none}
+.plus-track{height:6px;margin-top:6px;border-radius:99px;background:var(--ds-surface-soft,var(--ds-soft));overflow:hidden}
+.plus-track i{display:block;height:100%;border-radius:99px;background:var(--ds-brand)}
+.plus-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start}
+.plus-grid>.panel{margin:0;padding:18px 20px;display:flex;flex-direction:column;gap:14px}
+.plus-grid .panel-header{margin:0;padding:0;border:0}
+.plus-grid .panel-header p{margin:2px 0 0;color:var(--ds-text-muted);font-size:13px}
+.plus-perk-list{list-style:none;margin:0;padding:0;display:grid;gap:14px}
+.plus-perk-list li{display:flex;gap:12px;align-items:flex-start}
+.plus-perk-ic{flex:none;width:36px;height:36px;border-radius:11px;display:grid;place-items:center;background:var(--ds-brand-soft,#eaf0ff);color:var(--ds-brand)}
+.plus-perk-list b{display:block;font-size:14px}
+.plus-perk-list small{display:block;margin-top:2px;font-size:13px;line-height:1.45;color:var(--ds-text-muted)}
+.plus-side .plus-cta{width:100%;min-height:46px;justify-content:center}
+.plus-side .small-muted{margin:0}
+.plus-amount{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;margin:0 0 14px;border-radius:12px;background:var(--ds-surface-soft,var(--ds-soft));font-size:13px;color:var(--ds-text-muted)}
+.plus-amount b{font:800 20px var(--ds-font-display);color:var(--ds-text)}
+.plus-sendto{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;padding:12px 14px;border:1px dashed var(--ds-border);border-radius:12px}
+.plus-sendto small{display:block;font-size:12px;color:var(--ds-text-muted)}
+.plus-sendto b{font-size:15px;word-break:break-all}
+.plus-sendto .btn{flex:none}
+.plus-admin-actions{display:flex;gap:8px;flex-wrap:wrap}
+.plus-admin .metric-grid{margin:0}
+.plus-admin-list{margin:0;padding:6px 18px}
+.plus-admin-row{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1.3fr) minmax(0,1fr) auto;gap:14px;align-items:center;padding:14px 0;border-bottom:1px solid var(--ds-border)}
+.plus-admin-row:last-child{border-bottom:0}
+.plus-admin-row b{display:block;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.plus-admin-row small{display:block;margin-top:2px;font-size:12.5px;color:var(--ds-text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.plus-admin-status{display:grid;justify-items:start;gap:4px}
+.plus-admin-act{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
+.plus-admin-list>.smi-empty{margin:12px 0}
+.sms-pill.bad{color:var(--ds-danger);background:var(--ds-bad-soft,#fdeaec)}
+.sms-pill.muted{color:var(--ds-text-muted);background:var(--ds-surface-soft,var(--ds-soft))}
+@media (max-width:760px){.plus-grid{grid-template-columns:1fr}.plus-admin-row{grid-template-columns:minmax(0,1fr) auto;gap:8px 12px}.plus-admin-plan{grid-column:1/2}.plus-admin-status{grid-column:2;grid-row:1;justify-items:end}.plus-admin-act{grid-column:1/-1;justify-content:flex-start}}
