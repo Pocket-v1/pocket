@@ -79,13 +79,17 @@ export function parsePaymentText(text) {
   const t = normalizeDigits(String(text || ''));
   const flat = t.replace(/\s+/g, ' ');
   const handles = [...flat.matchAll(/([a-z0-9._-]{3,})\s*@\s*instapay/gi)].map(m => `${m[1].toLowerCase()}@instapay`);
+  // InstaPay "Approved Transaction" screen: From <payer>@instapay … To <name> <payee>@instapay
+  const after = re => { const m = flat.match(re); if (!m) return ''; const h = flat.slice(m.index + m[0].length).match(/([a-z0-9._-]{3,})\s*@\s*instapay/i); return h ? `${h[1].toLowerCase()}@instapay` : ''; };
+  const from = after(/\b(?:from|sender)\b|من/i);
+  const to = after(/\b(?:to|receiver|beneficiary)\b|إلى|الى/i);
   const ref = (flat.match(/(?:reference(?:\s*(?:no|number|id))?|ref(?:\.|\s*no)?|transaction\s*(?:id|no|number|reference)|رقم\s*(?:المرجع|المعامله|المعاملة|العمليه|العملية))\s*[:#.]?\s*([A-Za-z0-9]{6,})/i) || [])[1] || '';
   const phones = [...flat.matchAll(/(?:\+?20|0020)?\s?(01[0125]\d{8})/g)].map(m => m[1]);
   const money = [...flat.matchAll(/(?:EGP|LE|جنيه|ج\.?م|جم)\s*([0-9][0-9,]*(?:\.\d{1,2})?)|([0-9][0-9,]*(?:\.\d{1,2})?)\s*(?:EGP|LE|جنيه|ج\.?م|جم)/gi)].map(m => Number((m[1] || m[2]).replace(/,/g, ''))).filter(n => n > 0 && n < 1e6);
   const r = parseReceiptText(t);
   const amount = money.length ? Math.max(...money) : r.amount;
   const success = /(success|successful|completed|done|sent|تم|بنجاح|ناجح)/i.test(flat);
-  return { amount, ref, handles, phones, date: r.date, success, text: flat };
+  return { amount, ref, handles, from, to: to && to !== from ? to : (handles.find(h => h !== from) || ''), phones, date: r.date, success, text: flat };
 }
 
 export async function readPaymentShot(file, onProgress) {

@@ -57,12 +57,15 @@ function PayModal({ settings, currency, onClose, onSubmit, initialPeriod }) {
       const r = await readPaymentShot(file, pr => setShot(o => o && { ...o, progress: pr }));
       const notes = []; let bad = false;
       const want = String(m?.[2] || '').toLowerCase();
-      if (method === 'instapay' && r.handles.length) { if (want && !r.handles.includes(want)) { bad = true; notes.push(`This went to ${r.handles[0]}, not ${m[2]}.`); } else notes.push(`Sent to ${want || r.handles[0]}`); }
+      if (method === 'instapay' && (r.to || r.handles.length)) { const got = r.to || r.handles[0]; if (want && got !== want && !r.handles.includes(want)) { bad = true; notes.push(`This went to ${got}, not ${m[2]}.`); } else notes.push(`Sent to ${want || got}`); }
+      if (method === 'instapay' && r.from && r.from !== want) { setHandle(r.from); notes.push(`From ${r.from}`); }
+      if (!r.success) notes.push('We could not see “successful” on it.');
       if (r.amount) { if (r.amount + 0.001 < price) { bad = true; notes.push(`The amount is ${money(r.amount)}. The plan is ${money(price)}.`); } else notes.push(`Amount ${money(r.amount)}`); }
       if (r.date && (Date.now() - new Date(`${r.date}T23:59:59`).getTime()) > 3 * 864e5) { bad = true; notes.push('This transfer is more than 2 days old.'); }
       if (r.ref) { setRef(v => v || r.ref); notes.push(`Transaction number ${r.ref}`); }
       if (method === 'wallet' && r.phones.length && !handle) setHandle(r.phones.find(x => x !== String(m?.[2] || '').replace(/\D/g, '')) || '');
       if (!r.amount && !r.ref) notes.push('We could not read it well. Fill in the details below.');
+      else if (method === 'instapay' && !r.ref) notes.push('Tip: tap “More Details” in InstaPay and add the Reference number below. It confirms your payment right away.');
       setShot({ blob: r.blob || file, url, status: bad ? 'warn' : 'ok', notes });
     } catch { setShot({ blob: file, url, status: 'warn', notes: ['We could not read it. Fill in the details below.'] }); }
   }
