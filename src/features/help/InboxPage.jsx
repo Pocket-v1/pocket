@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { PageHeading } from '../../components/ui/PageHeading.jsx';
 import { Tabs } from '../../components/ui/Tabs.jsx';
 import { EmptyState } from '../../components/ui/EmptyState.jsx';
-import { Inbox, Send, ArrowLeft, Plus } from '../../lib/icons.jsx';
+import { Inbox, Send, ArrowLeft, Plus, UserRound } from '../../lib/icons.jsx';
 import { ContactModal } from './HelpPage.jsx';
 
 // Inbox: conversations between users and the Pocket team.
@@ -66,13 +66,13 @@ export function InboxPage({ supabase, session, isOwner = false, users = [], from
   return <div className="inbox-page">
     <PageHeading eyebrow={isOwner ? 'SUPPORT' : 'MESSAGES'} title="Inbox" subtitle={isOwner ? 'Messages from Pocket users. Your reply shows in their Inbox.' : 'Your messages with the Pocket team.'}
       actions={!isOwner && <button type="button" className="btn btn-primary" onClick={() => setNewOpen(true)}><Plus size={16} /> New message</button>} />
+    {isOwner && <div className={`inbox-tabs ${open ? 'has-open' : ''}`}><Tabs label="Filter" value={tab} onChange={setTab} items={[{ key: 'all', label: 'All' }, { key: 'unread', label: 'Unread', count: unread }, { key: 'new', label: 'To answer' }, { key: 'replied', label: 'Answered' }]} /></div>}
     <div className={`inbox-layout ${open ? 'has-open' : ''}`}>
       <section className="panel inbox-list" aria-label="Conversations">
-        {isOwner && <Tabs label="Filter" value={tab} onChange={setTab} items={[{ key: 'all', label: 'All' }, { key: 'unread', label: 'Unread', count: unread }, { key: 'new', label: 'To answer' }, { key: 'replied', label: 'Answered' }]} />}
         {loading ? <p className="small-muted inbox-pad">Loading…</p> : !list.length
           ? <EmptyState inline icon={Inbox} title={isOwner ? 'No messages' : 'No messages yet'} text={isOwner ? 'New messages from users show up here.' : 'Questions or problems? Send us a message and our reply shows up here.'} action={isOwner ? null : () => setNewOpen(true)} actionLabel="New message" />
           : list.map(t => <button type="button" key={t.id} className={`inbox-row ${t.id === openId ? 'on' : ''} ${threadUnread(t, isOwner) ? 'unread' : ''}`} onClick={() => setOpenId(t.id)}>
-            <span className="inbox-avatar" aria-hidden="true">{(isOwner ? nameOf(t.user_id) : 'P').slice(0, 1).toUpperCase()}</span>
+            <span className="inbox-avatar" aria-hidden="true">{isOwner ? <UserRound size={18} /> : <Inbox size={18} />}</span>
             <span className="inbox-row-t"><span className="inbox-row-top"><b>{isOwner ? nameOf(t.user_id) : (TOPIC[t.topic] || 'Message')}</b><small>{when(t.last_at)}</small></span>
               {isOwner && <small className="inbox-row-topic">{TOPIC[t.topic] || 'Message'}</small>}
               <small className="inbox-row-last">{lastText(t)}</small></span>

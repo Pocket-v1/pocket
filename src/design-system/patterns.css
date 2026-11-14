@@ -735,14 +735,14 @@
 .inbox-page{display:grid;gap:16px}
 .inbox-layout{display:grid;grid-template-columns:minmax(260px,340px) minmax(0,1fr);gap:16px;align-items:start}
 .inbox-list,.inbox-thread{margin:0;padding:0;overflow:hidden}
-.inbox-list .ds-tabs{margin:12px}
 .inbox-pad{padding:16px}
 .inbox-row{display:flex;align-items:flex-start;gap:12px;width:100%;padding:14px 16px;border:0;border-top:1px solid var(--ds-border);background:none;color:var(--ds-text);text-align:left;cursor:pointer;font:inherit}
 .inbox-row:first-of-type{border-top:0}
 .inbox-list .ds-tabs+.inbox-row{border-top:1px solid var(--ds-border)}
 .inbox-row:hover{background:var(--ds-hover,var(--ds-soft))}
 .inbox-row.on{background:var(--ds-brand-soft,#eaf0ff)}
-.inbox-avatar{flex:none;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:var(--ds-plus-ink);color:var(--ds-plus-gold);font:800 15px var(--ds-font-display)}
+.inbox-avatar{flex:none;width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--ds-brand-soft,#eaf0ff);color:var(--ds-brand)}
+:root[data-theme="dark"] .inbox-avatar{background:color-mix(in srgb,var(--ds-brand) 18%,transparent);color:#a5b0ff}
 .inbox-row-t{flex:1;min-width:0;display:grid;gap:2px}
 .inbox-row-top{display:flex;justify-content:space-between;gap:8px}
 .inbox-row-top b{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -776,3 +776,12 @@
  .inbox-msgs{max-height:none}
 }
 .inbox-msg.mine p{color:#fff!important}
+
+.inbox-tabs{min-width:0;overflow-x:auto;scrollbar-width:none}
+.inbox-tabs::-webkit-scrollbar{display:none}
+.inbox-tabs .ds-tabs{width:max-content;max-width:none}
+@media (max-width:900px){.inbox-tabs.has-open{display:none}}
+/* Pages laid out as a grid with their own gap: keep the space under the title the same as other pages */
+.inbox-page>.page-heading,.help-page>.page-heading,.plus-teaser>.page-heading{margin-bottom:4px}
+.page-heading .heading-actions:empty{display:none}
+.inbox-tabs .ds-tabs,.help-page>.ds-tabs{margin:0!important}
