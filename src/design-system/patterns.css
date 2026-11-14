@@ -683,3 +683,10 @@
 .plus-sendto-actions{display:flex;gap:8px;flex:none}
 .plus-open-app,.plus-open-note{display:none!important}
 @media (max-width:700px){.plus-open-app{display:inline-flex!important}.plus-open-note{display:block!important}.plus-sendto{flex-wrap:wrap}.plus-sendto-actions{width:100%}.plus-sendto-actions .btn{flex:1;justify-content:center}}
+
+.plus-method{display:flex;align-items:center;gap:12px;text-align:left}
+.plus-method-ic{flex:none;width:40px;height:40px;border-radius:12px;display:grid;place-items:center}
+.plus-method-ic.instapay{background:color-mix(in srgb,#6b4fd8 14%,transparent);color:#6b4fd8}
+.plus-method-ic.wallet{background:color-mix(in srgb,#e60000 12%,transparent);color:#d11a1a}
+:root[data-theme="dark"] .plus-method-ic.instapay{color:#b7a6ff}:root[data-theme="dark"] .plus-method-ic.wallet{color:#ff8a8a}
+.plus-method{justify-content:flex-start!important}.plus-method>span:last-child{flex:1;text-align:left;align-items:flex-start}

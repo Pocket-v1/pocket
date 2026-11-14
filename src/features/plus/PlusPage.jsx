@@ -3,7 +3,7 @@ import { PageHeading } from '../../components/ui/PageHeading.jsx';
 import { ModalShell } from '../../components/modals/ModalShell.jsx';
 import { Field } from '../../components/ui/Field.jsx';
 import { Tabs } from '../../components/ui/Tabs.jsx';
-import { Car, Check, Copy, MessageSquare, Sparkles, Receipt, Mic, Clock, CheckCircle2, TriangleAlert, Star } from '../../lib/icons.jsx';
+import { Car, Check, Copy, MessageSquare, Sparkles, Receipt, Mic, Clock, CheckCircle2, TriangleAlert, Star, Landmark, Smartphone } from '../../lib/icons.jsx';
 import { PLUS_DEFAULTS } from '../../lib/plus.js';
 
 // Pocket Plus for regular users: paywall, free trial, pay (InstaPay / wallet), and "Your plan".
@@ -62,7 +62,7 @@ function PayModal({ settings, currency, onClose, onSubmit, initialPeriod }) {
       <div className="plus-amount-n"><b>{money(price)}</b><small>{period === 'yearly' ? 'per year' : 'per month'}</small></div>
     </div>
     <div className="cc-options" role="radiogroup" aria-label="How you pay">
-      {methods.map(([k, label, to]) => <button key={k} type="button" role="radio" aria-checked={method === k} className={`cc-option ${method === k ? 'on' : ''}`} onClick={() => setMethod(k)}><span><b>{label}</b><small>Send to {to}</small></span></button>)}
+      {methods.map(([k, label, to]) => <button key={k} type="button" role="radio" aria-checked={method === k} className={`cc-option plus-method ${method === k ? 'on' : ''}`} onClick={() => setMethod(k)}><span className={`plus-method-ic ${k}`}>{k === 'wallet' ? <Smartphone size={20} /> : <Landmark size={20} />}</span><span><b>{label}</b><small>Send to {to}</small></span></button>)}
     </div>
     {m && <div className="plus-sendto"><div><small>Send {money(price)} to</small><b>{m[2]}</b></div><div className="plus-sendto-actions"><button type="button" className="btn btn-secondary btn-sm" onClick={copy}>{copied ? <><Check size={14} /> Copied</> : <><Copy size={14} /> Copy</>}</button>{method === 'instapay' && <button type="button" className="btn btn-primary btn-sm plus-open-app" onClick={openApp}>Open InstaPay</button>}</div></div>}
     {m && method === 'instapay' && <p className="small-muted plus-open-note">{ipnLink ? `Opens InstaPay with ${m[2]} filled in. Type ${money(price)} and send.` : `Opens InstaPay and copies ${m[2]} for you. Paste it in “Send to”.`}</p>}
