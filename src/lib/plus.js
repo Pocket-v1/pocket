@@ -1,6 +1,6 @@
 // Pocket Plus: which features it unlocks and what state a user's plan is in.
 export const PLUS_FEATURES = ['bank_sms', 'chat', 'vehicle_management'];
-export const PLUS_DEFAULTS = { monthly_price: 0, yearly_price: 0, trial_days: 14, instapay: '', wallet: '', currency: 'EGP' };
+export const PLUS_DEFAULTS = { monthly_price: 0, yearly_price: 0, trial_days: 14, instapay: '', instapay_link: '', wallet: '', currency: 'EGP' };
 
 const t = v => (v ? new Date(v).getTime() : null);
 export const daysLeft = (end, now = Date.now()) => (end ? Math.max(0, Math.ceil((t(end) - now) / 864e5)) : null);
