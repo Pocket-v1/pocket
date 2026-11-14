@@ -440,3 +440,11 @@
 .smi-empty-ic{flex:none;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--ds-surface);color:var(--ds-text-muted)}
 .smi-empty p{margin:0;font-size:13px;line-height:1.45;color:var(--ds-text-muted)}
 @media (max-width:760px){.smi-grid{grid-template-columns:1fr}.smi-panel{padding:16px}.smi-bars{gap:4px;height:100px}.smi-bar-col em{display:none}}
+
+/* Swipe intro on SMS cards: show Approve (green) while the card slides right, Dismiss (red) while it slides left */
+@keyframes smxNudge{0%,100%{transform:none}25%,32%{transform:translateX(118px)}50%{transform:none}68%,75%{transform:translateX(-112px)}90%{transform:none}}
+@keyframes smxHintAp{0%,4%{opacity:0}14%,36%{opacity:1}48%,100%{opacity:0}}
+@keyframes smxHintDi{0%,52%{opacity:0}60%,78%{opacity:1}90%,100%{opacity:0}}
+.smx-swipe:has(>.smx-card.smx-hint)>.smx-bg.ap{animation:smxHintAp 2.6s ease-in-out .8s 2}
+.smx-swipe:has(>.smx-card.smx-hint)>.smx-bg.di{animation:smxHintDi 2.6s ease-in-out .8s 2}
+@media (prefers-reduced-motion:reduce){.smx-swipe:has(>.smx-card.smx-hint)>.smx-bg{animation:none}}
