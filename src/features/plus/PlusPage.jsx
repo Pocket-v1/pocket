@@ -18,9 +18,9 @@ const PERKS = [
   [Car, 'Vehicles', 'Fuel, service and running costs for each car.'],
 ];
 
-function PayModal({ settings, currency, onClose, onSubmit }) {
+function PayModal({ settings, currency, onClose, onSubmit, initialPeriod }) {
   const s = { ...PLUS_DEFAULTS, ...settings };
-  const [period, setPeriod] = useState(Number(s.yearly_price) > 0 ? 'yearly' : 'monthly');
+  const [period, setPeriod] = useState(initialPeriod && Number(s[`${initialPeriod}_price`]) > 0 ? initialPeriod : Number(s.yearly_price) > 0 ? 'yearly' : 'monthly');
   const methods = [s.instapay && ['instapay', 'InstaPay', s.instapay, 'Your InstaPay address (name@instapay)'], s.wallet && ['wallet', 'Mobile wallet', s.wallet, 'The wallet number you sent from']].filter(Boolean);
   const [method, setMethod] = useState(methods[0]?.[0] || '');
   const [handle, setHandle] = useState('');
@@ -83,8 +83,10 @@ export function PlusPage({ plus, settings, currency = 'EGP', onStartTrial, onPay
     : canPay && (!plus.active || plus.kind === 'trial' || cur?.cancel_at_period_end || (plus.daysLeft != null && plus.daysLeft <= 7)) ? <button type="button" className="btn btn-primary plus-cta" onClick={() => setPayOpen(true)}>{plus.active && plus.kind !== 'trial' ? 'Pay to renew' : 'Pay to keep Plus'}</button>
     : null;
 
+  if (!plus.active) return <PlusPitch plus={plus} s={s} canPay={canPay} money={money} status={status} busy={busy} onTrial={trial} payOpen={payOpen} setPayOpen={setPayOpen} currency={currency} onPay={onPay} />;
+
   return <div className="plus-page">
-    <PageHeading eyebrow="POCKET PLUS" title={plus.active ? 'Your plan' : 'Pocket Plus'} subtitle={plus.active ? 'Bank SMS, Vehicles and the chat are on for you.' : 'Let your bank SMS fill Pocket for you.'} />
+    <PageHeading eyebrow="POCKET PLUS" title="Your plan" subtitle="Bank SMS, Vehicles and the chat are on for you." />
     {status}
     <div className="plus-grid">
       <section className="panel plus-perks">
@@ -92,16 +94,59 @@ export function PlusPage({ plus, settings, currency = 'EGP', onStartTrial, onPay
         <ul className="plus-perk-list">{PERKS.map(([Icon, title, text]) => <li key={title}><span className="plus-perk-ic"><Icon size={18} /></span><div><b>{title}</b><small>{text}</small></div></li>)}</ul>
       </section>
       <section className="panel plus-side">
-        <div className="panel-header"><div><h2>{plus.active ? 'Manage' : 'Get Plus'}</h2><p>{from ? `From ${from}` : 'Prices coming soon'}</p></div></div>
+        <div className="panel-header"><div><h2>Manage</h2><p>{from ? `From ${from}` : ''}</p></div></div>
         {primary}
-        {!plus.trialUsed && canPay && <button type="button" className="btn btn-secondary plus-cta" onClick={() => setPayOpen(true)}>Skip the trial and pay</button>}
-        {plus.active && onOpenSms && <button type="button" className="btn btn-secondary plus-cta" onClick={onOpenSms}>Open Bank SMS</button>}
-        {plus.active && plus.kind === 'paid' && <button type="button" className="btn btn-secondary plus-cta" onClick={() => onCancelToggle(cur)}>{cur.cancel_at_period_end ? 'Keep renewing' : 'Cancel at the end of the period'}</button>}
-        {plus.trialUsed && !canPay && !plus.active && <p className="small-muted">Payments are not open yet. Ask the Owner to turn Plus on for you.</p>}
+        {onOpenSms && <button type="button" className="btn btn-secondary plus-cta" onClick={onOpenSms}>Open Bank SMS</button>}
+        {plus.kind === 'paid' && <button type="button" className="btn btn-secondary plus-cta" onClick={() => onCancelToggle(cur)}>{cur.cancel_at_period_end ? 'Keep renewing' : 'Cancel at the end of the period'}</button>}
         <p className="small-muted">Pay with InstaPay or a mobile wallet. No card details are stored in Pocket.</p>
       </section>
     </div>
     {payOpen && <PayModal settings={s} currency={currency} onClose={() => setPayOpen(false)} onSubmit={async d => { const ok = await onPay(d); if (ok) setPayOpen(false); return ok; }} />}
+  </div>;
+}
+
+// A · The Plus page for people who don't have it yet: hero with the SMS → transaction demo, features, Free vs Plus, prices, one clear button.
+function PlusPitch({ plus, s, canPay, money, status, busy, onTrial, payOpen, setPayOpen, currency, onPay }) {
+  const m = Number(s.monthly_price) || 0, y = Number(s.yearly_price) || 0;
+  const [period, setPeriod] = useState(y > 0 ? 'yearly' : 'monthly');
+  const save = m > 0 && y > 0 && m * 12 > y ? Math.round((1 - y / (m * 12)) * 100) : 0;
+  const perDay = (period === 'yearly' ? y / 365 : m / 30);
+  const days = Number(s.trial_days) || 14;
+  const rows = [['Accounts, budgets, goals, bills', true], ['Reports and calendar', true], ['Bank SMS and auto-approve', false], ['Type, voice and receipt photos', false], ['Vehicles', false]];
+  const cta = plus.pending ? null : !plus.trialUsed
+    ? <button type="button" className="btn btn-primary plus-pitch-cta" disabled={busy} onClick={onTrial}>{busy ? 'Starting…' : `Start ${days} days free`}</button>
+    : canPay ? <button type="button" className="btn btn-primary plus-pitch-cta" onClick={() => setPayOpen(true)}>Get Pocket Plus</button> : null;
+  return <div className="plus-pitch">
+    <section className="plus-hero">
+      <div className="plus-hero-copy">
+        <span className="plus-hero-eyebrow"><Star size={14} /> POCKET PLUS</span>
+        <h1>Pocket writes it down for you.</h1>
+        <p>Bank SMS, receipts and your voice become transactions. You just tap Approve.</p>
+      </div>
+      <div className="plus-hero-demo" aria-hidden="true">
+        <div className="plus-demo-sms"><small>CIB · now</small>Your card ending 4821 was charged EGP 350.00 at UBER</div>
+        <div className="plus-demo-tx"><span className="plus-demo-ic"><MessageSquare size={16} /></span><span className="plus-demo-t"><b>UBER</b><small>Transportation · CIB</small></span><b className="plus-demo-amt">−350</b><span className="plus-demo-btn">Approve</span></div>
+      </div>
+    </section>
+    {status}
+    <div className="plus-pitch-body">
+      <div className="plus-feature-grid">{PERKS.map(([Icon, title, text], i) => <div className={`plus-feature tone-${i}`} key={title}><span className="plus-feature-ic"><Icon size={18} /></span><b>{title}</b><small>{text}</small></div>)}</div>
+      <section className="panel plus-compare" aria-label="Free and Plus compared">
+        <div className="plus-compare-row head"><span>What you get</span><span>Free</span><span>Plus</span></div>
+        {rows.map(([t, free]) => <div className="plus-compare-row" key={t}><span>{t}</span><span className={free ? 'yes' : 'no'}>{free ? '✓' : '—'}</span><span className="yes">✓</span></div>)}
+      </section>
+      {(m > 0 || y > 0) && <div className="plus-prices" role="radiogroup" aria-label="Billing period">
+        {y > 0 && <button type="button" role="radio" aria-checked={period === 'yearly'} className={`plus-price ${period === 'yearly' ? 'on' : ''}`} onClick={() => setPeriod('yearly')}>{save > 0 && <span className="plus-price-tag">Best value · save {save}%</span>}<span className="plus-price-t"><b>Yearly</b><small>{money(y)} a year · about {money(y / 365)} a day</small></span><b className="plus-price-n">{money(y)}</b></button>}
+        {m > 0 && <button type="button" role="radio" aria-checked={period === 'monthly'} className={`plus-price ${period === 'monthly' ? 'on' : ''}`} onClick={() => setPeriod('monthly')}><span className="plus-price-t"><b>Monthly</b><small>Cancel any time</small></span><b className="plus-price-n">{money(m)}</b></button>}
+      </div>}
+      <div className="plus-pitch-foot">
+        {cta}
+        {!plus.trialUsed && canPay && !plus.pending && <button type="button" className="btn btn-secondary plus-pitch-cta" onClick={() => setPayOpen(true)}>Skip the trial and pay</button>}
+        {plus.trialUsed && !canPay && <p className="small-muted">Payments are not open yet. Ask the Owner to turn Plus on for you.</p>}
+        <div className="plus-trust"><span>✓ No card needed</span><span>✓ Reminder before it ends</span><span>✓ Cancel any time</span></div>
+      </div>
+    </div>
+    {payOpen && <PayModal settings={s} currency={currency} initialPeriod={period} onClose={() => setPayOpen(false)} onSubmit={async d => { const ok = await onPay(d); if (ok) setPayOpen(false); return ok; }} />}
   </div>;
 }
 
