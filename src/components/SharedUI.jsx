@@ -1,3 +1,4 @@
+import { EmptyState } from './ui/EmptyState.jsx';
 import { AnimatedNumber } from './ui/AnimatedNumber.jsx';
 import React from 'react';
 import { CalendarDays, Check, CircleDollarSign, Wallet, ArrowLeftRight, FileSpreadsheet, CircleHelp, CreditCard, Sparkles, Target, ArrowUpRight, PiggyBank, Settings, UserRound, FileJson, ChartNoAxesCombined } from '../lib/icons.jsx';
@@ -11,7 +12,6 @@ function MonthPicker({month,setMonth}){return <div className="month-picker"><Cal
 
 function MetricCard({label,value,change,icon:Icon,tone='blue',note}){return <div className="metric-card"><div className="metric-top"><span>{label}</span><span className={`metric-icon ${tone}`}><Icon size={18}/></span></div><div className="metric-value"><AnimatedNumber value={value}/></div><div className="metric-foot">{change&&<span className={change.startsWith('+')?'positive':'neutral'}>{change}</span>}<span>{note}</span></div></div>}
 
-function EmptyState({icon:Icon,title,text,action,actionLabel}){return <div className="empty-state"><div className="empty-icon"><Icon size={21}/></div><b>{title}</b><p>{text}</p>{action&&<button className="btn btn-secondary btn-sm" onClick={action}>{actionLabel||'Add new'}</button>}</div>}
 
 function WizardProgress({step,total=3,labels}){return <div className="tx-wizard-progress"><div className="tx-wizard-steps">{labels.map((label,i)=><div key={label} className={`tx-wizard-step ${step===i+1?'active':step>i+1?'complete':''}`}><span>{step>i+1?<Check size={14}/>:i+1}</span><b>{label}</b></div>)}</div><div className="tx-wizard-track" aria-hidden="true">{Array.from({length:total},(_,i)=><span key={i} className={step>i?'on':''}/>)}</div></div>}
 

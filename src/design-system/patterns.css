@@ -663,3 +663,6 @@
 .plus-checkout .plus-price{padding-top:22px}
 .plus-checkout .plus-price.on{padding-top:21px}
 @media (max-width:900px){.plus-pitch-body{grid-template-columns:1fr!important}.plus-checkout{position:static}}
+/* Empty state inside an Overview panel fills the card height */
+.panel>.empty-state.is-inline{flex:1}
+.budget-summary:has(>.empty-state){display:flex;flex-direction:column}
