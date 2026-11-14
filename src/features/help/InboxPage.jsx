@@ -116,7 +116,7 @@ export function InboxPage({ supabase, session, isOwner = false, users = [], from
             {open.status === 'closed' && <div className="inbox-closed">
               <div><b>{isOwner ? 'You ended this chat' : 'This chat was closed'}</b><small>{open.closed_at ? when(open.closed_at) : ''}{isOwner ? (open.rated_at ? ' · rated by the user' : ' · waiting for a review') : ''}</small></div>
               {open.rated_at ? <div className="inbox-review"><StarsLine value={open.rating} />{open.review && <p>“{open.review}”</p>}</div>
-                : !isOwner && <button type="button" className="btn btn-primary btn-sm" onClick={() => setRateOpen(true)}>Rate this chat</button>}
+                : open.user_id === session?.user?.id && <button type="button" className="btn btn-primary btn-sm" onClick={() => setRateOpen(true)}>Rate this chat</button>}
             </div>}
             {(isOwner || open.status !== 'closed') && <div className="inbox-compose">
               <textarea className="pocket-textarea" rows="2" maxLength={4000} value={text} onChange={e => setText(e.target.value)} placeholder={isOwner ? 'Write your reply…' : 'Write a message…'} aria-label="Message"
