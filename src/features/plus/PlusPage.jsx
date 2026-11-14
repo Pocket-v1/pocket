@@ -40,11 +40,10 @@ function PayModal({ settings, currency, onClose, onSubmit, initialPeriod }) {
   const monthlyYear = Number(s.monthly_price) * 12;
   const saving = Number(s.yearly_price) > 0 && monthlyYear > Number(s.yearly_price) ? Math.round((monthlyYear - Number(s.yearly_price)) / Number(s.monthly_price)) : 0;
   async function copy() { try { await navigator.clipboard.writeText(m[2]); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* ignore */ } }
-  const ipnLink = /^https:\/\/ipn\.eg\//i.test(s.instapay_link || '') ? s.instapay_link : '';
+  const ipnLink = /^https:\/\/ipn\.eg\/S\/[^/\s]+\/instapay\/[A-Za-z0-9]+\/?$/i.test(s.instapay_link || '') ? s.instapay_link : '';
   async function openApp() {
     try { await navigator.clipboard.writeText(m[2]); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* ignore */ }
-    if (ipnLink) { window.location.href = ipnLink; return; }
-    window.location.href = /android/i.test(navigator.userAgent) ? 'intent://#Intent;package=com.egyptianbanks.instapay;end' : 'https://ipn.eg';
+    if (ipnLink) window.location.href = ipnLink;
   }
   async function go() {
     if (!handle.trim()) { setErr('Add the InstaPay address or wallet number you paid from, so we can find your payment.'); return; }
@@ -64,8 +63,8 @@ function PayModal({ settings, currency, onClose, onSubmit, initialPeriod }) {
     <div className="cc-options" role="radiogroup" aria-label="How you pay">
       {methods.map(([k, label, to]) => <button key={k} type="button" role="radio" aria-checked={method === k} className={`cc-option plus-method ${method === k ? 'on' : ''}`} onClick={() => setMethod(k)}><span className={`plus-method-ic ${k}`}>{k === 'wallet' ? <Smartphone size={20} /> : <Landmark size={20} />}</span><span><b>{label}</b><small>Send to {to}</small></span></button>)}
     </div>
-    {m && <div className="plus-sendto"><div><small>Send {money(price)} to</small><b>{m[2]}</b></div><div className="plus-sendto-actions"><button type="button" className="btn btn-secondary btn-sm" onClick={copy}>{copied ? <><Check size={14} /> Copied</> : <><Copy size={14} /> Copy</>}</button>{method === 'instapay' && <button type="button" className="btn btn-primary btn-sm plus-open-app" onClick={openApp}>Open InstaPay</button>}</div></div>}
-    {m && method === 'instapay' && <p className="small-muted plus-open-note">{ipnLink ? `Opens InstaPay with ${m[2]} filled in. Type ${money(price)} and send.` : `Opens InstaPay and copies ${m[2]} for you. Paste it in “Send to”.`}</p>}
+    {m && <div className="plus-sendto"><div><small>Send {money(price)} to</small><b>{m[2]}</b></div><div className="plus-sendto-actions"><button type="button" className="btn btn-secondary btn-sm" onClick={copy}>{copied ? <><Check size={14} /> Copied</> : <><Copy size={14} /> Copy</>}</button>{method === 'instapay' && ipnLink && <button type="button" className="btn btn-primary btn-sm plus-open-app" onClick={openApp}>Open InstaPay</button>}</div></div>}
+    {m && method === 'instapay' && ipnLink && <p className="small-muted plus-open-note">Opens InstaPay with {m[2]} filled in. Type {money(price)} and send.</p>}
     <div className="form-grid">
       <Field label={m?.[3] || 'Paid from'} wide><input value={handle} onChange={e => setHandle(e.target.value)} placeholder={method === 'wallet' ? '010…' : 'name@instapay'} autoComplete="off" /></Field>
       <Field label="Transaction number (optional)" wide><input value={ref} onChange={e => setRef(e.target.value)} placeholder="From the confirmation SMS" autoComplete="off" /></Field>
