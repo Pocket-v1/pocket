@@ -40,6 +40,12 @@ function PayModal({ settings, currency, onClose, onSubmit, initialPeriod }) {
   const monthlyYear = Number(s.monthly_price) * 12;
   const saving = Number(s.yearly_price) > 0 && monthlyYear > Number(s.yearly_price) ? Math.round((monthlyYear - Number(s.yearly_price)) / Number(s.monthly_price)) : 0;
   async function copy() { try { await navigator.clipboard.writeText(m[2]); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* ignore */ } }
+  async function openApp() {
+    if (method === 'wallet') { window.location.href = `tel:*9*7*${String(m[2]).replace(/\D/g, '')}*${Math.round(price)}%23`; return; }
+    try { await navigator.clipboard.writeText(m[2]); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* ignore */ }
+    const ios = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    window.location.href = ios ? 'https://apps.apple.com/eg/app/instapay-egypt/id1592108795' : 'intent://#Intent;package=com.egyptianbanks.instapay;S.browser_fallback_url=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dcom.egyptianbanks.instapay;end';
+  }
   async function go() {
     if (!handle.trim()) { setErr('Add the InstaPay address or wallet number you paid from, so we can find your payment.'); return; }
     setBusy(true); setErr('');
@@ -58,7 +64,8 @@ function PayModal({ settings, currency, onClose, onSubmit, initialPeriod }) {
     <div className="cc-options" role="radiogroup" aria-label="How you pay">
       {methods.map(([k, label, to]) => <button key={k} type="button" role="radio" aria-checked={method === k} className={`cc-option ${method === k ? 'on' : ''}`} onClick={() => setMethod(k)}><span><b>{label}</b><small>Send to {to}</small></span></button>)}
     </div>
-    {m && <div className="plus-sendto"><div><small>Send {money(price)} to</small><b>{m[2]}</b></div><button type="button" className="btn btn-secondary btn-sm" onClick={copy}>{copied ? <><Check size={14} /> Copied</> : <><Copy size={14} /> Copy</>}</button></div>}
+    {m && <div className="plus-sendto"><div><small>Send {money(price)} to</small><b>{m[2]}</b></div><div className="plus-sendto-actions"><button type="button" className="btn btn-secondary btn-sm" onClick={copy}>{copied ? <><Check size={14} /> Copied</> : <><Copy size={14} /> Copy</>}</button><button type="button" className="btn btn-primary btn-sm plus-open-app" onClick={openApp}>{method === 'wallet' ? 'Pay now' : 'Open InstaPay'}</button></div></div>}
+    {m && <p className="small-muted plus-open-note">{method === 'wallet' ? `Pay now opens your phone dialer with the Vodafone Cash code and ${money(price)} filled in. Enter your PIN to send.` : 'Open InstaPay copies the address for you, then opens the app. Paste it in “Send to”.'}</p>}
     <div className="form-grid">
       <Field label={m?.[3] || 'Paid from'} wide><input value={handle} onChange={e => setHandle(e.target.value)} placeholder={method === 'wallet' ? '010…' : 'name@instapay'} autoComplete="off" /></Field>
       <Field label="Transaction number (optional)" wide><input value={ref} onChange={e => setRef(e.target.value)} placeholder="From the confirmation SMS" autoComplete="off" /></Field>
