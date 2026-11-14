@@ -1,4 +1,4 @@
-import { ArrowUpRight, Check, ChevronLeft, ShieldCheck, X } from 'lucide-react';
+import { ArrowUpRight, Check, ChevronLeft, ShieldCheck, X } from '../../lib/icons.jsx';
 import { useEffect, useState } from 'react';
 import { FEATURE_OPTIONS } from '../../lib/features.js';
 

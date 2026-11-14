@@ -1,4 +1,4 @@
-import { Check, LoaderCircle, LockKeyhole, Mail, SlidersHorizontal, UserRound } from 'lucide-react';
+import { Check, LoaderCircle, LockKeyhole, Mail, SlidersHorizontal, UserRound } from '../../lib/icons.jsx';
 import { useState } from 'react';
 import { ModalShell } from '../../components/modals/ModalShell.jsx';
 import { Field } from '../../components/ui/Field.jsx';

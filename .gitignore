@@ -4,3 +4,10 @@
 .env
 .env.*
 !.env.example
+
+# Dependencies and build output
+node_modules/
+dist/
+dist-inline/
+*.log
+.DS_Store

@@ -1,13 +1,19 @@
-import { PanelLeftClose, PanelLeftOpen, ArrowLeftRight, ArrowUpRight, Bell, CalendarDays, CarFront, ChartNoAxesCombined, Check, ChevronDown, CircleDollarSign, CreditCard, Fuel, History, LayoutDashboard, LogOut, Mail, Menu, Moon, Repeat2, Settings, SlidersHorizontal, Sun, Target, UserRound, Users, Wallet, Wrench, X, XCircle } from 'lucide-react';
+import { Star, Search, PanelLeftClose, PanelLeftOpen, ArrowLeftRight, ArrowUpRight, Bell, CalendarDays, CarFront, ChartNoAxesCombined, Check, ChevronDown, CircleDollarSign, CreditCard, Fuel, History, LayoutDashboard, Lock, LogOut, Mail, Menu, MessageSquare, Moon, Repeat2, Settings, SlidersHorizontal, Sun, Target, UserRound, Users, Wallet, Wrench, X, XCircle } from './lib/icons.jsx';
 import { useSheetManager } from './hooks/useSheetManager.js';
 import * as XLSX from 'xlsx';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { exportTransactions, downloadTemplate } from './lib/transferFile.js';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ConfirmActionModal } from './components/modals/ConfirmActionModal.jsx';
 import { ProfileAvatar } from './components/ui/ProfileAvatar.jsx';
+import { storedTheme, saveTheme, bootTheme } from './lib/theme.js';
 import { WorkspaceSkeleton } from './components/ui/WorkspaceSkeleton.jsx';
 import { AccountModal } from './features/accounts/AccountModal.jsx';
 import { AccountsPage } from './features/accounts/AccountsPage.jsx';
+import { SmsPage } from './features/sms/SmsPage.jsx';
 import { AccessManagementPage } from './features/admin/AccessManagementPage.jsx';
+import { EmailStatusBar } from './components/ui/EmailStatusBar.jsx';
+import { WelcomeWizard } from './features/overview/WelcomeWizard.jsx';
+import { AppTour } from './components/ui/AppTour.jsx';
 import { AccessRestricted } from './features/admin/AccessRestricted.jsx';
 import { VehicleManagementPage } from './features/admin/VehicleManagementPage.jsx';
 import { AccountProfileModal } from './features/auth/AccountProfileModal.jsx';
@@ -20,27 +26,41 @@ import { DebtPaymentChoiceModal } from './features/debts/DebtPaymentChoiceModal.
 import { DebtsPage } from './features/debts/DebtsPage.jsx';
 import { GoalModal } from './features/goals/GoalModal.jsx';
 import { GoalsPage } from './features/goals/GoalsPage.jsx';
+import { GoalCompleteModal } from './features/goals/GoalCompleteModal.jsx';
+import { GoalAddMoneyModal } from './features/goals/GoalAddMoneyModal.jsx';
+import { goalSaved, goalSpent, isGoalDone, isFromSavings } from './lib/goals.js';
+import { GoalSpendModal } from './features/goals/GoalSpendModal.jsx';
 import { InsightsReportsPage } from './features/insights/InsightsReportsPage.jsx';
 import { CashFlowCalendar } from './features/overview/CashFlowCalendar.jsx';
 import { Overview } from './features/overview/Overview.jsx';
 import { RecurringModal } from './features/recurring/RecurringModal.jsx';
+import { QuickAdd } from './components/ui/QuickAdd.jsx';
+import { GlobalSearch } from './components/ui/GlobalSearch.jsx';
 import { RecurringPage } from './features/recurring/RecurringPage.jsx';
 import { ExpenseCategoriesPage } from './features/settings/ExpenseCategoriesPage.jsx';
 import { SettingsModal } from './features/settings/SettingsModal.jsx';
 import { ImportModal } from './features/transactions/ImportModal.jsx';
+import { setCategoryIconOverrides } from './lib/categoryIcons.js';
+import { PlusPage } from './features/plus/PlusPage.jsx';
+import { LockedSmsTeaser, LockedVehiclesTeaser, TypedByHandCard, SmsHintBanner } from './features/plus/PlusTeasers.jsx';
+import { SubscriptionsAdminPage } from './features/plus/SubscriptionsAdminPage.jsx';
+import { plusState, PLUS_FEATURES, PLUS_DEFAULTS } from './lib/plus.js';
+import { ChatSheet } from './components/ui/ChatSheet.jsx';
 import { TransactionModal } from './features/transactions/TransactionModal.jsx';
 import { TransactionsPage } from './features/transactions/TransactionsPage.jsx';
 import { PROFILE_AVATARS, defaultAvatarForGender } from './lib/avatars.js';
-import { customSubcategoriesOverride, expenseCategories, expenseCategoriesOverride, getExpenseCategories, setCustomSubcategoriesOverride, setExpenseCategoriesOverride } from './lib/categories.js';
-import { FEATURE_OPTIONS, PAGE_FEATURE, isGoalsAccount } from './lib/features.js';
+import { customSubcategoriesOverride, incomeCategories, getCategoriesForType, expenseCategories, expenseCategoriesOverride, getExpenseCategories, setCustomSubcategoriesOverride, setExpenseCategoriesOverride } from './lib/categories.js';
+import { FEATURE_OPTIONS, PAGE_FEATURE, MODAL_FEATURE, isGoalsAccount } from './lib/features.js';
 import { addFrequency, fmt, getGreeting, localISODate, monthNow, monthStart, titleCaseName, uid } from './lib/format.js';
 import { authRedirectUrl, cloudReady, supabase } from './lib/supabase.js';
+import { clearLoginFailures, formatWait, loginLockSeconds, recordLoginFailure } from './lib/loginThrottle.js';
 import { CardPayModal } from './features/credit/CardPayModal.jsx';
 import { CreditAccountModal } from './features/credit/CreditAccountModal.jsx';
 import { ProviderPayModal } from './features/credit/ProviderPayModal.jsx';
 import { CARD_TYPE, PROVIDER_TYPE, accountFlows, cardSummary, isCard, isLiability, isMoneyAccount, isProvider, providerSummary, reportView, limitLeft, planLimitUse } from './lib/credit.js';
 
-function readPocketStartupPage(){ return 'Overview'; }
+// A refresh stays on the same page (kept for this tab only); a new visit opens Overview.
+function readPocketStartupPage(){ try { return sessionStorage.getItem('pocket-current-page') || 'Overview'; } catch { return 'Overview'; } }
 
 function App(){
   useSheetManager();
@@ -87,11 +107,14 @@ function App(){
     };
   },[]);
   // Restore the last visited page on refresh and on the next visit in this browser.
-  const [page,setPage] = useState(readPocketStartupPage);
-  const [vehicleSidebarTab,setVehicleSidebarTab] = useState('vehicles');
+  const [page,setPageRaw] = useState(readPocketStartupPage);
+  const pageGuard=useRef(null);
+  const setPage=useCallback(v=>{const next=typeof v==='function'?v(page):v;const to=pageGuard.current?pageGuard.current(next):next;if(to)setPageRaw(to);},[page]);
+  const [vehicleSidebarTab,setVehicleSidebarTab] = useState(()=>{try{return sessionStorage.getItem('pocket-vehicle-tab')||'vehicles';}catch{return 'vehicles';}});
+  useEffect(()=>{try{sessionStorage.setItem('pocket-vehicle-tab',vehicleSidebarTab);}catch{}},[vehicleSidebarTab]);
   const [vehicleReminderNotifications,setVehicleReminderNotifications] = useState([]);
   useEffect(()=>{
-    try { void 0; } catch {}
+    try { sessionStorage.setItem('pocket-current-page', page); } catch {}
   },[page]);
   useEffect(()=>{
     const saveCurrentPage = () => { try { void 0; } catch {} };
@@ -104,7 +127,9 @@ function App(){
   const [budgets,setBudgets] = useState([]);
   const [goals,setGoals] = useState([]);
   const [recurring,setRecurring] = useState([]);
-  const [accounts,setAccounts] = useState([]);
+  const [rawAccounts,setAccounts] = useState([]);
+  // The Goals account also holds money added by hand to goals (cash kept outside Pocket's other accounts).
+  const accounts = useMemo(()=>{const manual=goals.reduce((sum,g)=>sum+Number(g.saved_amount||0),0);const outside=goals.reduce((sum,g)=>sum+Math.max(0,Math.min(Number(g.saved_amount||0),goalSaved(g,transactions,rawAccounts))),0);return rawAccounts.map(a=>isGoalsAccount(a)?{...a,opening_balance:Number(a.opening_balance||0)+manual,_manualGoalMoney:manual,_outsideMoney:outside}:a)},[rawAccounts,goals,transactions]);
   const [defaultAccountId,setDefaultAccountId] = useState(()=>{try{return null||''}catch{return ''}});
   const [debts,setDebts] = useState([]);
   const [month,setMonth] = useState(monthNow);
@@ -112,17 +137,28 @@ function App(){
   const [typeFilter,setTypeFilter] = useState('All types');
   const [categoryFilter,setCategoryFilter] = useState('All categories');
   const [amountSort,setAmountSort] = useState('date-desc');
-  const [modal,setModal] = useState(null);
+  const [modal,setModalRaw] = useState(null);
+  const modalGuard=useRef(null);
+  const setModal=useCallback(v=>{const next=typeof v==='function'?v(modal):v;const why=next&&modalGuard.current?.(next);if(why){setToast(why);return;}setModalRaw(next);},[modal]);
   const [confirmDialog,setConfirmDialog] = useState(null);
   const [debtPaymentTarget,setDebtPaymentTarget] = useState(null);
   const [debtFocus,setDebtFocus] = useState(null);
+  const [searchOpen,setSearchOpen] = useState(false);
+  const [quickAction,setQuickAction] = useState(null);
   const [creditKind,setCreditKind] = useState('card');
   const [debtPresetProvider,setDebtPresetProvider] = useState('');
   const [convertTx,setConvertTx] = useState(null);
-  const [txPresetAccount,setTxPresetAccount] = useState('');
+  const [completeGoalTarget,setCompleteGoalTarget] = useState(null);
+  const [addMoneyGoal,setAddMoneyGoal] = useState(null);
+  const [spendGoal,setSpendGoal] = useState(null);
+  const [chatOpen,setChatOpen] = useState(false);const [subs,setSubs]=useState([]);const [plusSettings,setPlusSettings]=useState(PLUS_DEFAULTS);const [subsPending,setSubsPending]=useState(0);const [chatStart,setChatStart]=useState('');
+  const [txPresetType,setTxPresetType]=useState('');const [txPresetAccount,setTxPresetAccount] = useState('');
   const [cardPay,setCardPay] = useState(null);
   const [providerPay,setProviderPay] = useState(null);
   const [accountsView,setAccountsView] = useState('grid');
+  const [smsFocusAccount,setSmsFocusAccount]=useState(null);
+  const [pendingSms,setPendingSms] = useState(0);
+  const [wizardOpen,setWizardOpen] = useState(false);
   const requestConfirm=(title,description,onConfirm,confirmLabel='Delete',options={})=>setConfirmDialog({title,description,onConfirm,confirmLabel,...options});
   const [editing,setEditing] = useState(null);
   const [toast,setToast] = useState('');
@@ -157,7 +193,8 @@ function App(){
     let timer;
     const expire = async () => {
       setSessionExpiredNotice(true);
-      await supabase.auth.signOut();
+      try{sessionStorage.removeItem('pocket-current-page');sessionStorage.removeItem('pocket-vehicle-tab');}catch{}
+    await supabase.auth.signOut();
       setAuthMsg('You were signed out after 15 minutes of inactivity. Sign in again to continue.');
       setAuthMode('signin');
     };
@@ -180,7 +217,7 @@ function App(){
   const [timezone,setTimezone] = useState(()=>{try{return null||Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC'}catch{return 'UTC'}});
   const [profileName,setProfileName] = useState(()=>{try{return null||''}catch{return ''}});
   const [profileSaving,setProfileSaving] = useState(false);
-  const [theme,setTheme] = useState(()=>null||'light');
+  const [theme,setTheme] = useState(()=>storedTheme());
   const [design,setDesign] = useState(()=>null||'classic');
   const [sidebarSize,setSidebarSize] = useState(()=>null||'comfortable');
   const [workspaceSectionName,setWorkspaceSectionName] = useState(()=>{try{return null||'MY SPACE'}catch{return 'MY SPACE'}});
@@ -190,6 +227,7 @@ function App(){
   const [avatarPickerGender,setAvatarPickerGender] = useState('prefer_not_to_say');
   const [backupForUsers,setBackupForUsers] = useState(false);
   const [accessRequestsOpen,setAccessRequestsOpen] = useState(true);
+  const [emailBarHidden,setEmailBarHidden] = useState(()=>{try{return sessionStorage.getItem('pocket-email-bar-hidden')==='1';}catch{return false;}});
   const [paidBusy,setPaidBusy] = useState([]);
   const [localLoaded,setLocalLoaded] = useState(false);
   const [settingsCloudUserId,setSettingsCloudUserId] = useState('');
@@ -225,9 +263,10 @@ function App(){
     void 0;
     void 0;
     void 0;
-    document.documentElement.dataset.theme=theme;
-    document.documentElement.dataset.design=design;
-  },[theme,design,sidebarSize,profileAvatar]);
+    document.documentElement.dataset.theme=session?theme:'light';
+    document.documentElement.dataset.design='classic';
+    if(session)saveTheme(theme);
+  },[theme,design,sidebarSize,profileAvatar,session]);
 
   useEffect(()=>{
     if(!cloudReady){setAuthMsg('Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to use Pocket. Local/demo storage is disabled.');setAuthLoading(false);return;}
@@ -262,7 +301,11 @@ function App(){
       setSession(s);
       setAuthLoading(false);
     });
-    return ()=>{alive=false;subscription.unsubscribe()};
+    // Coming back with the browser Back button (e.g. from Google sign-in) restores the page from the
+    // back/forward cache with the old "busy" state, so the Sign in button would stay on "Please wait…".
+    const onPageShow=e=>{if(e.persisted){setBusy(false);setAuthLoading(false);}};
+    window.addEventListener('pageshow',onPageShow);
+    return ()=>{alive=false;subscription.unsubscribe();window.removeEventListener('pageshow',onPageShow)};
   },[]);
   useEffect(()=>{
     let alive=true;
@@ -278,6 +321,8 @@ function App(){
         const {data:settingData}=await supabase.from('app_settings').select('value').eq('key','backup_restore_for_users').maybeSingle();
         if(alive)setBackupForUsers(settingData?.value===true);
         const {data:intakeData}=await supabase.from('app_settings').select('value').eq('key','access_requests_enabled').maybeSingle();
+        try{const [{data:ps},{data:mySubs}]=await Promise.all([supabase.from('app_settings').select('value').eq('key','plus').maybeSingle(),supabase.from('subscriptions').select('*').eq('user_id',session.user.id).order('created_at',{ascending:false})]);if(alive){if(ps?.value)setPlusSettings({...PLUS_DEFAULTS,...ps.value});setSubs(mySubs||[]);}}catch{}
+        if(['owner','super_admin'].includes(data?.role)){supabase.from('subscriptions').select('id',{count:'exact',head:true}).eq('status','pending').then(({count})=>{if(alive)setSubsPending(count||0)});}
         if(alive)setAccessRequestsOpen(intakeData?.value!==false);
         if(['owner','super_admin'].includes(data.role)){
           setAdminLoading(true);
@@ -331,6 +376,7 @@ function App(){
         if(!r.error)setRecurring(r.data||[]);
         if(!a.error)setAccounts(a.data||[]);
         if(!d.error)setDebts(d.data||[]);
+        supabase.from('sms_inbox').select('id',{count:'exact',head:true}).eq('status','pending').then(r=>{if(!r.error&&alive)setPendingSms(r.count||0)});
         if(errors.length)setDataLoadError(`Some data could not be loaded: ${[...new Set(errors)].join(' · ')}`);
       } catch(error) {
         if(alive)setDataLoadError(error?.message||'Could not load your workspace data.');
@@ -342,6 +388,7 @@ function App(){
   },[session?.user?.id,dataLoadAttempt]);
   // Financial records are persisted only through Supabase; no browser/local data cache is used.
   useEffect(()=>{const t=setInterval(()=>setClock(Date.now()),60000);return()=>clearInterval(t)},[]);
+  useEffect(()=>{const k=e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();setSearchOpen(v=>!v)}};window.addEventListener('keydown',k);return()=>window.removeEventListener('keydown',k)},[]);
   useEffect(()=>{if(!toast)return;const t=setTimeout(()=>setToast(''),2800);return()=>clearTimeout(t)},[toast]);
 
 
@@ -358,13 +405,14 @@ function App(){
         if(v.currency){setCurrency(v.currency);void 0}
         if(v.timezone){setTimezone(v.timezone);void 0}
         if(v.profileName!==undefined){setProfileName(v.profileName||'');void 0}
-        if(v.theme){setTheme(v.theme);void 0}
-        if(v.design){setDesign(v.design);void 0}
+        if(v.theme)setTheme(v.theme);
+        
         if(v.sidebarSize){setSidebarSize(v.sidebarSize);void 0}
         if(v.profileAvatar){setProfileAvatar(v.profileAvatar);void 0}
         if(v.defaultAccountId!==undefined){setDefaultAccountId(v.defaultAccountId||'');void 0}
         if(v.accountsView==='list'||v.accountsView==='grid')setAccountsView(v.accountsView);
         if(typeof v.workspaceSectionName==='string'&&v.workspaceSectionName.trim()){setWorkspaceSectionName(v.workspaceSectionName.trim().slice(0,32));setWorkspaceSectionDraft(v.workspaceSectionName.trim().slice(0,32));}
+        if(v.categoryIcons&&typeof v.categoryIcons==='object')setCategoryIconOverrides(v.categoryIcons);
         if(Array.isArray(v.expenseCategories)){void 0;setExpenseCategoriesOverride(v.expenseCategories)}
         if(v.subcategories&&typeof v.subcategories==='object'){setCustomSubcategoriesOverride(v.subcategories);}
       }
@@ -385,7 +433,9 @@ function App(){
     const monthTx=useMemo(()=>reportTx.filter(t=>(t.transaction_date||'').slice(0,7)===month),[reportTx,month]);
   const income=monthTx.filter(t=>t.type==='Income').reduce((s,t)=>s+Number(t.amount||0),0);
   const expenses=monthTx.filter(t=>t.type==='Expense').reduce((s,t)=>s+Number(t.amount||0),0);
-  const net=income-expenses, savingsRate=income?net/income*100:0;
+  // Spending a completed goal is paid from money saved earlier, so it is balanced by a 'From savings' line.
+  const fromSavings=monthTx.filter(isFromSavings).reduce((s,t)=>s+Number(t.amount||0),0);
+  const net=income-expenses+fromSavings, savingsRate=income?net/income*100:0;
   const filtered=useMemo(()=>transactions.filter(t=>{
     const q=search.toLowerCase();
     const matchesSearch=(t.description||'').toLowerCase().includes(q)||(t.category||'').toLowerCase().includes(q)||(t.notes||'').toLowerCase().includes(q);
@@ -401,9 +451,11 @@ function App(){
   const wants=monthTx.filter(t=>t.type==='Expense'&&t.need_want==='Want').reduce((s,t)=>s+Number(t.amount),0);
   const monthBudgets=budgets.filter(b=>(b.month||'').slice(0,7)===month);
   const totalBudget=monthBudgets.reduce((s,b)=>s+Number(b.amount||0),0);
-  const totalSaved=goals.reduce((s,g)=>s+Number(g.saved_amount||0)+transactions.filter(t=>t.type==='Transfer'&&String(t.goal_id)===String(g.id)).reduce((v,t)=>{const from=accounts.find(a=>String(a.id)===String(t.account_id)),to=accounts.find(a=>String(a.id)===String(t.to_account_id));if(isGoalsAccount(from))return v-Number(t.amount||0);if(isGoalsAccount(to))return v+Number(t.amount||0);const fs=String(from?.type||'').toLowerCase().includes('saving'),ts=String(to?.type||'').toLowerCase().includes('saving');return v+(fs&&!ts?-1:1)*Number(t.amount||0)},0),0);
-  const goalTarget=goals.reduce((s,g)=>s+Number(g.target_amount||0),0);
-  const upcoming=recurring.filter(r=>!r.paid_this_cycle).sort((a,b)=>(a.next_due_date||'').localeCompare(b.next_due_date||'')).slice(0,4);
+  const activeGoals=goals.filter(g=>!isGoalDone(g));
+  const totalSaved=activeGoals.reduce((s,g)=>s+goalSaved(g,transactions,accounts),0);
+  const goalTarget=activeGoals.reduce((s,g)=>s+Number(g.target_amount||0),0);
+  const activeRecurring=recurring.filter(r=>r.is_active!==false);
+  const upcoming=activeRecurring.filter(r=>!r.paid_this_cycle).sort((a,b)=>(a.next_due_date||'').localeCompare(b.next_due_date||'')).slice(0,4);
   const todayISO=localISODate();
   const activeMonth=todayISO.slice(0,7);
   const budgetAlerts=budgets.filter(b=>(b.month||'').slice(0,7)===activeMonth).map(b=>{const spent=reportTx.filter(t=>t.type==='Expense'&&(t.transaction_date||'').slice(0,7)===activeMonth&&t.category===b.category).reduce((sum,t)=>sum+Number(t.amount||0),0);const pct=Number(b.amount)>0?spent/Number(b.amount)*100:0;return {...b,spent,pct};}).filter(b=>b.pct>=90).map(b=>({id:`budget-${b.id}`,kind:'budget',name:`${b.category} budget at ${Math.round(b.pct)}%`,detail:`${fmt(b.spent)} of ${fmt(b.amount)} used`,target:'Budgets',amount:null,pct:b.pct}));
@@ -412,8 +464,8 @@ function App(){
   const debtAlerts=debts.filter(d=>{if(!(Number(d.remaining_amount||0)>0&&d.due_date))return false;const pref=debtReminderInfo(d).reminder;const lead=pref==='1 week before'?7:pref==='2 days before'?2:pref==='1 day before'?1:0;const alertStart=new Date(`${d.due_date}T12:00:00`);alertStart.setDate(alertStart.getDate()-lead);const startISO=`${alertStart.getFullYear()}-${String(alertStart.getMonth()+1).padStart(2,'0')}-${String(alertStart.getDate()).padStart(2,'0')}`;return d.due_date<todayISO||todayISO>=startISO;}).map(d=>({id:`debt-${d.id}`,kind:'debt',name:d.name,detail:`${d.due_date<todayISO?'Overdue':d.due_date===todayISO?'Due today':`Due ${debtReminderInfo(d).reminder}`} · ${d.due_date}`,target:'Debts & installments',amount:Number(d.monthly_payment||d.remaining_amount||0)}));
   const cardAlertLimit=(()=>{const date=new Date(`${todayISO}T12:00:00`);date.setDate(date.getDate()+3);return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`})();
   const cardAlerts=accounts.filter(isCard).flatMap(c=>cardSummary(c,transactions,todayISO,debts).groups.filter(g=>g.due<=cardAlertLimit).map(g=>({id:`card-${c.id}-${g.due}`,kind:'debt',name:`${c.name} payment`,detail:`${g.due<todayISO?'Overdue':g.due===todayISO?'Due today':'Due soon'} · ${g.due}`,target:'Debts & installments',amount:g.remaining})));
-  const notificationPayments=recurring.filter(r=>!r.paid_this_cycle&&r.next_due_date&&r.next_due_date<=notificationDueLimit).sort((a,b)=>(a.next_due_date||'').localeCompare(b.next_due_date||''));
-  const notificationItems=[...budgetAlerts,...debtAlerts,...cardAlerts,...notificationPayments.map(r=>({id:`recurring-${r.id}`,kind:'recurring',name:r.name,detail:r.next_due_date?`${r.next_due_date<todayISO?'Overdue':r.next_due_date===todayISO?'Due today':'Due soon'} · ${new Date(r.next_due_date+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})} · ${r.frequency||'Recurring'}`:'Upcoming payment',target:'Recurring payments',amount:Number(r.amount||0)}))];
+  const notificationPayments=activeRecurring.filter(r=>!r.paid_this_cycle&&r.next_due_date&&r.next_due_date<=notificationDueLimit).sort((a,b)=>(a.next_due_date||'').localeCompare(b.next_due_date||''));
+  const notificationItems=[...budgetAlerts,...debtAlerts,...cardAlerts,...notificationPayments.map(r=>({id:`recurring-${r.id}`,kind:'recurring',name:r.name,detail:r.next_due_date?`${r.next_due_date<todayISO?'Overdue':r.next_due_date===todayISO?'Due today':'Due soon'} · ${new Date(r.next_due_date+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})} · ${r.frequency||'Recurring'}`:'Upcoming payment',target:'Subscriptions & bills',amount:Math.max(0,Number(r.amount||0)-Number(r.paid_amount||0))}))];
   const allNotificationItems=[...notificationItems,...vehicleReminderNotifications];
   useEffect(()=>{
     const currentIds=new Set(notificationItems.map(item=>String(item.id)));
@@ -468,9 +520,17 @@ function App(){
       setToast(err?.message||'Could not delete item. Please try again.');
     }
   }
+  async function toggleRecurringActive(r){
+    if(!r?.id||!supabase)return;
+    const next=r.is_active===false;
+    setRecurring(list=>list.map(x=>x.id===r.id?{...x,is_active:next}:x));
+    const {error}=await supabase.from('recurring_payments').update({is_active:next}).eq('id',r.id).eq('user_id',session.user.id);
+    if(error){setRecurring(list=>list.map(x=>x.id===r.id?{...x,is_active:!next}:x));setToast(error.message);return;}
+    setToast(next?`${r.name} is active again.`:`${r.name} is paused. It will not show in reminders or the calendar.`);
+  }
   async function deleteRecurringPayment(payment){
     if(!payment?.id)return;
-    requestConfirm('Delete recurring payment?', `“${payment.name||'This recurring payment'}” will be permanently removed. This action cannot be undone.`, async()=>{
+    requestConfirm('Delete this bill?', `“${payment.name||'This bill'}” will be permanently removed. This action cannot be undone.`, async()=>{
     try{
       if(cloudReady && session?.user){
         // Do not request a returned row: DELETE + SELECT can fail when a project's
@@ -479,7 +539,7 @@ function App(){
         if(error){setToast(`Could not delete payment: ${error.message}`);return;}
       }
       setRecurring(old=>old.filter(item=>String(item.id)!==String(payment.id)));
-      setToast('Recurring payment deleted');
+      setToast('Bill deleted');
     }catch(error){setToast(error?.message||'Could not delete payment. Please try again.');}
     });
   }
@@ -503,7 +563,7 @@ function App(){
     if(form.type==='Transfer'&&(isGoalsAccount(source)||isGoalsAccount(destination))&&(!form.goal_id||!goals.some(g=>String(g.id)===String(form.goal_id)))){setToast('Choose which savings goal this transfer belongs to.');return;}
     if(form.type==='Transfer'&&isGoalsAccount(source)){
       const selectedGoal=goals.find(g=>String(g.id)===String(form.goal_id));
-      const goalBalance=Number(selectedGoal?.saved_amount||0)+transactions.filter(t=>t.type==='Transfer'&&String(t.goal_id)===String(form.goal_id)&&String(t.id)!==String(editing?.id)).reduce((sum,t)=>{const from=accounts.find(a=>String(a.id)===String(t.account_id)),to=accounts.find(a=>String(a.id)===String(t.to_account_id));if(isGoalsAccount(from))return sum-Number(t.amount||0);if(isGoalsAccount(to))return sum+Number(t.amount||0);return sum+Number(t.amount||0)},0);
+      const goalBalance=selectedGoal?goalSaved(selectedGoal,transactions.filter(t=>String(t.id)!==String(editing?.id)),accounts):0;
       if(Number(form.amount)>goalBalance){setToast(`This goal only has ${new Intl.NumberFormat('en-EG',{style:'currency',currency,maximumFractionDigits:2}).format(Math.max(0,goalBalance))} available to withdraw.`);return;}
     }
     const sourceIn=transactions.filter(t=>(t.type==='Income'&&String(t.account_id)===String(source?.id))||(t.type==='Transfer'&&String(t.to_account_id)===String(source?.id))).reduce((sum,t)=>sum+Number(t.amount||0),0);
@@ -513,18 +573,29 @@ function App(){
     if(isCard(source)&&Number(source.credit_limit)>0){available=Number(source.credit_limit)-cardSummary(source,transactions,undefined,debts).owed;}
     if(editing && String(editing.account_id)===String(source?.id) && (editing.type==='Expense'||editing.type==='Transfer')) available+=Number(editing.amount||0);
     if((form.type==='Expense'||form.type==='Transfer') && Number(form.amount)>available){const shown=new Intl.NumberFormat('en-EG',{style:'currency',currency,maximumFractionDigits:2}).format(Math.max(0,available));setToast((isCard(source)||isProvider(source))?`Could not add: this is over the limit on ${source.name}. Available credit: ${shown}.`:`Insufficient balance in ${source?.name||'this account'}. Available: ${shown}.`);return;}
-    const payload={transaction_date:form.transaction_date,type:form.type,category:form.type==='Transfer'?'Transfer':form.category,subcategory:form.type==='Transfer'?(form.goal_id?(goals.find(g=>String(g.id)===String(form.goal_id))?.name||'Transfer'):'Transfer'):(form.subcategory||null),description:form.description,amount:Number(form.amount),need_want:form.type==='Expense'?form.need_want:null,fixed_variable:form.fixed_variable,payment_method:accounts.find(a=>String(a.id)===String(form.account_id))?.name||'Unassigned',account_id:form.account_id||null,to_account_id:form.type==='Transfer'?form.to_account_id||null:null,goal_id:form.type==='Transfer'?(form.goal_id||null):null,debt_id:form.debt_id||null,recurring:form.type==='Transfer'?false:form.recurring,notes:form.notes};
+    const payload={transaction_date:form.transaction_date,type:form.type,category:form.type==='Transfer'?'Transfer':form.category,subcategory:form.type==='Transfer'?(form.goal_id?(goals.find(g=>String(g.id)===String(form.goal_id))?.name||'Transfer'):'Transfer'):(form.subcategory||null),description:form.description,amount:Number(form.amount),need_want:form.type==='Expense'?form.need_want:null,fixed_variable:form.fixed_variable,payment_method:accounts.find(a=>String(a.id)===String(form.account_id))?.name||'Unassigned',account_id:form.account_id||null,to_account_id:form.type==='Transfer'?form.to_account_id||null:null,goal_id:form.type==='Transfer'?(form.goal_id||null):null,debt_id:form.type==='Income'&&form.loan_mode==='new'?null:(form.debt_id||null),recurring:form.type==='Transfer'?false:form.recurring,notes:form.notes};
+    if(form.receipt_path)payload.receipt_path=form.receipt_path;
     const saved=await saveRecord('transactions',payload,editing?.id);if(!saved)return;
     setTransactions(old=>editing?old.map(x=>x.id===editing.id?saved:x):[saved,...old]);
-    setModal(null);setEditing(null);setTxPresetAccount('');setToast(editing?'Transaction updated':'Transaction added');
+    if(form.type==='Income'&&form.loan_mode==='new'){setEditing(null);setTxPresetAccount('');setConvertTx(saved);setDebtPresetProvider('');setModal('debt');setToast(editing?'Income saved · now add the debt details':'Income added · now add the debt details');return true;}
+    if(form.type==='Income'&&form.loan_mode==='link'&&form.debt_id&&!editing){
+      const d=(debts||[]).find(x=>String(x.id)===String(form.debt_id));const add=Number(form.amount)||0;
+      if(d&&add>0){const r2=n=>Number(Number(n).toFixed(2));
+        const dp={name:d.name,debt_type:d.debt_type||'Other',lender:d.lender||'',account_id:d.account_id||null,original_amount:r2(Number(d.original_amount||0)+add),remaining_amount:r2(Number(d.remaining_amount||0)+add),monthly_payment:d.monthly_payment,due_date:d.due_date||null,frequency:d.frequency||'Monthly',notes:d.notes||'',start_date:d.start_date||null,term_months:d.term_months||null,total_repayment:r2(Number(d.total_repayment||d.original_amount||0)+add),interest_rate:Number(d.interest_rate||0),paid_installments:d.paid_installments||0,amount_paid:Number(d.amount_paid||0)};
+        const ds=await saveRecord('debts',dp,d.id);
+        if(ds){setDebts(old=>old.map(x=>x.id===d.id?ds:x));setModal(null);setEditing(null);setTxPresetAccount('');setToast(`Income added · ${d.name} increased by ${fmt(add)}`);return true;}
+        setToast('Income added, but the debt could not be updated');return true;
+      }
+    }
+    setModal(null);setEditing(null);setTxPresetAccount('');setToast(editing?'Transaction updated':'Transaction added');return true;
   }
   async function addGoal(form){
     const p={name:form.name,goal_type:form.goal_type||'Other',target_amount:Number(form.target_amount),saved_amount:Number(form.saved_amount||0),target_date:form.target_date||null,notes:form.notes||''};
     const saved=await saveRecord('savings_goals',p,editing?.id);if(!saved)return;
-    setGoals(old=>editing?old.map(x=>x.id===editing.id?saved:x):[saved,...old]);setModal(null);setEditing(null);setToast('Goal saved');
+    setGoals(old=>editing?old.map(x=>x.id===editing.id?saved:x):[saved,...old]);setModal(null);setEditing(null);setToast('Goal saved');if(!editing)setAddMoneyGoal(saved);
   }
   async function addRecurring(form){
-    const p={name:form.name,category:form.category,subcategory:form.subcategory||null,amount:Number(form.amount),frequency:form.frequency,next_due_date:form.next_due_date||null,account_id:form.account_id||null,auto_pay:form.auto_pay,paid_this_cycle:form.paid_this_cycle,last_paid_date:editing?.last_paid_date||null,essential:form.essential,notes:form.notes||''};
+    const p={name:form.name,category:form.category,subcategory:form.subcategory||null,amount:Number(form.amount),frequency:form.frequency,next_due_date:form.next_due_date||null,account_id:form.account_id||null,auto_pay:form.auto_pay,paid_this_cycle:form.paid_this_cycle,last_paid_date:editing?.last_paid_date||null,pay_by_date:form.pay_by_date||null,paid_amount:Math.min(Number(editing?.paid_amount||0),Number(form.amount)),essential:form.essential,notes:form.notes||''};
     const saved=await saveRecord('recurring_payments',p,editing?.id);if(!saved)return;
     setRecurring(old=>editing?old.map(x=>x.id===editing.id?saved:x):[saved,...old]);setModal(null);setEditing(null);setToast('Payment saved');
   }
@@ -548,15 +619,15 @@ function App(){
     }
   }
   async function saveAccount(form){
-    if(isGoalsAccount(editing)){setToast('The system Goals account cannot be edited.');return;}
-    const payload={name:form.name.trim(),type:form.type,opening_balance:Number(form.opening_balance||0),opening_balance_date:form.opening_balance_date||localISODate(),color:form.color||'#6c7cf5'};
+    const goalsEdit=isGoalsAccount(editing);
+    const payload=goalsEdit?{name:editing.name,type:editing.type,opening_balance:Number(form.opening_balance||0),opening_balance_date:form.opening_balance_date||editing.opening_balance_date||localISODate(),color:form.color||editing.color||'#6c7cf5'}:{name:form.name.trim(),type:form.type,opening_balance:Number(form.opening_balance||0),opening_balance_date:form.opening_balance_date||localISODate(),color:form.color||'#6c7cf5'};
     const saved=await saveRecord('financial_accounts',payload,editing?.id);if(!saved)return;
     setAccounts(old=>editing?old.map(x=>x.id===editing.id?saved:x):[saved,...old]);setModal(null);setEditing(null);setToast('Account saved');
   }
   async function createSetupAccount(form){
     const payload={name:form.name.trim(),type:form.type,opening_balance:Number(form.opening_balance||0),opening_balance_date:form.opening_balance_date||localISODate(),color:form.color||'#6c7cf5'};
-    const saved=await saveRecord('financial_accounts',payload);if(!saved)return;
-    setAccounts(old=>[saved,...old]);setToast('Your account is ready. You can start using Pocket now.');
+    const saved=await saveRecord('financial_accounts',payload);if(!saved)return false;
+    setAccounts(old=>[saved,...old]);setToast('Your account is ready. You can start using Pocket now.');return true;
   }
   async function saveCreditAccount(form){
     const isCardKind=form.kind==='card';
@@ -593,7 +664,23 @@ function App(){
     if(providerAcc&&Number(providerAcc.credit_limit)>0){const avail=limitLeft(providerAcc,debts,transactions)+(convertTx&&String(convertTx.account_id)===String(providerAcc.id)?Number(convertTx.amount||0):0)+(editing&&String(editing.provider_account_id)===String(providerAcc.id)?planLimitUse(editing):0);const need=totalRepayment>0?Math.max(0,principal-Number(form.down_payment||0))*Math.min(1,remaining/totalRepayment):remaining;if(need>avail+0.005){setToast(`Could not save: only ${fmt(avail)} is left on ${providerAcc.name}.`);return;}}
     const payload={provider_account_id:providerId,name:form.name.trim(),debt_type:form.debt_type||'Other',lender:form.lender||'',account_id:form.account_id||null,original_amount:principal,remaining_amount:remaining,monthly_payment:installment,due_date:form.due_date||null,frequency:'Monthly',notes:form.notes||'',start_date:form.start_date||null,term_months:term||null,total_repayment:totalRepayment,interest_rate:interestRate,paid_installments:paidCount,amount_paid:amountPaid};
     const saved=await saveRecord('debts',payload,editing?.id);if(!saved)return;
-    setDebts(old=>editing?old.map(x=>x.id===editing.id?saved:x):[saved,...old]);if(convertTx&&!editing){const t=await saveRecord('transactions',{...convertTx,debt_id:saved.id},convertTx.id);if(t)setTransactions(old=>old.map(x=>x.id===t.id?t:x));}setConvertTx(null);setModal(null);setEditing(null);setDebtPresetProvider('');setToast(convertTx&&!editing?'Purchase turned into installments':'Debt saved');
+    setDebts(old=>editing?old.map(x=>x.id===editing.id?saved:x):[saved,...old]);if(convertTx&&!editing){const t=await saveRecord('transactions',{...convertTx,debt_id:saved.id},convertTx.id);if(t)setTransactions(old=>old.map(x=>x.id===t.id?t:x));}setConvertTx(null);setModal(null);setEditing(null);setDebtPresetProvider('');setToast(convertTx&&!editing?(convertTx.type==='Income'?'Debt saved and linked to your income':'Purchase turned into installments'):'Debt saved');
+  }
+  async function closeDebt(debt){
+    const note=`Closed early on ${localISODate()} with ${fmt(Number(debt.remaining_amount||0))} unpaid.`;
+    const saved=await saveRecord('debts',{remaining_amount:0,notes:[debt.notes,note].filter(Boolean).join('\n')},debt.id);
+    if(!saved)return;setDebts(old=>old.map(x=>x.id===debt.id?saved:x));setToast(`${debt.name} closed`);
+  }
+  async function reopenDebt(debt){
+    // Reopen = forget installments that were only auto-counted from the due date; keep real payments recorded as transactions.
+    const total=Number(debt.total_repayment||debt.original_amount||0);
+    const real=transactions.filter(t=>String(t.debt_id)===String(debt.id)&&t.type==='Expense');
+    const realPaid=Math.min(total,real.reduce((n,t)=>n+Number(t.amount||0),0));
+    const remaining=Math.max(0,Number((total-realPaid).toFixed(2)));
+    if(!(remaining>0)){setToast('This debt has real payments covering all of it, so there is nothing left to reopen.');return;}
+    const note=`Reopened on ${localISODate()}.`;
+    const saved=await saveRecord('debts',{remaining_amount:remaining,amount_paid:Number(realPaid.toFixed(2)),paid_installments:real.length,notes:[debt.notes,note].filter(Boolean).join('\n')},debt.id);
+    if(!saved)return;setDebts(old=>old.map(x=>x.id===debt.id?saved:x));setToast(`${debt.name} is active again`);
   }
   async function recordDebtInstallment(debt, options={}){
     if(typeof options==='string') options={accountId:options};
@@ -606,19 +693,20 @@ function App(){
     const total=Number(debt.total_repayment||debt.original_amount||0), installment=Number(debt.monthly_payment||0), paid=Number(debt.paid_installments||0), amountPaid=Number(debt.amount_paid??Math.max(0,total-Number(debt.remaining_amount||0)));
     const installmentAmount=Math.min(installment,Number(debt.remaining_amount||0));
     const actualPaid=mode==='transaction'?Number(enteredAmount??installmentAmount):Number(enteredAmount??installmentAmount);
-    if(installmentAmount<=0||actualPaid<installmentAmount){setToast(`Payment must cover at least the due installment (${fmt(installmentAmount)}).`);return false;}
+    if(installmentAmount<=0||!(actualPaid>0)){setToast('Enter the amount you paid.');return false;}
+    const partialPay=actualPaid<installmentAmount;
     if(mode==='transaction'){
       const accountIn=transactions.filter(t=>(t.type==='Income'&&String(t.account_id)===String(account.id))||(t.type==='Transfer'&&String(t.to_account_id)===String(account.id))).reduce((sum,t)=>sum+Number(t.amount||0),0);
       const accountOut=transactions.filter(t=>((t.type==='Expense'||t.type==='Transfer')&&String(t.account_id)===String(account.id))).reduce((sum,t)=>sum+Number(t.amount||0),0);
       const balance=Number(account.opening_balance||0)+accountIn-accountOut;
       if(actualPaid>balance){setToast(`Insufficient balance in ${account.name}. Available: ${fmt(balance)}.`);return false;}
     }
-    const nextPaid=paid+1, nextAmountPaid=Math.min(total,Number((amountPaid+installmentAmount).toFixed(2))), nextRemaining=Math.max(0,Number((total-nextAmountPaid).toFixed(2)));
-    let nextDue=debt.due_date||null;if(nextDue){const d=new Date(`${nextDue}T12:00:00`);if(debt.frequency==='Weekly')d.setDate(d.getDate()+7);else if(debt.frequency==='Quarterly')d.setMonth(d.getMonth()+3);else if(debt.frequency==='Yearly')d.setFullYear(d.getFullYear()+1);else d.setMonth(d.getMonth()+1);nextDue=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+    const reduceBy=partialPay?actualPaid:installmentAmount;const nextPaid=partialPay?paid:paid+1, nextAmountPaid=Math.min(total,Number((amountPaid+reduceBy).toFixed(2))), nextRemaining=Math.max(0,Number((total-nextAmountPaid).toFixed(2)));
+    let nextDue=debt.due_date||null;if(nextDue&&!partialPay){const d=new Date(`${nextDue}T12:00:00`);if(debt.frequency==='Weekly')d.setDate(d.getDate()+7);else if(debt.frequency==='Quarterly')d.setMonth(d.getMonth()+3);else if(debt.frequency==='Yearly')d.setFullYear(d.getFullYear()+1);else d.setMonth(d.getMonth()+1);nextDue=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
     let txSaved=null;
     if(mode==='transaction'){
       const extraFees=Math.max(0,Number((actualPaid-installmentAmount).toFixed(2)));
-      const txPayload={transaction_date:paymentDate,type:'Expense',category:'Debt repayment',subcategory:debt.debt_type||'Installment',description:`Installment · ${debt.name}`,amount:actualPaid,need_want:'Need',fixed_variable:'Fixed',payment_method:account.name,account_id:account.id,to_account_id:null,goal_id:null,debt_id:debt.id,recurring:false,notes:`Debt installment ${nextPaid}${extraFees>0?` · Extra fees: ${fmt(extraFees)}`:''}`};
+      const txPayload={transaction_date:paymentDate,type:'Expense',category:'Debt repayment',subcategory:debt.debt_type||'Installment',description:`Installment · ${debt.name}`,amount:actualPaid,need_want:'Need',fixed_variable:'Fixed',payment_method:account.name,account_id:account.id,to_account_id:null,goal_id:null,debt_id:debt.id,recurring:false,notes:`${partialPay?'Partial payment for installment '+(paid+1):'Debt installment '+nextPaid}${extraFees>0?` · Extra fees: ${fmt(extraFees)}`:''}`};
       txSaved=await saveRecord('transactions',txPayload);if(!txSaved)return false;
     }
     const payload={name:debt.name,debt_type:debt.debt_type||'Other',lender:debt.lender||'',account_id:debt.account_id||account?.id||null,original_amount:Number(debt.original_amount||0),remaining_amount:nextRemaining,monthly_payment:installment,due_date:nextDue,frequency:debt.frequency||'Monthly',notes:debt.notes||'',start_date:debt.start_date||null,term_months:debt.term_months||null,total_repayment:total,interest_rate:Number(debt.interest_rate||0),paid_installments:nextPaid,amount_paid:nextAmountPaid};
@@ -626,18 +714,130 @@ function App(){
     if(txSaved)setTransactions(old=>[txSaved,...old]);setDebts(old=>old.map(x=>x.id===debt.id?saved:x));setToast(mode==='transaction'?`Installment recorded from ${account.name}${actualPaid>installmentAmount?' including extra fees':''}`:'Installment recorded without creating a transaction');return true;
   }
 
+  async function startPlusTrial(){
+    const {data,error}=await supabase.from('subscriptions').insert({user_id:session.user.id,status:'trial',period:'trial'}).select().single();
+    if(error){setToast(error.message);return false;}
+    setSubs(o=>[data,...o]);setToast('Your free trial started. Bank SMS is open.');return true;
+  }
+  async function sendPlusPayment({period,method,handle,ref,name,proof,amount}){
+    let proof_path=null;
+    if(proof){try{const uid=session.user.id;const path=`${uid}/plus/${Date.now()}-${Math.random().toString(36).slice(2,8)}.jpg`;const {error:ue}=await supabase.storage.from('receipts').upload(path,proof,{contentType:proof.type||'image/jpeg',upsert:false});if(!ue)proof_path=path;}catch{}}
+    const {data,error}=await supabase.from('subscriptions').insert({user_id:session.user.id,status:'pending',period,payment_method:method,payer_handle:handle,payer_name:name||null,payment_ref:ref||null,proof_path,amount}).select().single();
+    if(error){setToast(/subscriptions_payment_ref_once|duplicate key/i.test(error.message)?'This transaction number was already used for another payment.':error.message);return false;}
+    const {data:fresh}=await supabase.from('subscriptions').select('*').eq('id',data.id).maybeSingle();const row=fresh||data;
+    setSubs(o=>[row,...o]);setToast(row.status==='active'?'Payment found. Pocket Plus is on!':'Got it. Plus turns on as soon as your payment arrives.');return true;
+  }
+  const plusPendingId=subs.find(r=>r.status==='pending')?.id||null;
+  useEffect(()=>{if(!plusPendingId||!supabase||!session?.user?.id)return;let alive=true;const tick=async()=>{if(document.hidden)return;const {data}=await supabase.from('subscriptions').select('*').eq('user_id',session.user.id).order('created_at',{ascending:false});if(!alive||!data)return;setSubs(data);if(!data.some(r=>r.status==='pending')){const ok=data.find(r=>r.id===plusPendingId);if(ok?.status==='active')setToast('Payment found. Pocket Plus is on!');}};const iv=setInterval(tick,20000);return()=>{alive=false;clearInterval(iv)};},[plusPendingId]);
+  async function togglePlusCancel(row){
+    const {data,error}=await supabase.from('subscriptions').update({cancel_at_period_end:!row.cancel_at_period_end}).eq('id',row.id).select().single();
+    if(error){setToast(error.message);return;}
+    setSubs(o=>o.map(x=>x.id===row.id?data:x));setToast(data.cancel_at_period_end?'Plus will end at the end of this period':'Plus will keep renewing');
+  }
+  async function savePlusSettings(v){
+    const {error}=await supabase.from('app_settings').upsert({key:'plus',value:v,updated_at:new Date().toISOString()},{onConflict:'key'});
+    if(error){setToast(error.message);return false;}
+    setPlusSettings({...PLUS_DEFAULTS,...v});setToast('Plus settings saved');return true;
+  }
+  async function uploadReceipt(blob){
+    try{const uid=session?.user?.id;if(!uid||!supabase)return '';const ext=(blob.type||'image/jpeg').includes('png')?'png':'jpg';const path=`${uid}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;const {error}=await supabase.storage.from('receipts').upload(path,blob,{contentType:blob.type||'image/jpeg',upsert:false});return error?'':path;}catch{return '';}
+  }
+  useEffect(()=>{const h=e=>openReceipt(e.detail);window.addEventListener('pocket-open-receipt',h);return()=>window.removeEventListener('pocket-open-receipt',h)},[]);
+  async function openReceipt(path){
+    try{const {data,error}=await supabase.storage.from('receipts').createSignedUrl(path,300);if(error||!data?.signedUrl){setToast('Could not open the receipt.');return;}window.open(data.signedUrl,'_blank','noopener');}catch{setToast('Could not open the receipt.');}
+  }
+  const [chatVehicles,setChatVehicles]=useState({vehicles:[],fuel:[],services:[],lastFuelType:''});
+  useEffect(()=>{if(!chatOpen||!supabase||!session?.user?.id||!allowedFeatures.includes('vehicle_management'))return;let alive=true;(async()=>{const uid=session.user.id;const [v,f,sv,st]=await Promise.all([supabase.from('vehicles').select('*').eq('user_id',uid),supabase.from('vehicle_fuel_logs').select('fill_date,cost,vehicle_id,fuel_type').eq('user_id',uid),supabase.from('vehicle_service_records').select('service_date,cost,vehicle_id').eq('user_id',uid),supabase.from('user_settings').select('settings').eq('user_id',uid).maybeSingle()]);if(!alive)return;setChatVehicles({vehicles:v.data||[],fuel:f.data||[],services:sv.data||[],lastFuelType:st.data?.settings?.lastFuelType||''});})();return()=>{alive=false}},[chatOpen,session?.user?.id]);
+  const vehicleSpend=useCallback((from,to)=>{const inR=d=>d&&d>=from&&d<=to;const fuel=chatVehicles.fuel.filter(x=>inR(x.fill_date)).reduce((s,x)=>s+Number(x.cost||0),0);const service=chatVehicles.services.filter(x=>inR(x.service_date)).reduce((s,x)=>s+Number(x.cost||0),0);return {fuel,service,total:fuel+service};},[chatVehicles]);
+  async function chatSaveVehicle(d){
+    const uid=session?.user?.id;if(!uid)return false;
+    const v=chatVehicles.vehicles.find(x=>String(x.id)===String(d.vehicleId));if(!v){setToast('Choose the vehicle first.');return false;}
+    const acc=accounts.find(a=>String(a.id)===String(d.accountId));if(!acc||isGoalsAccount(acc)){setToast('Choose the account you paid from.');return false;}
+    const cats=getCategoriesForType('Expense',session?.user?.user_metadata?.gender||'');const category=cats.find(c=>c==='Transportation')||cats.find(c=>/transport|car|vehicle/i.test(c))||'Transportation';
+    const isFuel=d.kind==='fuel';
+    const tx=await saveRecord('transactions',{transaction_date:d.date,type:'Expense',category,subcategory:isFuel?'Fuel':'Car maintenance',description:isFuel?`Fuel: ${v.name}`:`${d.title||'Service'}: ${v.name}`,amount:Number(d.amount),need_want:'Need',fixed_variable:'Variable',payment_method:acc.name,account_id:acc.id,to_account_id:null,goal_id:null,debt_id:null,recurring:false,notes:'Added by typing'});
+    if(!tx)return false;
+    setTransactions(o=>[tx,...o]);
+    const odo=Number(d.odometer)||null;
+    let res;
+    if(isFuel){const liters=Number(d.liters)||0;res=await supabase.from('vehicle_fuel_logs').insert({user_id:uid,vehicle_id:v.id,fill_date:d.date,odometer:odo??Number(v.current_odometer||0),liters:liters||null,cost:Number(d.amount),price_per_liter:liters?Number((Number(d.amount)/liters).toFixed(2)):null,fuel_type:d.fuelType||'92 Octane',tank_id:null,station:null,full_tank:Boolean(d.fullTank),notes:'Added by typing',transaction_id:tx.id});}
+    else res=await supabase.from('vehicle_service_records').insert({user_id:uid,vehicle_id:v.id,service_type:d.serviceType||'Routine maintenance',title:d.title||'Service',service_date:d.date,odometer:odo,cost:Number(d.amount),provider:null,notes:'Added by typing',transaction_id:tx.id,debt_id:null});
+    if(res.error){await supabase.from('transactions').delete().eq('id',tx.id).eq('user_id',uid);setTransactions(o=>o.filter(x=>x.id!==tx.id));setToast(res.error.message||'Could not save.');return false;}
+    if(odo&&odo>Number(v.current_odometer||0)){await supabase.from('vehicles').update({current_odometer:odo}).eq('id',v.id).eq('user_id',uid);setChatVehicles(o=>({...o,vehicles:o.vehicles.map(x=>x.id===v.id?{...x,current_odometer:odo}:x)}));}
+    setChatVehicles(o=>isFuel?{...o,fuel:[...o.fuel,{fill_date:d.date,cost:Number(d.amount),vehicle_id:v.id}]}:{...o,services:[...o.services,{service_date:d.date,cost:Number(d.amount),vehicle_id:v.id}]});
+    setToast(isFuel?`Fuel saved for ${v.name}`:`Service saved for ${v.name}`);return true;
+  }
+  async function chatSave(d){
+    {const need={expense:'transactions',income:'transactions',transfer:'transactions',goal:'goals',debt:'debts',bill:'subscriptions',newbill:'subscriptions',budget:'budgets',fuel:'vehicle_management',service:'vehicle_management'}[d.kind];if(need&&!hasFeature(need)){setToast('This part of Pocket is not turned on for your account.');return false;}}
+    const base={transaction_date:d.date,subcategory:'',description:d.description||'',need_want:'Need',fixed_variable:'Variable',account_id:d.accountId||'',to_account_id:'',goal_id:'',debt_id:'',recurring:false,notes:'Added by typing',loan_mode:'none'};
+    if(d.kind==='expense'||d.kind==='income'){let receipt_path='';if(d.receiptFile){receipt_path=await uploadReceipt(d.receiptFile);if(!receipt_path)setToast('The receipt photo could not be uploaded. Saving the transaction without it.');}return !!(await submitTransaction({...base,type:d.type,category:d.category,amount:d.amount,notes:d.receiptFile?'Added from a receipt photo':base.notes,receipt_path}));}
+    if(d.kind==='budget'){const m=monthStart(d.month);const old=budgets.find(b=>b.category===d.category&&String(b.month||'').slice(0,7)===String(d.month));const saved=await saveRecord('budgets',{category:d.category,month:m,amount:Number(d.amount)},old?.id);if(!saved)return false;setBudgets(o=>[saved,...o.filter(x=>String(x.id)!==String(saved.id)&&!(x.category===saved.category&&String(x.month||'').slice(0,7)===String(saved.month||'').slice(0,7)))]);setToast(`Budget for ${d.category} saved`);return true;}
+    if(d.kind==='newbill'){const saved=await saveRecord('recurring_payments',{name:d.name||'Bill',category:d.category||'Bills & Utilities',subcategory:null,amount:Number(d.amount),frequency:'Monthly',next_due_date:d.nextDue||null,account_id:d.accountId||null,auto_pay:false,paid_this_cycle:false,last_paid_date:null,pay_by_date:null,paid_amount:0});if(!saved)return false;setRecurring(o=>[saved,...o]);setToast(`${saved.name} added to Subscriptions & bills`);return true;}
+    if(d.kind==='fuel'||d.kind==='service')return await chatSaveVehicle(d);
+    if(d.kind==='transfer')return !!(await submitTransaction({...base,type:'Transfer',category:'Transfer',description:'Transfer',amount:d.amount,to_account_id:d.toAccountId||'',goal_id:d.goalId||''}));
+    if(d.kind==='goal'){if(!d.goalId){setToast('Choose a goal first.');return false;}return !!(await submitTransaction({...base,type:'Transfer',category:'Transfer',description:'Goal deposit',amount:d.amount,to_account_id:d.goalsAccountId,goal_id:d.goalId}));}
+    if(d.kind==='debt'){const debt=debts.find(x=>String(x.id)===String(d.debtId));if(!debt)return false;return !!(await recordDebtInstallment(debt,{accountId:d.accountId,amount:d.amount,paymentDate:d.date}));}
+    if(d.kind==='bill'){const r=recurring.find(x=>String(x.id)===String(d.billId));if(!r)return false;return !!(await markRecurringPaid(r,{accountId:d.accountId,amount:d.amount}));}
+    return false;
+  }
+  async function completeGoal(goal,{mode,accountId,amount,category}){
+    const left=Number(amount)||0;
+    if(left>0.005){
+      if(mode==='paid'){const exp=await goalExpense(goal,left,category,'Goal spent when completed');if(!exp)return;}
+      else{
+        const goalsAcc=accounts.find(isGoalsAccount);
+        if(!goalsAcc||!accountId){setToast('Choose an account for the money.');return;}
+        const ok=await submitTransaction({transaction_date:localISODate(),type:'Transfer',category:'Transfer',subcategory:'',description:`Goal closed · ${goal.name}`,amount:left,need_want:'Need',fixed_variable:'Variable',account_id:goalsAcc.id,to_account_id:accountId,goal_id:goal.id,debt_id:'',recurring:false,notes:'Money returned when the goal was closed',loan_mode:'none'});
+        if(!ok)return;
+      }
+    }
+    const saved=await saveRecord('savings_goals',{completed_at:new Date().toISOString()},goal.id);
+    if(!saved){setToast('The goal could not be closed. Try again.');return;}
+    setGoals(old=>old.map(x=>x.id===goal.id?saved:x));setCompleteGoalTarget(null);setToast(`${goal.name} completed. Well done!`);
+  }
+  async function addToGoal(goal,{amount,source}){
+    if(source==='outside'){
+      const saved=await saveRecord('savings_goals',{saved_amount:Number(goal.saved_amount||0)+Number(amount)},goal.id);if(!saved)return;
+      setGoals(old=>old.map(x=>x.id===goal.id?saved:x));setAddMoneyGoal(null);setToast(`Added to ${goal.name}`);return;
+    }
+    const goalsAcc=accounts.find(isGoalsAccount);if(!goalsAcc){setToast('The Goals account was not found.');return;}
+    const ok=await submitTransaction({transaction_date:localISODate(),type:'Transfer',category:'Transfer',subcategory:'',description:`Saved for ${goal.name}`,amount:Number(amount),need_want:'Need',fixed_variable:'Variable',account_id:source,to_account_id:goalsAcc.id,goal_id:goal.id,debt_id:'',recurring:false,notes:'Added from the goal',loan_mode:'none'});
+    if(ok){setAddMoneyGoal(null);setToast(`Added to ${goal.name}`);}
+  }
+  // One expense paid from the goal itself: no transfer row and no other account changes.
+  async function goalExpense(goal,amount,category,note){
+    const goalsAcc=accounts.find(isGoalsAccount);if(!goalsAcc){setToast('The Goals account was not found.');return null;}
+    const exp=await saveRecord('transactions',{transaction_date:localISODate(),type:'Expense',category:category||'Other',subcategory:null,description:goal.name,amount:Number(amount),need_want:'Want',fixed_variable:'Variable',payment_method:'Savings goal',account_id:goalsAcc.id,to_account_id:null,goal_id:goal.id,debt_id:null,recurring:false,notes:note});
+    if(exp)setTransactions(old=>[exp,...old]);
+    return exp;
+  }
+  async function spendFromGoal(goal,{amount,category}){
+    const exp=await goalExpense(goal,amount,category,'Goal spent early');if(!exp)return;
+    setSpendGoal(null);setToast(`Spending recorded for ${goal.name}`);
+  }
+  async function reopenGoal(goal){
+    const saved=await saveRecord('savings_goals',{completed_at:null},goal.id);if(!saved)return;
+    setGoals(old=>old.map(x=>x.id===goal.id?saved:x));setToast(`${goal.name} is active again`);
+  }
   async function signIn(e){
     e.preventDefault(); if(!supabase)return;
+    const locked=loginLockSeconds();if(locked){setAuthMsg(`Too many sign-in attempts. Try again in ${formatWait(locked)}.`);return;}
     setBusy(true);setAuthMsg('');setSessionExpiredNotice(false);
     const loginId=authEmail.trim();
     const loginEmail=loginId.includes('@')?loginId:`${loginId.toLowerCase().replace(/[^a-z0-9._-]/g,'-')}@users.pocket.local`;
     const {error}=await supabase.auth.signInWithPassword({email:loginEmail,password:authPassword});
     setBusy(false);
+    if(!error)clearLoginFailures();
     if(error){
       const message=String(error.message||'');
       if(/email not confirmed|email_not_confirmed|confirm your email/i.test(message)){
         setAuthMsg('Your email is not confirmed yet. Check your inbox or resend the confirmation email below.');
-      }else setAuthMsg(message);
+      }else if(/rate limit|too many|429/i.test(message)||error.status===429){
+        setAuthMsg('Too many attempts right now. Please wait a few minutes and try again.');
+      }else{
+        const wait=recordLoginFailure();
+        setAuthMsg(wait?`${message} Too many attempts — try again in ${formatWait(wait)}.`:message);
+      }
     }
   }
   async function resendConfirmation(){
@@ -661,11 +861,11 @@ function App(){
   }
   async function signUp(e){
     e.preventDefault(); if(!supabase)return;
-    if(authPassword.length<8){setAuthMsg('Use a password with at least 8 characters.');return;}
+    if(authPassword.length<10){setAuthMsg('Use a password with at least 10 characters.');return;}
+    const username=authUsername.trim();
+    if(!/^[a-zA-Z0-9._-]{3,32}$/.test(username)){setAuthMsg('Choose a username (3–32 characters: letters, numbers, dots, underscores or hyphens).');return;}
     setBusy(true);setAuthMsg('');
     if(!authEmail.trim()){
-      const username=authUsername.trim();
-      if(!/^[a-zA-Z0-9._-]{3,32}$/.test(username)){setBusy(false);setAuthMsg('Choose a username (3–32 characters: letters, numbers, dots, underscores or hyphens) or add an email.');return;}
       const {error:fnError}=await supabase.functions.invoke('public-signup',{body:{full_name:authName.trim(),gender:authGender,avatar:defaultAvatarForGender(authGender),username,password:authPassword}});
       if(fnError){let msg=fnError.message;try{const j=await fnError.context?.json?.();if(j?.error)msg=j.error;}catch{}setBusy(false);setAuthMsg(msg||'Could not create the account.');return;}
       const {error:inError}=await supabase.auth.signInWithPassword({email:`${username.toLowerCase().replace(/[^a-z0-9._-]/g,'-')}@users.pocket.local`,password:authPassword});
@@ -676,7 +876,7 @@ function App(){
     const {data,error}=await supabase.auth.signUp({
       email:authEmail.trim(),
       password:authPassword,
-      options:{data:{full_name:authName.trim(),gender:authGender,avatar:defaultAvatarForGender(authGender)},emailRedirectTo:authRedirectUrl()}
+      options:{data:{full_name:authName.trim(),username,gender:authGender,avatar:defaultAvatarForGender(authGender)},emailRedirectTo:authRedirectUrl()}
     });
     setBusy(false);
     if(error){setAuthMsg(error.message);return;}
@@ -703,11 +903,12 @@ function App(){
   }
   async function updatePassword(e){
     e.preventDefault(); if(!supabase)return;
-    if(authPassword.length<8){setAuthMsg('Use a password with at least 8 characters.');return;}
+    if(authPassword.length<10){setAuthMsg('Use a password with at least 10 characters.');return;}
     if(authPassword!==authConfirmPassword){setAuthMsg('The passwords do not match.');return;}
     setBusy(true);setAuthMsg('');
     const {error}=await supabase.auth.updateUser({password:authPassword});
     if(error){setBusy(false);setAuthMsg(error.message);return;}
+    try{sessionStorage.removeItem('pocket-current-page');sessionStorage.removeItem('pocket-vehicle-tab');}catch{}
     await supabase.auth.signOut();
     setBusy(false);setAuthMode('signin');setAuthPassword('');setAuthConfirmPassword('');
     setAuthMsg('Password updated successfully. Sign in with your new password.');
@@ -748,6 +949,12 @@ function App(){
     setToast('User access updated');
     await refreshAdminUsers();
   }
+  async function exportTransactionsAs(format){
+    if(!transactions.length){setToast('No transactions to export yet.');return;}
+    try{await exportTransactions(format,transactions,accounts,currency);setToast(`Exported ${transactions.length} transactions as ${format==='xlsx'?'Excel':format.toUpperCase()}.`);}
+    catch(err){setToast('Could not export: '+(err?.message||err));}
+  }
+  function downloadTemplateAs(format){downloadTemplate(format,currency);setToast(`Template downloaded (${format==='xlsx'?'Excel':'CSV'}). Fill it in, then use Import.`);}
   function exportCSV(){
     const ws=XLSX.utils.json_to_sheet(transactions.map(t=>({'Date':t.transaction_date,'Type':t.type,'Category':t.category,'Description':t.description,[`Amount (${currency})`]:t.amount,'Need / Want':t.need_want,'Fixed / Variable':t.fixed_variable,'Account / Wallet':accounts.find(a=>a.id===t.account_id)?.name||'No account linked','Recurring?':t.recurring?'Yes':'No','Notes':t.notes})));
     const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Transactions');XLSX.writeFile(wb,'forma-transactions.xlsx');
@@ -823,27 +1030,46 @@ function App(){
     }catch(err){setToast(err.message||'Could not restore backup');}
     finally{e.target.value='';}
   }
-  async function markRecurringPaid(r){
-    if(paidBusy.includes(r.id))return;
+  async function markRecurringPaid(r,opts={}){
+    const accId=opts.accountId||r.account_id||null;const record=opts.record!==false;
+    if(paidBusy.includes(r.id))return false;
     setPaidBusy(old=>[...old,r.id]);
     try{
       const paidDate=localISODate();
-      if(cloudReady&&session?.user){
-        const {error}=await supabase.rpc('mark_recurring_payment_paid',{p_payment_id:r.id,p_paid_date:paidDate,p_account_id:r.account_id||null});
+      const already=Number(r.paid_amount||0),remaining=Math.max(0,Number(r.amount||0)-already);
+      const payAmt=opts.amount!=null&&opts.amount!==''?Math.min(Number(opts.amount),remaining):remaining;
+      if(!(payAmt>0))throw new Error('Enter an amount greater than zero.');
+      const isPart=payAmt<remaining-0.004,newPaid=Math.round((already+payAmt)*100)/100,done=newPaid>=Number(r.amount||0)-0.004;
+      const nextDue=addFrequency(r.next_due_date||paidDate,r.frequency);
+      const gap=r.pay_by_date&&r.next_due_date?Math.round((new Date(r.pay_by_date+'T12:00:00')-new Date(r.next_due_date+'T12:00:00'))/864e5):null;
+      const shiftPayBy=nd=>gap!=null&&gap>=0?localISODate(new Date(new Date(nd+'T12:00:00').getTime()+gap*864e5)):null;
+      const patch=done?{next_due_date:nextDue,paid_this_cycle:true,last_paid_date:paidDate,paid_amount:0,...(r.pay_by_date?{pay_by_date:shiftPayBy(nextDue)}:{})}:{paid_amount:newPaid};
+      if(!record){
+        if(cloudReady&&session?.user){const {error}=await supabase.from('recurring_payments').update(patch).eq('id',r.id);if(error)throw error;}
+        setRecurring(old=>old.map(x=>x.id===r.id?{...x,...patch}:x));
+      } else if(cloudReady&&session?.user&&!isPart&&already===0){
+        const {error}=await supabase.rpc('mark_recurring_payment_paid',{p_payment_id:r.id,p_paid_date:paidDate,p_account_id:accId});
         if(error)throw error;
         const [t,rec]=await Promise.all([supabase.from('transactions').select('*').order('transaction_date',{ascending:false}),supabase.from('recurring_payments').select('*').order('next_due_date',{ascending:true})]);
         if(t.error||rec.error)throw new Error('Payment recorded. Reload the app if the refreshed list is not visible.');
-        setTransactions(t.data||[]);setRecurring(rec.data||[]);
+        let recRows=rec.data||[];
+        if(r.pay_by_date){const fresh=recRows.find(x=>x.id===r.id);const nd=fresh?.next_due_date;const np=nd?shiftPayBy(nd):null;if(np){const {error:e2}=await supabase.from('recurring_payments').update({pay_by_date:np}).eq('id',r.id);if(!e2)recRows=recRows.map(x=>x.id===r.id?{...x,pay_by_date:np}:x);}}
+        setTransactions(t.data||[]);setRecurring(recRows);
       } else {
-        if(r.last_paid_date&&r.next_due_date&&paidDate<r.next_due_date)throw new Error('This payment was already recorded for the current cycle.');
-        const account=accounts.find(a=>String(a.id)===String(r.account_id));if(!account)throw new Error('Choose an account or wallet in this recurring payment before marking it paid.');if(isGoalsAccount(account))throw new Error('The Goals account can only be used for transfers.');const accountIn=transactions.filter(t=>(t.type==='Income'&&String(t.account_id)===String(account.id))||(t.type==='Transfer'&&String(t.to_account_id)===String(account.id))).reduce((sum,t)=>sum+Number(t.amount||0),0);const accountOut=transactions.filter(t=>((t.type==='Expense'||t.type==='Transfer')&&String(t.account_id)===String(account.id))).reduce((sum,t)=>sum+Number(t.amount||0),0);if(isProvider(account))throw new Error('Choose a bank, cash, wallet or credit card account for this payment.');const available=Number(account.opening_balance||0)+accountIn-accountOut+(isCard(account)?(Number(account.credit_limit)>0?Number(account.credit_limit):1e12):0);if(Number(r.amount)>available)throw new Error(`Insufficient balance in ${account.name}. Available: ${fmt(available)}.`);const tx={transaction_date:paidDate,type:'Expense',category:r.category||'Bills & Utilities',subcategory:r.subcategory||null,description:`Recurring payment: ${r.name}`,amount:Number(r.amount)||0,need_want:'Need',fixed_variable:'Fixed',payment_method:account.name,account_id:account.id,recurring:true,notes:`Generated from recurring payment ${r.name}`};
-        const savedTx={...tx,id:uid()};
-        const nextDue=addFrequency(r.next_due_date||paidDate,r.frequency);
-        const updated={...r,next_due_date:nextDue,paid_this_cycle:true,last_paid_date:paidDate};
-        setTransactions(old=>[savedTx,...old]);setRecurring(old=>old.map(x=>x.id===r.id?updated:x));
+        if(!cloudReady&&already===0&&!isPart&&r.last_paid_date&&r.next_due_date&&paidDate<r.next_due_date)throw new Error('This payment was already recorded for the current cycle.');
+        const account=accounts.find(a=>String(a.id)===String(accId));if(!account)throw new Error('Choose an account or wallet in this recurring payment before marking it paid.');if(isGoalsAccount(account))throw new Error('The Goals account can only be used for transfers.');const accountIn=transactions.filter(t=>(t.type==='Income'&&String(t.account_id)===String(account.id))||(t.type==='Transfer'&&String(t.to_account_id)===String(account.id))).reduce((sum,t)=>sum+Number(t.amount||0),0);const accountOut=transactions.filter(t=>((t.type==='Expense'||t.type==='Transfer')&&String(t.account_id)===String(account.id))).reduce((sum,t)=>sum+Number(t.amount||0),0);if(isProvider(account))throw new Error('Choose a bank, cash, wallet or credit card account for this payment.');const available=Number(account.opening_balance||0)+accountIn-accountOut+(isCard(account)?(Number(account.credit_limit)>0?Number(account.credit_limit):1e12):0);if(payAmt>available)throw new Error(`Insufficient balance in ${account.name}. Available: ${fmt(available)}.`);
+        const partial=isPart||already>0;
+        const tx={transaction_date:paidDate,type:'Expense',category:r.category||'Bills & Utilities',subcategory:r.subcategory||null,description:`Recurring payment: ${r.name}${partial?(done?' (final part)':' (part)'):''}`,amount:payAmt,need_want:'Need',fixed_variable:'Fixed',payment_method:account.name,account_id:account.id,recurring:true,notes:`Generated from recurring payment ${r.name}${partial?` · ${fmt(newPaid)} of ${fmt(r.amount)} paid`:''}`};
+        let savedTx={...tx,id:uid()};
+        if(cloudReady&&session?.user){
+          const ins=await supabase.from('transactions').insert({...tx,user_id:session.user.id}).select().single();if(ins.error)throw ins.error;savedTx=ins.data;
+          const {error:e3}=await supabase.from('recurring_payments').update(patch).eq('id',r.id);if(e3)throw e3;
+        }
+        setTransactions(old=>[savedTx,...old]);setRecurring(old=>old.map(x=>x.id===r.id?{...x,...patch}:x));
       }
-      setToast('Payment recorded and next due date updated');
-    }catch(err){setToast(err.message||'Could not mark payment as paid');}
+      setToast(!record?(done?'Marked as paid · no transaction created':'Part payment saved · no transaction created'):done?'Payment recorded and next due date updated':`Part payment recorded · ${fmt(Math.max(0,Number(r.amount||0)-newPaid))} left`);
+      return true;
+    }catch(err){setToast(err.message||'Could not mark payment as paid');return false;}
     finally{setPaidBusy(old=>old.filter(id=>id!==r.id));}
   }
 
@@ -897,13 +1123,29 @@ function App(){
     window.addEventListener('pocket-access-requests-updated',onChanged);
     return()=>{alive=false;window.removeEventListener('pocket-access-requests-updated',onChanged);};
   },[isAdmin,page,session?.user?.id]);
-  const allowedFeatures=!cloudReady||isAdmin?FEATURE_OPTIONS.map(f=>f.key):(Array.isArray(profile?.enabled_features)?profile.enabled_features:[]);
-  useEffect(()=>{let live=true;async function loadVehicleAlerts(){if(!supabase||!session?.user?.id||!allowedFeatures.includes('vehicle_management')){setVehicleReminderNotifications([]);return;}try{const [plansResult,vehiclesResult]=await Promise.all([supabase.from('maintenance_plans').select('id,title,vehicle_id,next_due_date,next_due_odometer,status'),supabase.from('vehicles').select('id,name,current_odometer,odometer_unit')]);if(!live||plansResult.error||vehiclesResult.error)return;const today=todayISO,limit=new Date(Date.now()+30*86400000).toISOString().slice(0,10),vehicles=vehiclesResult.data||[];setVehicleReminderNotifications((plansResult.data||[]).filter(p=>p.status!=='completed'&&((p.next_due_date&&p.next_due_date<=limit)||(p.next_due_odometer!=null&&Number(p.next_due_odometer)<=Number(vehicles.find(v=>v.id===p.vehicle_id)?.current_odometer||0)+500))).map(p=>{const v=vehicles.find(x=>x.id===p.vehicle_id),overdue=Boolean((p.next_due_date&&p.next_due_date<today)||(p.next_due_odometer!=null&&Number(p.next_due_odometer)<=Number(v?.current_odometer||0)));return {id:`vehicle-maintenance-${p.id}`,kind:'maintenance',name:`${p.title||'Vehicle maintenance'} · ${v?.name||'Vehicle'}`,detail:overdue?'Maintenance overdue':`Maintenance due soon${p.next_due_date?` · ${p.next_due_date}`:p.next_due_odometer?` · ${Number(p.next_due_odometer).toLocaleString()} ${v?.odometer_unit||'km'}`:''}`,target:'Vehicle Management',amount:null}}));}catch{}}loadVehicleAlerts();return()=>{live=false}},[supabase,session?.user?.id,allowedFeatures.join('|')]);
+  // Each user sees only the pages the Owner turned on for them (Users → pages)
+  const plus=plusState(subs);
+  const allowedFeatures=!cloudReady||isAdmin?FEATURE_OPTIONS.map(f=>f.key):[...new Set([...(Array.isArray(profile?.enabled_features)?profile.enabled_features:[]),...(plus.active?PLUS_FEATURES:[])])];
+  const canUseChat=allowedFeatures.includes('chat');
+  const hasFeature=f=>!f||allowedFeatures.includes(f);
+  pageGuard.current=name=>{if(isAdmin||!cloudReady||['Pocket Plus','Access restricted','Overview'].includes(name))return name;const f=PAGE_FEATURE[name];if(!f||hasFeature(f))return name;if(PLUS_FEATURES.includes(f))return name;setToast('This page is not turned on for your account.');return null;};
+  modalGuard.current=m=>{const f=MODAL_FEATURE[typeof m==='string'?m:m?.type];return f&&!hasFeature(f)?'This part of Pocket is not turned on for your account.':'';};
+  useEffect(()=>{let live=true;async function loadVehicleAlerts(){if(!supabase||!session?.user?.id||!allowedFeatures.includes('vehicle_management')){setVehicleReminderNotifications([]);return;}try{const [plansResult,vehiclesResult,fuelResult,svcResult]=await Promise.all([supabase.from('maintenance_plans').select('id,title,vehicle_id,next_due_date,next_due_odometer,last_service_odometer,status'),supabase.from('vehicles').select('id,name,current_odometer,odometer_unit'),supabase.from('vehicle_fuel_logs').select('vehicle_id,odometer'),supabase.from('vehicle_service_records').select('vehicle_id,odometer')]);if(!live||plansResult.error||vehiclesResult.error)return;const today=todayISO,limit=new Date(Date.now()+30*86400000).toISOString().slice(0,10),vehicles=vehiclesResult.data||[],plans=plansResult.data||[];const odoOf=id=>Math.max(Number(vehicles.find(v=>String(v.id)===String(id))?.current_odometer||0),...(fuelResult.data||[]).filter(x=>String(x.vehicle_id)===String(id)).map(x=>Number(x.odometer||0)),...(svcResult.data||[]).filter(x=>String(x.vehicle_id)===String(id)).map(x=>Number(x.odometer||0)),...plans.filter(x=>String(x.vehicle_id)===String(id)).map(x=>Number(x.last_service_odometer||0)));setVehicleReminderNotifications(plans.filter(p=>{if(p.status==='completed')return false;const cur=odoOf(p.vehicle_id);return (p.next_due_date&&p.next_due_date<=limit)||(p.next_due_odometer!=null&&Number(p.next_due_odometer)-cur<=500)}).map(p=>{const v=vehicles.find(x=>x.id===p.vehicle_id),cur=odoOf(p.vehicle_id),unit=v?.odometer_unit||'km',left=p.next_due_odometer!=null?Number(p.next_due_odometer)-cur:null,kmOver=left!=null&&left<=0,dateOver=Boolean(p.next_due_date&&p.next_due_date<today),overdue=kmOver||dateOver;const why=kmOver?`${Math.abs(left).toLocaleString()} ${unit} past due`:dateOver?`due ${p.next_due_date}`:left!=null&&left<=500?`only ${left.toLocaleString()} ${unit} left`:`due ${p.next_due_date}`;return {id:`vehicle-maintenance-${p.id}`,kind:'maintenance',name:`${p.title||'Vehicle maintenance'} · ${v?.name||'Vehicle'}`,detail:`${overdue?'Maintenance overdue':'Maintenance due soon'} · ${why}`,target:'Vehicle Management',amount:null}}));}catch{}}loadVehicleAlerts();return()=>{live=false}},[supabase,session?.user?.id,allowedFeatures.join('|'),page]);
   // New sidebar pages inherit the same access rule as the standard Workspace pages
   // unless an explicit feature mapping is added to PAGE_FEATURE.
   const getPageFeature=(name)=>PAGE_FEATURE[name]||'overview';
-  const visibleNavGroups=[{label:'WORKSPACE',items:[['Overview',LayoutDashboard],['Transactions',ArrowLeftRight],['Accounts',Wallet],['Cash flow calendar',CalendarDays],['Budgets',CreditCard],['Savings goals',Target],['Subscriptions & bills',Repeat2],['Debts & installments',CircleDollarSign]]},{label:'ANALYZE',items:[['Insights & reports',ChartNoAxesCombined]]}].map(g=>({...g,items:g.items.filter(([name])=>allowedFeatures.includes(getPageFeature(name)))})).filter(g=>g.items.length);
-  const canSeeCurrentPage=['Admin access','Access requests','Access management'].includes(page)?isAdmin:page==='Access restricted'?true:allowedFeatures.includes(getPageFeature(page));
+  const visibleNavGroups=[{label:'WORKSPACE',items:[['Overview',LayoutDashboard],['Transactions',ArrowLeftRight],['Bank SMS',MessageSquare],['Accounts',Wallet],['Cash flow calendar',CalendarDays],['Budgets',CreditCard],['Savings goals',Target],['Subscriptions & bills',Repeat2],['Debts & installments',CircleDollarSign]]},{label:'ANALYZE',items:[['Insights & reports',ChartNoAxesCombined]]}].map(g=>({...g,items:g.items.filter(([name])=>allowedFeatures.includes(getPageFeature(name))||(PLUS_FEATURES.includes(getPageFeature(name))&&cloudReady&&!isAdmin)).map(([name,Icon])=>[name,Icon,!allowedFeatures.includes(getPageFeature(name))])})).filter(g=>g.items.length);
+  const wizardKey=`pocket-welcome-${session?.user?.id||'local'}`;
+  useEffect(()=>{if(!cloudReady||!session?.user?.id||!accountsLoaded||busy)return;let seen=false;try{seen=localStorage.getItem(wizardKey)==='1'}catch{}if(!seen&&accounts.length===0&&transactions.length===0&&allowedFeatures.length>0)setWizardOpen(true)},[accountsLoaded,busy,session?.user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  const closeWizard=()=>{setWizardOpen(false);try{localStorage.setItem(wizardKey,'1')}catch{}};
+  const tourKey=`pocket-tour-${session?.user?.id||'local'}`;
+  const [tourOpen,setTourOpen]=useState(false);
+  const closeTour=()=>{setTourOpen(false);try{localStorage.setItem(tourKey,'1')}catch{}};
+  useEffect(()=>{const h=()=>setTourOpen(true);window.addEventListener('pocket:tour',h);return()=>window.removeEventListener('pocket:tour',h)},[]);
+  useEffect(()=>{if(!cloudReady||!session?.user?.id||!accountsLoaded||busy||wizardOpen)return;let seen=true;try{seen=localStorage.getItem(tourKey)==='1'}catch{}const fresh=Date.now()-new Date(session.user.created_at||0).getTime()<14*864e5;if(!seen&&fresh)setTourOpen(true)},[accountsLoaded,busy,session?.user?.id,wizardOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+  const wizardSteps=[{key:'tx',feat:'transactions',emoji:'🧾',title:'Record a transaction',desc:'Add an expense or income. It takes about 20 seconds.',cta:'Add a transaction',action:()=>{if(!accounts.length){setToast('Add an account first, then record a transaction.');return}setEditing(null);setModal('transaction')}},{key:'sms',feat:'bank_sms',emoji:'💬',title:'Connect your bank SMS',desc:'Bank messages land in Pocket and you approve them as transactions.',cta:'Open Bank SMS',action:()=>setPage('Bank SMS')},{key:'credit',feat:'accounts',emoji:'💳',title:'Add a credit card or installment app',desc:'Track Valu, Halan, Aman and your cards with their limits.',cta:'Add a card',action:()=>creditActions.addCard()},{key:'budget',feat:'budgets',emoji:'🎯',title:'Set a monthly budget',desc:'Pick a category and a limit so you can see where money goes.',cta:'Set a budget',action:()=>{setEditing(null);setModal('budget')}},{key:'goal',feat:'goals',emoji:'🐷',title:'Create a savings goal',desc:'Something to save towards, with a target date.',cta:'Create a goal',action:()=>{setEditing(null);setModal('goal')}},{key:'bill',feat:'subscriptions',emoji:'🔁',title:'Add a recurring bill',desc:'Rent, subscriptions or installments, so nothing is missed.',cta:'Add a bill',action:()=>{setEditing(null);setModal('recurring')}}].filter(st=>allowedFeatures.includes(st.feat));
+  const canSeeCurrentPage=['Admin access','Access requests','Access management','Subscriptions'].includes(page)?isAdmin:page==='Access restricted'||page==='Pocket Plus'?true:allowedFeatures.includes(getPageFeature(page));
+  const plusPreview=cloudReady&&!isAdmin&&!canSeeCurrentPage&&PLUS_FEATURES.includes(getPageFeature(page));
   const openCredit=id=>{setDebtFocus(id);setPage('Debts & installments')};
   const creditActions={
     open:openCredit,
@@ -916,75 +1158,100 @@ function App(){
     convertPurchase:(provider,tx)=>{setEditing(null);setConvertTx(tx);setDebtPresetProvider(provider.id);setModal('debt')},
     addPlan:provider=>{setEditing(null);setDebtPresetProvider(provider.id);setModal('debt')}
   };
-  if(cloudReady && (authLoading || (session && !profileLoaded))) return <main className="pocket-loading-screen" role="status" aria-live="polite" aria-label="Loading Pocket">
+  // Keep the browser / phone status-bar colour in sync with the screen behind it (loading, login or app, light or dark).
+  useEffect(()=>{
+    const meta=document.querySelector('meta[name="theme-color"]');
+    if(!meta)return;
+    const loading=cloudReady&&(authLoading||(session&&!profileLoaded));
+    if(loading){meta.setAttribute('content',bootTheme()==='dark'?'#131925':'#f7f8fa');return;}
+    const id=requestAnimationFrame(()=>{try{const c=getComputedStyle(document.body).backgroundColor;if(c&&c!=='rgba(0, 0, 0, 0)')meta.setAttribute('content',c);}catch{}});
+    return ()=>cancelAnimationFrame(id);
+  },[authLoading,session,profileLoaded,theme]);
+  if(cloudReady && (authLoading || (session && !profileLoaded))){
+    let loadTheme='light';
+    loadTheme=bootTheme();
+    return <main className="pocket-loading-screen" data-lg-theme={loadTheme} role="status" aria-live="polite" aria-label="Loading Pocket">
     <div className="pocket-loading-glow pocket-loading-glow-one" aria-hidden="true"/><div className="pocket-loading-glow pocket-loading-glow-two" aria-hidden="true"/>
     <section className="pocket-loading-card">
-      <div className="pocket-loading-brand"><span className="pocket-loading-logo"><img src="/brand/pocket-mark.svg" alt=""/></span><span>Pocket<span className="pocket-loading-brand-dot">.</span></span></div>
-      <div className="pocket-loading-orbit" aria-hidden="true"><span className="pocket-loading-orbit-core"><img src="/brand/pocket-mark.svg" alt=""/></span><i/><i/><i/></div>
+      <div className="pocket-loading-brand"><span className="pocket-loading-logo"><img src="/brand/pocket-mark.svg" alt=""/></span><span>Pocket</span></div>
+      <div className="pocket-loading-orbit" aria-hidden="true"><span className="pocket-loading-orbit-core"><img src="/brand/pocket-mark.svg" alt=""/></span></div>
       <h1>Getting things ready</h1>
       <p>Connecting to your secure workspace</p>
       <div className="pocket-loading-progress" aria-hidden="true"><span/></div>
       <div className="pocket-loading-foot"><span className="pocket-loading-status-dot"/> Secure sign-in <span className="pocket-loading-separator">·</span> Your data stays protected</div>
     </section>
-    <span className="pocket-loading-caption">PERSONAL FINANCE, IN ONE PLACE</span>
-  </main>;
+  </main>;}
   if(cloudReady && (!session || authMode==='update-password')) return <AuthScreen {...{authMode,setAuthMode,authName,setAuthName,authGender,setAuthGender,authEmail,setAuthEmail,authUsername,setAuthUsername,authPassword,setAuthPassword,authConfirmPassword,setAuthConfirmPassword,authMsg,setAuthMsg,stayLoggedIn,setStayLoggedIn,busy,signIn,signInWithGoogle,signUp,resetPassword,updatePassword,resendConfirmation}} />;
   if(!cloudReady) return <main className="auth-page pocket-auth-page"><section className="auth-panel pocket-auth-panel"><div className="auth-choice-card pocket-auth-choice-card"><div className="auth-mobile-brand pocket-mobile-brand"><b>Pocket</b></div><h2>Connect Pocket to Supabase</h2><p className="auth-subtitle">Local and browser-based data storage is disabled. Configure <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> in your deployment environment, then redeploy.</p></div></section></main>;
   return <div className={`app-shell sidebar-${isDesktopNav?sidebarSize:'comfortable'}`} lang="en" dir="ltr">
     <aside className={`sidebar ${sidebarOpen?'sidebar-open':''}`} onMouseOver={e=>{if(!(isDesktopNav&&sidebarSize==='compact')){if(navTip)setNavTip(null);return}const el=e.target.closest('[data-label]');if(!el){if(navTip)setNavTip(null);return}const r=el.getBoundingClientRect();setNavTip({label:el.dataset.label,top:r.top+r.height/2,left:r.right+10})}} onMouseLeave={()=>setNavTip(null)}>
-      <div className="brand"><button type="button" data-label="Overview" className="brand-home" onClick={()=>{setPage('Overview');setSidebarOpen(false);}} aria-label="Pocket home — Overview"><div className="brand-mark"><img className="brand-logo-mark" src="/brand/pocket-mark.svg" alt="" /></div><span>Pocket</span></button><button type="button" data-label="Expand sidebar" className="icon-btn sidebar-collapse-btn" onClick={()=>setSidebarSize(sidebarSize==='compact'?'comfortable':'compact')} title={sidebarSize==='compact'?'Expand sidebar':'Collapse sidebar'} aria-label={sidebarSize==='compact'?'Expand sidebar':'Collapse sidebar'}>{sidebarSize==='compact'?<PanelLeftOpen size={18}/>:<PanelLeftClose size={18}/>}</button><button className="icon-btn mobile-close" onClick={()=>setSidebarOpen(false)} aria-label="Close navigation"><X size={18}/></button></div>
+      <div className="brand"><button type="button" data-label="Overview" className="brand-home" onClick={()=>{setPage('Overview');setSidebarOpen(false);}} aria-label="Pocket home — Overview"><div className="brand-mark"><img className="brand-logo-mark" src="/brand/pocket-mark.svg" alt="" /></div><span>Pocket</span></button><button className="icon-btn mobile-close" onClick={()=>setSidebarOpen(false)} aria-label="Close navigation"><X size={18}/></button></div><div className="sidebar-collapse-row"><button type="button" data-label="Expand sidebar" className="icon-btn sidebar-collapse-btn" onClick={()=>setSidebarSize(sidebarSize==='compact'?'comfortable':'compact')} title={sidebarSize==='compact'?'Expand sidebar':'Collapse sidebar'} aria-label={sidebarSize==='compact'?'Expand sidebar':'Collapse sidebar'}>{sidebarSize==='compact'?<PanelLeftOpen size={18}/>:<PanelLeftClose size={18}/>}</button></div>
       <div className="sidebar-scroll">
       <div className="sidebar-navigation-tools"><span className="sidebar-section-title">MONEY</span></div>
-      {visibleNavGroups.filter(group=>group.label==='WORKSPACE').map(group=><div className="nav-group sidebar-flat-group" key={group.label}>{group.items.filter(([name])=>['Overview','Transactions','Accounts'].includes(name)).map(([name,Icon])=><button key={name} data-label={name} className={`nav-item ${page===name?'active':''}`} onClick={()=>{setPage(name);setSidebarOpen(false)}}><Icon size={18}/><span>{name}</span>{name==='Transactions'&&<span className="nav-count">{transactions.length}</span>}</button>)}</div>)}
-      {visibleNavGroups.filter(group=>group.label==='ANALYZE').map(group=><div className="nav-group sidebar-flat-group" key={group.label}>{group.items.map(([name,Icon])=><button key={name} data-label={name} className={`nav-item ${page===name?'active':''}`} onClick={()=>{setPage(name);setSidebarOpen(false)}}><Icon size={18}/><span>{name}</span></button>)}</div>)}
+      {visibleNavGroups.filter(group=>group.label==='WORKSPACE').map(group=><div className="nav-group sidebar-flat-group" key={group.label}>{group.items.filter(([name])=>['Overview','Transactions','Bank SMS','Accounts'].includes(name)).map(([name,Icon,locked])=><button key={name} data-label={name} className={`nav-item ${page===name?'active':''}`} onClick={()=>{setPage(name);setSidebarOpen(false)}}><Icon size={18}/><span>{name}</span>{name==='Transactions'&&<span className="nav-count">{transactions.length}</span>}{name==='Bank SMS'&&pendingSms>0&&<span className="nav-count">{pendingSms}</span>}</button>)}</div>)}
+      {visibleNavGroups.filter(group=>group.label==='ANALYZE').map(group=><div className="nav-group sidebar-flat-group" key={group.label}>{group.items.map(([name,Icon,locked])=><button key={name} data-label={name} className={`nav-item ${page===name||(locked&&page==='Pocket Plus')?'active':''}`} onClick={()=>{setPage(locked?'Pocket Plus':name);setSidebarOpen(false)}}><Icon size={18}/><span>{name}</span>{locked&&<span className="nav-plus">Plus</span>}</button>)}</div>)}
       <div className="sidebar-section-heading"><span>PLAN</span></div>
-      {visibleNavGroups.filter(group=>group.label==='WORKSPACE').map(group=><div className="nav-group sidebar-flat-group" key={'plan-'+group.label}>{group.items.filter(([name])=>['Cash flow calendar','Budgets','Savings goals','Subscriptions & bills','Debts & installments'].includes(name)).map(([name,Icon])=><button key={name} data-label={name} className={`nav-item ${page===name?'active':''}`} onClick={()=>{setDebtFocus(null);setPage(name);setSidebarOpen(false)}}><Icon size={18}/><span>{name}</span></button>)}</div>)}
-      {allowedFeatures.includes('vehicle_management')&&<><div className="sidebar-section-heading"><span>VEHICLES</span></div><div className="nav-group sidebar-flat-group">{[['vehicles','My vehicles',CarFront],['maintenance','Maintenance',Wrench],['history','Service history',History],['fuel','Fuel log',Fuel]].map(([key,label,Icon])=><button key={key} data-label={label} className={`nav-item ${page==='Vehicle Management'&&vehicleSidebarTab===key?'active':''}`} onClick={()=>{setVehicleSidebarTab(key);setPage('Vehicle Management');setSidebarOpen(false)}}><Icon size={18}/><span>{label}</span></button>)}</div></>}
-      {(isAdmin||allowedFeatures.includes('expense_categories'))&&<><div className="sidebar-section-heading"><span>ADMIN</span></div><div className="nav-group sidebar-flat-group">{isAdmin&&<><button data-label="Requests" className={`nav-item ${page==='Access requests'?'active':''}`} onClick={()=>{setPage('Access requests');setSidebarOpen(false)}}><Mail size={18}/><span>Requests</span><span className="nav-count">{accessRequestCounts.pending}</span></button><button data-label="Users" className={`nav-item ${page==='Admin access'?'active':''}`} onClick={()=>{setPage('Admin access');setSidebarOpen(false)}}><Users size={18}/><span>Users</span></button></>}{(isAdmin||allowedFeatures.includes('expense_categories'))&&<button data-label="Expense categories" className={`nav-item ${page==='Expense categories'?'active':''}`} onClick={()=>{setPage('Expense categories');setSidebarOpen(false)}}><SlidersHorizontal size={18}/><span>Expense categories</span></button>}</div></>}
+      {visibleNavGroups.filter(group=>group.label==='WORKSPACE').map(group=><div className="nav-group sidebar-flat-group" key={'plan-'+group.label}>{group.items.filter(([name])=>['Cash flow calendar','Budgets','Savings goals','Subscriptions & bills','Debts & installments'].includes(name)).map(([name,Icon,locked])=><button key={name} data-label={name} className={`nav-item ${page===name?'active':''} ${locked?'locked':''}`} onClick={()=>{setDebtFocus(null);setPage(name);setSidebarOpen(false)}}><Icon size={18}/><span>{name}</span>{locked&&<Lock size={13} className="nav-lock" aria-label="Locked"/>}</button>)}</div>)}
+      {(allowedFeatures.includes("vehicle_management")||(cloudReady&&!isAdmin))&&<><div className="sidebar-section-heading"><span>VEHICLES</span></div><div className="nav-group sidebar-flat-group">{[['vehicles','Vehicles',CarFront]].map(([key,label,Icon])=><button key={key} data-label={label} className={`nav-item ${page==='Vehicle Management'?'active':''}`} onClick={()=>{setVehicleSidebarTab(key);setPage('Vehicle Management');setSidebarOpen(false)}}><Icon size={18}/><span>{label}</span></button>)}</div></>}
+      {(isAdmin||allowedFeatures.includes('expense_categories'))&&<><div className="sidebar-section-heading"><span>ADMIN</span></div><div className="nav-group sidebar-flat-group">{isAdmin&&<><button data-label="Requests" className={`nav-item ${page==='Access requests'?'active':''}`} onClick={()=>{setPage('Access requests');setSidebarOpen(false)}}><Mail size={18}/><span>Requests</span><span className="nav-count">{accessRequestCounts.pending}</span></button><button data-label="Users" className={`nav-item ${page==='Admin access'?'active':''}`} onClick={()=>{setPage('Admin access');setSidebarOpen(false)}}><Users size={18}/><span>Users</span></button><button data-label="Subscriptions" className={`nav-item ${page==='Subscriptions'?'active':''}`} onClick={()=>{setPage('Subscriptions');setSidebarOpen(false)}}><Star size={18}/><span>Subscriptions</span>{subsPending>0&&<span className="nav-count">{subsPending}</span>}</button></>}{(isAdmin||allowedFeatures.includes('expense_categories'))&&<button data-label="Expense categories" className={`nav-item ${page==='Expense categories'?'active':''}`} onClick={()=>{setPage('Expense categories');setSidebarOpen(false)}}><SlidersHorizontal size={18}/><span>Expense categories</span></button>}</div></>}
       </div>
-      <div className="sidebar-bottom"><div className="sidebar-profile"><span data-label="Profile" role="button" tabIndex={0} onClick={()=>setModal('profile')} className="sidebar-profile-avatar avatar-image"><ProfileAvatar value={profileAvatar}/></span><button className="sidebar-profile-copy" onClick={()=>setModal('profile')}><b>{displayName}</b><span>View profile</span></button><button type="button" data-label="Settings" className="icon-btn sidebar-settings-button" onClick={()=>setModal('app-settings')} title="Settings" aria-label="Settings"><Settings size={18}/></button></div></div>
+      <div className="sidebar-bottom"><div className="sidebar-profile"><button type="button" data-label="Profile" className="sidebar-profile-open" onClick={()=>setModal('profile')} aria-label="View profile"><span className="sidebar-profile-avatar avatar-image"><ProfileAvatar value={profileAvatar}/></span><span className="sidebar-profile-copy"><b>{displayName}</b><span>View profile</span></span></button><button type="button" data-label="Settings" className="icon-btn sidebar-settings-button" onClick={()=>setModal('app-settings')} title="Settings" aria-label="Settings"><Settings size={18}/></button></div></div>
     </aside>
     {navTip&&<div className="sidebar-tooltip" style={{top:navTip.top,left:navTip.left}}>{navTip.label}</div>}
     {sidebarOpen&&<div className="scrim" onClick={()=>setSidebarOpen(false)} />}
     <main className="main-area">
-      <header className="topbar"><div className="topbar-left"><button className="icon-btn menu-toggle" onClick={()=>setSidebarOpen(true)} aria-label="Open navigation"><Menu size={20}/></button><b className="breadcrumb-current">{page==='Vehicle Management'?({vehicles:'My Vehicles',maintenance:'Maintenance',history:'Service History',fuel:'Fuel Log'}[vehicleSidebarTab]||'My Vehicles'):page}</b></div><div className="topbar-actions"><button type="button" className="icon-btn theme-toggle-btn" onClick={()=>setTheme(current=>current==='dark'?'light':'dark')} title={theme==='dark'?'Switch to light mode':'Switch to dark mode'} aria-label={theme==='dark'?'Switch to light mode':'Switch to dark mode'}>{theme==='dark'?<Sun size={18}/>:<Moon size={18}/>}</button><div className="top-action-wrap"><button className={`icon-btn notification-btn ${notificationsOpen?'is-open':''}`} onClick={()=>{setNotificationsOpen(v=>!v);setAccountMenuOpen(false)}} title="Notifications" aria-label={`Notifications${allNotificationItems.length?`, ${allNotificationItems.length} alerts`:''}`} aria-expanded={notificationsOpen}><Bell size={18}/>{allNotificationItems.length>0&&<span className="notification-count-badge" aria-hidden="true">{allNotificationItems.length>99?'99+':allNotificationItems.length}</span>}</button>{notificationsOpen&&<div className="top-popover notification-popover"><div className="popover-heading"><div><b>Notifications</b><span>{allNotificationItems.length?`${allNotificationItems.length} alert${allNotificationItems.length===1?'':'s'}`:'You’re all caught up'}</span></div><span className="popover-icon"><Bell size={16}/></span></div>{allNotificationItems.length?allNotificationItems.map(item=><button className="notification-item" key={item.id} onClick={()=>{if(item.kind==='maintenance'){setVehicleSidebarTab('maintenance');setPage('Vehicle Management')}else setPage(item.target);setNotificationsOpen(false)}}><span className="notification-item-icon">{item.kind==='budget'?<ChartNoAxesCombined size={16}/>:item.kind==='debt'?<CreditCard size={16}/>:item.kind==='maintenance'?<Wrench size={16}/>:<CalendarDays size={16}/>}</span><span className="notification-item-copy"><b>{item.name}</b><small>{item.detail}</small></span>{item.amount!==null&&<strong>{fmt(item.amount)}</strong>}</button>):<div className="notification-empty"><span><Check size={18}/></span><b>No alerts right now</b><small>Debt installments, budget limits, upcoming payments, and vehicle maintenance reminders will appear here.</small></div>}<button className="popover-footer-action" onClick={()=>{setPage('Budgets');setNotificationsOpen(false)}}>Review budgets <ArrowUpRight size={15}/></button></div>}</div><div className="top-action-wrap"><button className={`account-trigger ${accountMenuOpen?'is-open':''}`} onClick={()=>{setAccountMenuOpen(v=>!v);setNotificationsOpen(false)}} aria-label="Open account menu" aria-expanded={accountMenuOpen}><span className="top-avatar avatar-image"><ProfileAvatar value={profileAvatar}/></span><ChevronDown size={14}/></button>{accountMenuOpen&&<div className="top-popover account-popover"><div className="account-popover-identity"><span className="account-large-avatar avatar-image"><ProfileAvatar value={profileAvatar}/></span><div><b>{displayName}</b><span>{session?.user?.email||''}</span><small>{profile?.role==='owner'?'Owner':profile?.role==='super_admin'?'Super admin':session?'User':'Local workspace'}</small></div></div><button className="account-menu-item" onClick={e=>{e.preventDefault();e.stopPropagation();setNotificationsOpen(false);setAccountMenuOpen(false);setModal('profile')}}><UserRound size={16}/><span>Account & profile</span></button>{session&&<button className="account-menu-item signout-menu-item" onClick={async()=>{setAccountMenuOpen(false);const {error}=await supabase.auth.signOut();if(error)setToast(error.message);else setToast('Signed out successfully')}}><LogOut size={16}/><span>Sign out</span></button>}</div>}</div></div></header>
+      <header className="topbar"><div className="topbar-left"><button className="icon-btn menu-toggle" onClick={()=>setSidebarOpen(true)} aria-label="Open navigation"><Menu size={20}/></button><b className="breadcrumb-current">{page==='Vehicle Management'?({vehicles:'My Vehicles',maintenance:'Maintenance',history:'Service History',fuel:'Fuel Log'}[vehicleSidebarTab]||'My Vehicles'):page}</b></div><div className="topbar-actions"><button type="button" className="topbar-search" onClick={()=>setSearchOpen(true)} aria-label="Search Pocket" title="Search (Ctrl+K)"><Search size={16}/><span>Search</span><kbd>Ctrl K</kbd></button><button type="button" className="icon-btn theme-toggle-btn" onClick={()=>setTheme(current=>current==='dark'?'light':'dark')} title={theme==='dark'?'Switch to light mode':'Switch to dark mode'} aria-label={theme==='dark'?'Switch to light mode':'Switch to dark mode'}>{theme==='dark'?<Sun size={18}/>:<Moon size={18}/>}</button><div className="top-action-wrap"><button className={`icon-btn notification-btn ${notificationsOpen?'is-open':''}`} onClick={()=>{setNotificationsOpen(v=>!v);setAccountMenuOpen(false)}} title="Notifications" aria-label={`Notifications${allNotificationItems.length?`, ${allNotificationItems.length} alerts`:''}`} aria-expanded={notificationsOpen}><Bell size={18}/>{allNotificationItems.length>0&&<span className="notification-count-badge" aria-hidden="true">{allNotificationItems.length>99?'99+':allNotificationItems.length}</span>}</button>{notificationsOpen&&<div className="top-popover notification-popover"><div className="popover-heading"><div><b>Notifications</b><span>{allNotificationItems.length?`${allNotificationItems.length} alert${allNotificationItems.length===1?'':'s'}`:'You’re all caught up'}</span></div><span className="popover-icon"><Bell size={16}/></span></div>{allNotificationItems.length?allNotificationItems.map(item=><button className="notification-item" key={item.id} onClick={()=>{if(item.kind==='maintenance'){setVehicleSidebarTab('maintenance');setPage('Vehicle Management')}else setPage(item.target);setNotificationsOpen(false)}}><span className="notification-item-icon">{item.kind==='budget'?<ChartNoAxesCombined size={16}/>:item.kind==='debt'?<CreditCard size={16}/>:item.kind==='maintenance'?<Wrench size={16}/>:<CalendarDays size={16}/>}</span><span className="notification-item-copy"><b>{item.name}</b><small>{item.detail}</small></span>{item.amount!==null&&<strong>{fmt(item.amount)}</strong>}</button>):<div className="notification-empty"><span><Check size={18}/></span><b>No alerts right now</b><small>Debt installments, budget limits, upcoming payments, and vehicle maintenance reminders will appear here.</small></div>}<button className="popover-footer-action" onClick={()=>{setPage('Budgets');setNotificationsOpen(false)}}>Review budgets <ArrowUpRight size={15}/></button></div>}</div><div className="top-action-wrap"><button className={`account-trigger ${accountMenuOpen?'is-open':''}`} onClick={()=>{setAccountMenuOpen(v=>!v);setNotificationsOpen(false)}} aria-label="Open account menu" aria-expanded={accountMenuOpen}><span className="top-avatar avatar-image"><ProfileAvatar value={profileAvatar}/></span><ChevronDown size={14}/></button>{accountMenuOpen&&<div className="top-popover account-popover"><div className="account-popover-identity"><span className="account-large-avatar avatar-image"><ProfileAvatar value={profileAvatar}/></span><div><b>{displayName}</b>{(()=>{const em=session?.user?.email||'';const real=em&&!em.endsWith('@users.pocket.local');const ok=real&&Boolean(session?.user?.email_confirmed_at);return <><span className="account-popover-email">{real?em:''}</span>{session&&<span className={`status-tag email-status ${!real?'is-none':ok?'status-good':'status-pending'}`}>{!real?'No email':ok?'Email verified':'Email not verified'}</span>}</>})()}<small>{profile?.role==='owner'?'Owner':profile?.role==='super_admin'?'Super admin':session?'User':'Local workspace'}</small></div></div><button className="account-menu-item" onClick={e=>{e.preventDefault();e.stopPropagation();setNotificationsOpen(false);setAccountMenuOpen(false);setModal('profile')}}><UserRound size={16}/><span>Account & profile</span></button>{session&&!isAdmin&&<button className="account-menu-item" onClick={()=>{setAccountMenuOpen(false);setPage('Pocket Plus')}}><Star size={16}/><span>{plus.active?'Your plan':'Pocket Plus'}</span>{plus.active&&<span className="status-tag status-good">{plus.kind==='trial'?`Trial · ${plus.daysLeft}d`:'On'}</span>}</button>}{session&&<button className="account-menu-item signout-menu-item" onClick={async()=>{setAccountMenuOpen(false);try{sessionStorage.removeItem('pocket-current-page');sessionStorage.removeItem('pocket-vehicle-tab');}catch{}const {error}=await supabase.auth.signOut();if(error)setToast(error.message);else setToast('Signed out successfully')}}><LogOut size={16}/><span>Sign out</span></button>}</div>}</div></div></header>
+      {!emailBarHidden&&page==='Overview'&&<EmailStatusBar user={session?.user} onAddEmail={()=>setModal('profile')} onSendVerification={sendEmailVerification} onDismiss={()=>{setEmailBarHidden(true);try{sessionStorage.setItem('pocket-email-bar-hidden','1')}catch{}}}/>}
       <div className="page-wrap">
         {profileLoadError&&<div className="workspace-error" role="alert"><div><b>Couldn’t verify your access</b><p>{profileLoadError}</p></div><button className="btn btn-secondary btn-sm" onClick={()=>{setProfileLoaded(false);setProfileLoadError('');setProfileRetry(v=>v+1)}}>Retry</button></div>}
         {dataLoadError&&<div className="workspace-error" role="alert"><div><b>Some workspace data didn’t load</b><p>{dataLoadError}</p></div><button className="btn btn-secondary btn-sm" onClick={()=>setDataLoadAttempt(v=>v+1)}>Retry loading</button></div>}
         {cloudReady&&session&&!accountsLoaded?<WorkspaceSkeleton/>: <>
-        {!canSeeCurrentPage&&!(isAdmin&&['Expense categories','Admin access','Access requests','Access management'].includes(page))&&<AccessRestricted profile={profile} onBack={()=>setPage(allowedFeatures[0]?FEATURE_OPTIONS.find(f=>f.key===allowedFeatures[0])?.label:'Overview')} onRequestAccess={requestAccess} requestBusy={accessRequestBusy} requestsOpen={accessRequestsOpen}/> }
+        {plusPreview&&page==='Bank SMS'&&<LockedSmsTeaser plus={plus} settings={plusSettings} onStartTrial={startPlusTrial} onOpenPlus={()=>setPage('Pocket Plus')}/>}
+        {plusPreview&&page==='Vehicle Management'&&<LockedVehiclesTeaser plus={plus} settings={plusSettings} onStartTrial={startPlusTrial} onOpenPlus={()=>setPage('Pocket Plus')}/>}
+        {!canSeeCurrentPage&&!(isAdmin&&['Expense categories','Admin access','Access requests','Access management'].includes(page))&&!(!isAdmin&&PLUS_FEATURES.includes(getPageFeature(page)))&&<AccessRestricted profile={profile} onBack={()=>setPage(allowedFeatures[0]?FEATURE_OPTIONS.find(f=>f.key===allowedFeatures[0])?.label:'Overview')} onRequestAccess={requestAccess} requestBusy={accessRequestBusy} requestsOpen={accessRequestsOpen}/> }
+        {page==='Pocket Plus'&&<PlusPage plus={plus} settings={plusSettings} currency={currency} onOpenSms={()=>setPage('Bank SMS')} onStartTrial={startPlusTrial} onPay={sendPlusPayment} onCancelToggle={togglePlusCancel}/>}
+        {page==='Subscriptions'&&isAdmin&&<SubscriptionsAdminPage supabase={supabase} users={adminUsers} settings={plusSettings} onSaveSettings={savePlusSettings} currency={currency} onToast={setToast} onPendingCount={setSubsPending}/>}
         {page==='Expense categories'&&(isAdmin||allowedFeatures.includes('expense_categories'))&&<ExpenseCategoriesPage session={session} supabase={supabase}/>}
-        {canSeeCurrentPage&&page==='Vehicle Management'&&<VehicleManagementPage session={session} supabase={supabase} transactions={transactions} setTransactions={setTransactions} accounts={accounts} currency={currency} onToast={setToast} requestedTab={vehicleSidebarTab}/>}
+        {canSeeCurrentPage&&page==='Vehicle Management'&&<div><VehicleManagementPage session={session} supabase={supabase} transactions={transactions} setTransactions={setTransactions} accounts={accounts} debts={debts} currency={currency} onToast={setToast} onMakeInstallments={(provider,tx)=>{setPage('Debts & installments');creditActions.convertPurchase(provider,tx)}} requestedTab={vehicleSidebarTab} onTabChange={setVehicleSidebarTab} quickAction={quickAction}/></div>}
         {['Access management','Admin access','Access requests'].includes(page)&&isAdmin&&<AccessManagementPage supabase={supabase} onToast={setToast} users={adminUsers} loading={adminLoading} profile={profile} onUpdate={updateUserAccess} onDelete={deleteManagedUser} onCreate={createManagedUser} onRefresh={refreshAdminUsers} initialTab={page==='Admin access'?'users':'requests'}/>}
-        {canSeeCurrentPage&&page==='Overview'&&<Overview {...{debts,creditActions,month,setMonth,transactions,accounts,monthTx,income,expenses,net,savingsRate,monthlySeries,categoryData,needs,wants,monthBudgets,totalBudget,totalSaved,goalTarget,upcoming,goals,setPage,setModal,setEditing,setToast,displayName,greeting,profileAvatar,session,supabase,currency,setVehicleSidebarTab,canViewVehicles:allowedFeatures.includes('vehicle_management')}}/>}
-        {canSeeCurrentPage&&page==='Transactions'&&<TransactionsPage {...{transactions,reportTx,accounts,debts,filtered,search,setSearch,typeFilter,setTypeFilter,categoryFilter,setCategoryFilter,amountSort,setAmountSort,setModal,setEditing,setPage,setToast,removeRecord,setTransactions,handleImport,exportCSV,currency,requestConfirm,recordDebtInstallment,activeCategoryOptions:getExpenseCategories(profile?.gender)}}/>}
-        {canSeeCurrentPage&&page==='Accounts'&&<AccountsPage {...{debts,creditActions,accountsView,setAccountsView,accounts,transactions,setModal,setEditing,removeRecord,setAccounts,currency,requestConfirm,defaultAccountId,setDefaultAccountId}}/>}
-        {canSeeCurrentPage&&page==='Cash flow calendar'&&<CashFlowCalendar {...{transactions,recurring,accounts,debts,month,setMonth,currency}}/>}
-        {canSeeCurrentPage&&page==='Debts & installments'&&<DebtsPage {...{debts,accounts,transactions,debtFocus,setDebtFocus,credit:creditActions,setAccounts,setModal,setEditing,removeRecord,setDebts,currency,requestConfirm,recordDebtInstallment,setDebtPaymentTarget,setToast}}/>}
-        {canSeeCurrentPage&&(page==='Insights & reports'||page==='Insights & forecast'||page==='Reports')&&<InsightsReportsPage {...{transactions:reportTx,month,setMonth,budgets,recurring,goals,debts,currency,setPage,accounts}}/>}
+        {canSeeCurrentPage&&page==='Overview'&&<Overview {...{plusNudge:cloudReady&&!isAdmin?<TypedByHandCard transactions={transactions} accounts={accounts} plus={plus} onTry={async()=>{if(await startPlusTrial())setPage('Bank SMS')}} onOpenPlus={()=>setPage('Pocket Plus')}/>:null,can:hasFeature,fromSavings,recurring:activeRecurring,onboardingKey:`pocket-onboarding-${session?.user?.id||'local'}`,onboardingSteps:[{key:'account',feat:'accounts',title:'Add an account or wallet',hint:'Cash, bank or e-wallet — where your money lives',done:accounts.some(a=>!isLiability(a)),action:()=>{setEditing(null);setModal('account')}},{key:'tx',feat:'transactions',title:'Record your first transaction',hint:'An expense or income, takes 20 seconds',done:transactions.length>0,action:()=>{if(!accounts.length){setToast('Add an account first, then record a transaction.');return}setEditing(null);setModal('transaction')}},{key:'sms',feat:'bank_sms',title:'Connect your bank SMS',hint:'Bank messages become transactions after your approval',done:transactions.some(t=>String(t.notes||'').startsWith('From bank SMS')),action:()=>setPage('Bank SMS')},{key:'credit',feat:'accounts',title:'Add a credit card or installment app',hint:'Valu, Halan, Aman, your cards…',done:accounts.some(a=>isLiability(a)),action:()=>creditActions.addCard()},{key:'budget',feat:'budgets',title:'Set a monthly budget',hint:'Pick a category and a limit',done:budgets.length>0,action:()=>{setEditing(null);setModal('budget')}},{key:'goal',feat:'goals',title:'Create a savings goal',hint:'Something to save towards',done:goals.length>0,action:()=>{setEditing(null);setModal('goal')}},{key:'bill',feat:'subscriptions',title:'Add a recurring bill',hint:'Rent, subscriptions, installments',done:recurring.length>0,action:()=>{setEditing(null);setModal('recurring')}}].filter(st=>allowedFeatures.includes(st.feat)),debts,creditActions,month,setMonth,transactions,accounts,monthTx,income,expenses,net,savingsRate,monthlySeries,categoryData,needs,wants,monthBudgets,totalBudget,totalSaved,goalTarget,upcoming,goals,setPage,setModal,setEditing,setToast,displayName,greeting,profileAvatar,session,supabase,currency,setVehicleSidebarTab,canViewVehicles:allowedFeatures.includes('vehicle_management')}}/>}
+        {canSeeCurrentPage&&page==='Transactions'&&<TransactionsPage {...{plusHint:cloudReady&&!isAdmin?<SmsHintBanner transactions={transactions} accounts={accounts} plus={plus} onTry={async()=>{if(await startPlusTrial())setPage('Bank SMS')}} onOpenPlus={()=>setPage('Pocket Plus')}/>:null,transactions,reportTx,accounts,debts,filtered,search,setSearch,typeFilter,setTypeFilter,categoryFilter,setCategoryFilter,amountSort,setAmountSort,setModal,setEditing,setPage,setToast,removeRecord,setTransactions,handleImport,exportCSV,exportTransactionsAs,downloadTemplateAs,currency,requestConfirm,recordDebtInstallment,activeCategoryOptions:getExpenseCategories(profile?.gender)}}/>}
+        {canSeeCurrentPage&&page==='Accounts'&&<AccountsPage {...{can:hasFeature,openGoals:()=>setPage('Savings goals'),goals,debts,creditActions,accountsView,setAccountsView,accounts,transactions,setModal,setEditing,removeRecord,setAccounts,currency,requestConfirm,defaultAccountId,setDefaultAccountId,pendingSms}} openSms={allowedFeatures.includes('bank_sms')?(from,id)=>{if(id)setSmsFocusAccount(id);setPage('Bank SMS')}:null}/>}
+        {canSeeCurrentPage&&page==='Bank SMS'&&<div><SmsPage focusAccount={smsFocusAccount} onFocusDone={()=>setSmsFocusAccount(null)} debts={debts} recurring={recurring} onPayDebt={recordDebtInstallment} onPayBill={markRecurringPaid} accounts={accounts} transactions={transactions} session={session} supabase={supabase} currency={currency} gender={session?.user?.user_metadata?.gender||''} setToast={setToast} onPendingChange={setPendingSms} onUndoTx={async ids=>{for(const id of ids)await removeRecord('transactions',id,setTransactions,transactions);}} onApprove={async payload=>{const saved=await saveRecord('transactions',payload);if(saved)setTransactions(o=>[saved,...o]);return saved}}/></div>}
+        {canSeeCurrentPage&&page==='Cash flow calendar'&&<CashFlowCalendar {...{transactions,recurring:activeRecurring,accounts,debts,month,setMonth,currency}}/>}
+        {canSeeCurrentPage&&page==='Debts & installments'&&<DebtsPage {...{debts,accounts,transactions,debtFocus,setDebtFocus,credit:creditActions,setAccounts,setModal,setEditing,removeRecord,setDebts,currency,requestConfirm,recordDebtInstallment,closeDebt,reopenDebt,setDebtPaymentTarget,setToast}}/>}
+        {canSeeCurrentPage&&(page==='Insights & reports'||page==='Insights & forecast'||page==='Reports')&&<InsightsReportsPage {...{transactions:reportTx,month,setMonth,budgets,recurring:activeRecurring,goals,debts,currency,setPage,accounts:rawAccounts,showVehicles:allowedFeatures.includes('vehicle_management')}}/>}
         {canSeeCurrentPage&&page==='Budgets'&&<BudgetsPage {...{budgets,transactions:reportTx,month,setMonth,setModal,setEditing,setToast,removeRecord,setBudgets,requestConfirm}}/>}
-        {canSeeCurrentPage&&page==='Savings goals'&&<GoalsPage {...{goals,transactions,accounts,setModal,setEditing,setToast,removeRecord,setGoals,totalSaved,goalTarget,requestConfirm}}/>}
-        {canSeeCurrentPage&&(page==='Recurring payments'||page==='Subscriptions & bills')&&<RecurringPage {...{recurring,setModal,setEditing,setToast,removeRecord,setRecurring,markRecurringPaid,paidBusy,deleteRecurringPayment}}/>}
+        {canSeeCurrentPage&&page==='Savings goals'&&<GoalsPage {...{onSpend:(g,saved)=>setSpendGoal({goal:g,saved}),onAddMoney:g=>setAddMoneyGoal(g),onCompleteGoal:(g,saved)=>setCompleteGoalTarget({goal:g,saved}),onReopenGoal:reopenGoal,goals,transactions,accounts,setModal,setEditing,setToast,removeRecord,setGoals,totalSaved,goalTarget,requestConfirm}}/>}
+        {canSeeCurrentPage&&(page==='Recurring payments'||page==='Subscriptions & bills')&&<RecurringPage {...{accounts,recurring,toggleRecurringActive,setModal,setEditing,setToast,removeRecord,setRecurring,markRecurringPaid,paidBusy,deleteRecurringPayment}}/>}
         </>}
       </div>
       <footer className="footer"><span>Pocket Finance <span className="footer-dot">•</span> Make room for what matters.</span><span>Currency: {currency}</span></footer>
     </main>
-    {(modal==='transaction'||modal==='account-from-transaction')&&<TransactionModal presetAccountId={txPresetAccount} transactions={transactions} currency={currency} accounts={accounts} goals={goals} debts={debts} recordDebtInstallment={recordDebtInstallment} defaultAccountId={defaultAccountId} gender={session?.user?.user_metadata?.gender||''} session={session} initial={editing} onClose={()=>{setModal(null);setEditing(null);setTxPresetAccount('')}} onSave={submitTransaction} onAddAccount={()=>setModal('account-from-transaction')}/>}
+    {(modal==='transaction'||modal==='account-from-transaction')&&<TransactionModal presetType={txPresetType} presetAccountId={txPresetAccount} transactions={transactions} currency={currency} accounts={accounts} goals={goals} debts={debts} recordDebtInstallment={recordDebtInstallment} defaultAccountId={defaultAccountId} gender={session?.user?.user_metadata?.gender||''} session={session} initial={editing} onClose={()=>{setModal(null);setEditing(null);setTxPresetAccount('');setTxPresetType('')}} onSave={submitTransaction} onAddAccount={()=>setModal('account-from-transaction')}/>}
+    {addMoneyGoal&&<GoalAddMoneyModal goal={addMoneyGoal} accounts={accounts} currency={currency} onClose={()=>setAddMoneyGoal(null)} onConfirm={opts=>addToGoal(addMoneyGoal,opts)}/>}
+    {spendGoal&&<GoalSpendModal goal={spendGoal.goal} saved={spendGoal.saved} currency={currency} expenseCats={getCategoriesForType('Expense',session?.user?.user_metadata?.gender||'')} onClose={()=>setSpendGoal(null)} onConfirm={opts=>spendFromGoal(spendGoal.goal,opts)}/>}
+    {completeGoalTarget&&<GoalCompleteModal goal={completeGoalTarget.goal} saved={completeGoalTarget.saved} spent={goalSpent(completeGoalTarget.goal,transactions)} expenseCats={getCategoriesForType('Expense',session?.user?.user_metadata?.gender||'')} accounts={accounts} currency={currency} onClose={()=>setCompleteGoalTarget(null)} onConfirm={opts=>completeGoal(completeGoalTarget.goal,opts)}/>}
     {modal==='goal'&&<GoalModal currency={currency} initial={editing} onClose={()=>{setModal(null);setEditing(null)}} onSave={addGoal}/>}
     {modal==='recurring'&&<RecurringModal currency={currency} accounts={accounts} initial={editing} onClose={()=>{setModal(null);setEditing(null)}} onSave={addRecurring}/>}
     {modal==='budget'&&<BudgetModal currency={currency} initial={editing} month={month} onClose={()=>{setModal(null);setEditing(null)}} onSave={addBudget}/>}
      {modal==='app-settings'&&<SettingsModal {...{onClose:()=>setModal(null),design,setDesign,sidebarSize,setSidebarSize,isAdmin,backupForUsers,setBackupVisibility,exportCSV,exportBackup,handleImport,restoreBackup,session,supabase,onOpenProfile:()=>setModal('profile')}}/>}
     {modal==='profile'&&<AccountProfileModal {...{sendEmailVerification,addAccountEmail,onClose:()=>setModal(null),openAvatarPicker:gender=>{setAvatarPickerGender(gender||session?.user?.user_metadata?.gender||'prefer_not_to_say');setModal('avatar-picker')},session,saveProfile,profileSaving,profileName:session?.user?.user_metadata?.full_name||profileName,gender:session?.user?.user_metadata?.gender||'prefer_not_to_say',currency,timezone,profileAvatar}}/>}
     {modal==='avatar-picker'&&<AvatarPickerModal current={profileAvatar} gender={avatarPickerGender} onClose={()=>setModal('profile')} onChoose={avatar=>{setProfileAvatar(avatar);setModal('profile')}} />}
+    {tourOpen&&!wizardOpen&&<AppTour onClose={closeTour}/>}
+    {wizardOpen&&<WelcomeWizard name={displayName.split(' ')[0]} currency={currency} canAccount={allowedFeatures.includes('accounts')} steps={wizardSteps} onClose={closeWizard} onCreateAccount={createSetupAccount}/>}
     {modal==='account'&&<AccountModal initial={editing} onClose={()=>{setModal(null);setEditing(null)}} onSave={saveAccount}/> }
     {modal==='account-from-transaction'&&<AccountModal initial={null} onClose={()=>setModal('transaction')} onSave={async form=>{const payload={name:form.name.trim(),type:form.type,opening_balance:Number(form.opening_balance||0),opening_balance_date:form.opening_balance_date||localISODate(),color:form.color||'#6c7cf5'};const saved=await saveRecord('financial_accounts',payload);if(!saved)return;setAccounts(old=>[saved,...old]);setModal('transaction');setToast('Account added. Select it for your transaction.')}}/>}
-    {modal==='debt'&&<DebtModal currency={currency} accounts={accounts} debts={debts} transactions={transactions} convertTx={convertTx} providerAccounts={convertTx?accounts.filter(a=>String(a.id)===String(convertTx.account_id)):accounts.filter(isProvider)} presetProviderId={debtPresetProvider} onChooseAccountKind={kind=>{setEditing(null);setDebtPresetProvider('');setCreditKind(kind);setModal('credit-account')}} initial={editing} onClose={()=>{setModal(null);setEditing(null);setDebtPresetProvider('');setConvertTx(null)}} onSave={saveDebt}/> }
+    {modal==='debt'&&<DebtModal currency={currency} accounts={accounts} debts={debts} transactions={transactions} convertTx={convertTx} providerAccounts={convertTx&&convertTx.type!=='Income'?accounts.filter(a=>String(a.id)===String(convertTx.account_id)):accounts.filter(isProvider)} presetProviderId={debtPresetProvider} onChooseAccountKind={kind=>{setEditing(null);setDebtPresetProvider('');setCreditKind(kind);setModal('credit-account')}} initial={editing} onClose={()=>{setModal(null);setEditing(null);setDebtPresetProvider('');setConvertTx(null)}} onSave={saveDebt}/> }
     {modal==='credit-account'&&<CreditAccountModal kind={creditKind} currency={currency} accounts={accounts} initial={editing} onClose={()=>{setModal(null);setEditing(null)}} onSave={saveCreditAccount}/>}
     {cardPay&&<CardPayModal card={accounts.find(a=>String(a.id)===String(cardPay.card.id))||cardPay.card} summary={cardSummary(accounts.find(a=>String(a.id)===String(cardPay.card.id))||cardPay.card,transactions,undefined,debts)} accounts={accounts} transactions={transactions} currency={currency} initialChoice={cardPay.choice} onClose={()=>setCardPay(null)} onSubmit={payCreditCard}/>}
     {providerPay&&<ProviderPayModal provider={providerPay.provider} group={providerPay.group} accounts={accounts} transactions={transactions} currency={currency} onClose={()=>setProviderPay(null)} onSubmit={payProviderGroup}/>}
     {modal==='debt-payment'&&debtPaymentTarget&&<DebtPaymentChoiceModal debt={debtPaymentTarget} accounts={accounts} currency={currency} onClose={()=>{setModal(null);setDebtPaymentTarget(null)}} onSubmit={async opts=>{const ok=await recordDebtInstallment(debtPaymentTarget,opts);if(ok){setModal(null);setDebtPaymentTarget(null)}}}/> }
     {modal==='import'&&<ImportModal rows={importPreview} onClose={()=>{setModal(null);setImportPreview([])}} onConfirm={confirmImport}/>}
     {confirmDialog&&<ConfirmActionModal dialog={confirmDialog} onCancel={()=>setConfirmDialog(null)} onConfirm={async()=>{const action=confirmDialog.onConfirm;setConfirmDialog(null);await action?.()}}/>}
+    <GlobalSearch open={searchOpen} onClose={()=>setSearchOpen(false)} {...{transactions,accounts,debts,recurring,goals,currency}} loadVehicles={allowedFeatures.includes('vehicle_management')&&cloudReady&&session?.user?async()=>{const {data}=await supabase.from('vehicles').select('id,name,make,model,plate');return data||[]}:null} onPick={r=>{if(r.kind==='transaction'){setSearch(r.title||'');setPage('Transactions')}else if(r.kind==='account'){const a=accounts.find(x=>String(x.id)===String(r.id));if(a&&isLiability(a))openCredit(a.id);else setPage('Accounts')}else if(r.kind==='debt')setPage('Debts & installments');else if(r.kind==='recurring')setPage('Subscriptions & bills');else if(r.kind==='goal')setPage('Savings goals');else if(r.kind==='vehicle'){setVehicleSidebarTab('vehicles');setPage('Vehicle Management')}}}/>
+    {canUseChat&&<ChatSheet open={chatOpen} onOpenChange={setChatOpen} accounts={accounts} debts={debts} recurring={activeRecurring} goals={activeGoals} currency={currency} defaultAccountId={defaultAccountId} expenseCats={getCategoriesForType('Expense',session?.user?.user_metadata?.gender||'')} incomeCats={incomeCategories} onSave={chatSave} transactions={transactions} budgets={budgets} page={page} pages={visibleNavGroups.flatMap(g=>g.items).filter(([,,locked])=>!locked).map(([name])=>name).concat(allowedFeatures.includes('vehicle_management')?['Vehicles']:[])} onNavigate={p=>setPage(p)} vehicles={chatVehicles.vehicles} vehicleSpend={vehicleSpend} lastFuelType={chatVehicles.lastFuelType} startWith={chatStart}/>}
+    <QuickAdd onPlus={cloudReady&&!isAdmin&&!canUseChat?()=>setPage('Pocket Plus'):null} onType={canUseChat?()=>{setChatStart('');setChatOpen(true)}:null} onVoice={canUseChat?()=>{setChatStart('voice');setChatOpen(true)}:null} onPhoto={canUseChat?()=>{setChatStart('photo');setChatOpen(true)}:null} onSms={allowedFeatures.includes('bank_sms')?()=>setPage('Bank SMS'):null} canTransact={hasFeature('transactions')} smsPending={Number(pendingSms)||0} showVehicles={allowedFeatures.includes('vehicle_management')} onTransaction={(t)=>{setTxPresetType(typeof t==='string'?t:'');if(!accounts.length){setToast('Add an account or wallet first. Go to Accounts → Add account.');setPage('Accounts');return}setEditing(null);setModal('transaction')}} onFuel={()=>{setVehicleSidebarTab('fuel');setPage('Vehicle Management');setQuickAction({type:'fuel',n:Date.now()})}} onService={()=>{setVehicleSidebarTab('history');setPage('Vehicle Management');setQuickAction({type:'service',n:Date.now()})}}/>
     {toast&&<div className={`toast ${/insufficient balance|error|failed|could not/i.test(toast)?'toast-error':'toast-success'}`} role="status">{/insufficient balance|error|failed|could not/i.test(toast)?<XCircle size={18}/>:<Check size={17}/>}<span>{toast}</span></div>}
     {notificationToast&&<div role="button" tabIndex={0} className="notification-toast" onClick={()=>{setPage(notificationToast.target);setNotificationToast(null)}} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){setPage(notificationToast.target);setNotificationToast(null)}}} aria-label={`Open notification: ${notificationToast.name}`}><span className={`notification-toast-icon ${notificationToast.kind}`}><Bell size={17}/></span><span className="notification-toast-copy"><b>New notification</b><strong>{notificationToast.name}</strong><small>{notificationToast.detail}</small></span><button type="button" className="notification-toast-close" aria-label="Dismiss notification" onClick={e=>{e.stopPropagation();setNotificationToast(null)}}><X size={15}/></button></div>}
   </div>;

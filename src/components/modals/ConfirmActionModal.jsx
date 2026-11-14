@@ -1,4 +1,4 @@
-import { CreditCard, Trash2 } from 'lucide-react';
+import { CreditCard, Trash2 } from '../../lib/icons.jsx';
 
 export function ConfirmActionModal({dialog,onCancel,onConfirm}){
  return <div className="modal-backdrop confirm-backdrop" onMouseDown={e=>e.target===e.currentTarget&&onCancel()}><section className="modal confirm-action-modal" role="alertdialog" aria-modal="true" aria-labelledby="confirm-action-title"><div className={`confirm-action-icon ${dialog.variant==='payment'?'confirm-action-icon-payment':''}`}>{dialog.variant==='payment'?<CreditCard size={21}/>:<Trash2 size={21}/>}</div><div className="confirm-action-copy"><h2 id="confirm-action-title">{dialog.title}</h2><p>{dialog.description}</p></div><div className="confirm-action-buttons"><button type="button" className="btn btn-secondary" onClick={onCancel}>Cancel</button><button type="button" className={`btn ${dialog.variant==='payment'?'btn-primary':'btn-danger'}`} onClick={onConfirm}>{dialog.variant==='payment'&&<CreditCard size={15}/>} {dialog.confirmLabel||'Delete'}</button></div></section></div>;
