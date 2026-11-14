@@ -57,3 +57,5 @@ The goal popups (add money, spend, finish) and the "Add by typing" card follow t
 ## Text case
 
 Sentence case for everything (buttons, labels, cards, popups). Only the page title (`.page-heading h1`) uses Title Case. There is no global capitalize rule any more, so write copy exactly as it should read.
+
+Also used for: the Transactions period switch (All time / This month / Pick month), Bank SMS setup steps and phone type, and Expense / Income on chat cards. The sign-in screen keeps its own animated switch.

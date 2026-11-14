@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MessageCircle, Send, X, Mic, Camera, ArrowUpRight } from '../../lib/icons.jsx';
+import { Tabs } from './Tabs.jsx';
 import { rememberCategory } from '../../lib/chatParser.js';
 import { parseMessage, draftNotes, PAGE_EXAMPLES } from '../../lib/chatIntents.js';
 
@@ -34,7 +35,7 @@ function Draft({ m, ctx, onChange, onSave, onCancel }) {
     {d.kind === 'bill' && <p className="chat-note">{d.billName}</p>}
     {notes.map((n, i) => <p key={i} className={`chat-note ${n.tone === 'bad' ? 'chat-note-bad' : 'chat-note-warn'}`}>{n.text}</p>)}
     {!saved && <div className="chat-fields">
-      {isTx && <div className="chat-seg" role="group" aria-label="Type">{['Expense', 'Income'].map(t => <button key={t} type="button" aria-pressed={d.type === t} className={d.type === t ? 'on' : ''} onClick={() => set({ type: t, kind: t.toLowerCase(), category: (t === 'Income' ? incomeCats : expenseCats).includes(d.category) ? d.category : (t === 'Income' ? 'Other income' : 'Other') })}>{t}</button>)}</div>}
+      {isTx && <Tabs label="Type" value={d.type} onChange={t => set({ type: t, kind: t.toLowerCase(), category: (t === 'Income' ? incomeCats : expenseCats).includes(d.category) ? d.category : (t === 'Income' ? 'Other income' : 'Other') })} items={[{ key: 'Expense', label: 'Expense' }, { key: 'Income', label: 'Income' }]} />}
       {num('amount', d.kind === 'budget' ? 'Monthly limit' : d.kind === 'fuel' ? 'Total paid' : 'Amount', '0')}
       {(isTx || d.kind === 'budget' || d.kind === 'newbill') && <label className="field"><span>Category</span><select value={d.category} onChange={e => set({ category: e.target.value })}>{[...new Set([...(d.type === 'Income' ? incomeCats : expenseCats), d.category].filter(Boolean))].map(c => <option key={c}>{c}</option>)}</select></label>}
       {isTx && txt('description', 'Note', '')}
