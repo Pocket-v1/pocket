@@ -1,6 +1,6 @@
 // Pocket Plus: which features it unlocks and what state a user's plan is in.
 export const PLUS_FEATURES = ['bank_sms', 'chat', 'vehicle_management'];
-export const PLUS_DEFAULTS = { monthly_price: 0, yearly_price: 0, trial_days: 14, instapay: '', instapay_link: '', wallet: '', currency: 'EGP' };
+export const PLUS_DEFAULTS = { daily_price: 0, monthly_price: 0, yearly_price: 0, trial_days: 14, instapay: '', instapay_link: '', wallet: '', currency: 'EGP' };
 
 const t = v => (v ? new Date(v).getTime() : null);
 export const daysLeft = (end, now = Date.now()) => (end ? Math.max(0, Math.ceil((t(end) - now) / 864e5)) : null);
@@ -36,6 +36,6 @@ export function nextPeriodEnd(period, fromRows = [], now = Date.now()) {
   const liveEnds = fromRows.filter(r => rowIsLive(r, now)).map(r => t(r.status === 'trial' ? r.trial_ends_at : r.current_period_end)).filter(Boolean);
   const start = new Date(Math.max(now, ...liveEnds.filter(e => e > 0)));
   const d = new Date(start);
-  if (period === 'yearly') d.setFullYear(d.getFullYear() + 1); else d.setMonth(d.getMonth() + 1);
+  if (period === 'yearly') d.setFullYear(d.getFullYear() + 1); else if (period === 'daily') d.setDate(d.getDate() + 1); else d.setMonth(d.getMonth() + 1);
   return d.toISOString();
 }

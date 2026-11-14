@@ -38,7 +38,7 @@ function PayModal({ settings, currency, onClose, onSubmit, initialPeriod }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const [copied, setCopied] = useState(false);
-  const price = Number(period === 'yearly' ? s.yearly_price : s.monthly_price) || 0;
+  const price = Number(s[`${period}_price`]) || 0;
   const m = methods.find(x => x[0] === method);
   const money = n => new Intl.NumberFormat('en-EG', { style: 'currency', currency, maximumFractionDigits: 0 }).format(n);
   const monthlyYear = Number(s.monthly_price) * 12;
@@ -75,13 +75,13 @@ function PayModal({ settings, currency, onClose, onSubmit, initialPeriod }) {
     setBusy(false);
     if (!ok) setErr('Could not send it. Check your connection and try again.');
   }
-  const tabs = [Number(s.monthly_price) > 0 && { key: 'monthly', label: 'Monthly' }, Number(s.yearly_price) > 0 && { key: 'yearly', label: saving ? `Yearly · ${saving} month${saving === 1 ? '' : 's'} free` : 'Yearly' }].filter(Boolean);
+  const tabs = [Number(s.daily_price) > 0 && { key: 'daily', label: '1 day' }, Number(s.monthly_price) > 0 && { key: 'monthly', label: 'Monthly' }, Number(s.yearly_price) > 0 && { key: 'yearly', label: saving ? `Yearly · ${saving} month${saving === 1 ? '' : 's'} free` : 'Yearly' }].filter(Boolean);
   return <ModalShell title="Pay for Pocket Plus" subtitle="Send the amount, then tell us where it came from. We turn Plus on as soon as we see it." onClose={onClose}>
     <div className="plus-pay">
     {tabs.length > 1 && <Tabs label="Billing period" value={period} onChange={setPeriod} items={tabs} />}
     <div className="plus-amount">
-      <div className="plus-amount-t"><span className="plus-chip gold">Plus</span><b>{period === 'yearly' ? 'Yearly plan' : 'Monthly plan'}</b><small>{period === 'yearly' ? `Pay once for 12 months · about ${money(price / 12)} a month` : 'Pay for 1 month · cancel any time'}</small></div>
-      <div className="plus-amount-n"><b>{money(price)}</b><small>{period === 'yearly' ? 'per year' : 'per month'}</small></div>
+      <div className="plus-amount-t"><span className="plus-chip gold">Plus</span><b>{period === 'yearly' ? 'Yearly plan' : period === 'daily' ? '1-day pass' : 'Monthly plan'}</b><small>{period === 'yearly' ? `Pay once for 12 months · about ${money(price / 12)} a month` : period === 'daily' ? 'Plus for 24 hours · does not renew' : 'Pay for 1 month · cancel any time'}</small></div>
+      <div className="plus-amount-n"><b>{money(price)}</b><small>{period === 'yearly' ? 'per year' : period === 'daily' ? 'for 1 day' : 'per month'}</small></div>
     </div>
     <div className="cc-options" role="radiogroup" aria-label="How you pay">
       {methods.map(([k, label, to]) => <button key={k} type="button" role="radio" aria-checked={method === k} className={`cc-option plus-method ${method === k ? 'on' : ''}`} onClick={() => setMethod(k)}><span className={`plus-method-ic ${k}`}>{k === 'wallet' ? <Smartphone size={20} /> : <Landmark size={20} />}</span><span><b>{label}</b><small>Send to {to}</small></span></button>)}
@@ -109,7 +109,7 @@ export function PlusPage({ plus, settings, currency = 'EGP', onStartTrial, onPay
   const [payOpen, setPayOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const s = { ...PLUS_DEFAULTS, ...settings };
-  const canPay = (Number(s.monthly_price) > 0 || Number(s.yearly_price) > 0) && (s.instapay || s.wallet);
+  const canPay = (Number(s.daily_price) > 0 || Number(s.monthly_price) > 0 || Number(s.yearly_price) > 0) && (s.instapay || s.wallet);
   const money = n => new Intl.NumberFormat('en-EG', { style: 'currency', currency, maximumFractionDigits: 0 }).format(Number(n) || 0);
   const from = Number(s.monthly_price) > 0 ? `${money(s.monthly_price)}/month` : Number(s.yearly_price) > 0 ? `${money(s.yearly_price)}/year` : '';
   async function trial() { setBusy(true); await onStartTrial(); setBusy(false); }
@@ -153,8 +153,8 @@ export function PlusPage({ plus, settings, currency = 'EGP', onStartTrial, onPay
 
 // A · The Plus page for people who don't have it yet: hero with the SMS → transaction demo, features, Free vs Plus, prices, one clear button.
 function PlusPitch({ plus, s, canPay, money, status, busy, onTrial, payOpen, setPayOpen, currency, onPay }) {
-  const m = Number(s.monthly_price) || 0, y = Number(s.yearly_price) || 0;
-  const [period, setPeriod] = useState(y > 0 ? 'yearly' : 'monthly');
+  const m = Number(s.monthly_price) || 0, y = Number(s.yearly_price) || 0, dd = Number(s.daily_price) || 0;
+  const [period, setPeriod] = useState(y > 0 ? 'yearly' : m > 0 ? 'monthly' : 'daily');
   const save = m > 0 && y > 0 && m * 12 > y ? Math.round((m * 12 - y) / m) : 0;
   const days = Number(s.trial_days) || 14;
   const rows = [['Accounts, budgets, goals, bills', true], ['Reports and calendar', true], ['Bank SMS, auto-approve', false], ['Voice and receipt photos', false], ['Vehicles', false]];
@@ -188,9 +188,10 @@ function PlusPitch({ plus, s, canPay, money, status, busy, onTrial, payOpen, set
       </div>
       <aside className="panel plus-checkout" aria-label="Choose your plan">
       <div className="plus-checkout-head"><b>Choose your plan</b><small>Subscribe now, or try it free first.</small></div>
-      {(m > 0 || y > 0) && <div className="plus-prices" role="radiogroup" aria-label="Billing period">
+      {(m > 0 || y > 0 || dd > 0) && <div className="plus-prices" role="radiogroup" aria-label="Billing period">
         {y > 0 && <button type="button" role="radio" aria-checked={period === 'yearly'} className={`plus-price ${period === 'yearly' ? 'on' : ''}`} onClick={() => setPeriod('yearly')}>{save > 0 && <span className="plus-price-tag">Best value · {save} month{save === 1 ? '' : 's'} free</span>}<span className="plus-price-t"><b>Yearly</b><small>{money(y)} a year · about {money(y / 365)} a day</small></span><b className="plus-price-n">{money(y)}</b></button>}
         {m > 0 && <button type="button" role="radio" aria-checked={period === 'monthly'} className={`plus-price ${period === 'monthly' ? 'on' : ''}`} onClick={() => setPeriod('monthly')}><span className="plus-price-t"><b>Monthly</b><small>Cancel any time</small></span><b className="plus-price-n">{money(m)}</b></button>}
+        {dd > 0 && <button type="button" role="radio" aria-checked={period === 'daily'} className={`plus-price ${period === 'daily' ? 'on' : ''}`} onClick={() => setPeriod('daily')}><span className="plus-price-t"><b>1 day</b><small>Try Plus for 24 hours · no renewal</small></span><b className="plus-price-n">{money(dd)}</b></button>}
       </div>}
       <div className="plus-pitch-foot">
         {cta}

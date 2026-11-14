@@ -16,6 +16,7 @@ function SettingsModal({ settings, onClose, onSave }) {
   const set = (k, v) => setF(o => ({ ...o, [k]: v }));
   return <ModalShell title="Plus settings" subtitle="Prices, trial length and where people send money." onClose={onClose}>
     <div className="form-grid">
+      <Field label={`1-day price (${f.currency})`}><input type="number" inputMode="decimal" min="0" value={f.daily_price ?? 0} onChange={e => set('daily_price', e.target.value)} placeholder="0 = not offered" /></Field>
       <Field label={`Monthly price (${f.currency})`}><input type="number" inputMode="decimal" min="0" value={f.monthly_price} onChange={e => set('monthly_price', e.target.value)} placeholder="0 = not offered" /></Field>
       <Field label={`Yearly price (${f.currency})`}><input type="number" inputMode="decimal" min="0" value={f.yearly_price} onChange={e => set('yearly_price', e.target.value)} placeholder="0 = not offered" /></Field>
       <Field label="Free trial (days)"><input type="number" inputMode="numeric" min="0" max="90" value={f.trial_days} onChange={e => set('trial_days', e.target.value)} /></Field>
@@ -24,7 +25,7 @@ function SettingsModal({ settings, onClose, onSave }) {
       <Field label="Wallet number" wide><input value={f.wallet} onChange={e => set('wallet', e.target.value)} placeholder="010… (Vodafone Cash or any wallet)" /></Field>
     </div>
     <p className="small-muted" style={{ marginTop: 10 }}>Leave a price at 0 to hide that option. Leave both the InstaPay address and the wallet empty to turn paying off.</p>
-    <div className="modal-actions"><button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button><button type="button" className="btn btn-primary" disabled={busy} onClick={async () => { setBusy(true); await onSave({ ...f, monthly_price: Number(f.monthly_price) || 0, yearly_price: Number(f.yearly_price) || 0, trial_days: Math.max(0, Number(f.trial_days) || 0), instapay: f.instapay.trim(), wallet: f.wallet.trim() }); setBusy(false); }}>{busy ? 'Saving…' : 'Save'}</button></div>
+    <div className="modal-actions"><button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button><button type="button" className="btn btn-primary" disabled={busy} onClick={async () => { setBusy(true); await onSave({ ...f, daily_price: Number(f.daily_price) || 0, monthly_price: Number(f.monthly_price) || 0, yearly_price: Number(f.yearly_price) || 0, trial_days: Math.max(0, Number(f.trial_days) || 0), instapay: f.instapay.trim(), wallet: f.wallet.trim() }); setBusy(false); }}>{busy ? 'Saving…' : 'Save'}</button></div>
   </ModalShell>;
 }
 
@@ -132,7 +133,7 @@ export function SubscriptionsAdminPage({ supabase, users = [], settings, onSaveS
       {loading ? <p className="small-muted">Loading…</p> : !list.length ? <div className="smi-empty"><span className="smi-empty-ic"><Star size={18} /></span><p>{tab === 'confirm' ? 'No payments waiting. New ones show up here.' : 'Nothing here yet.'}</p></div>
         : list.map(r => <div className="plus-admin-row" key={r.id}>
           <div className="plus-admin-who"><b>{nameOf(r.user_id)}</b><small>{emailOf(r.user_id)}</small></div>
-          <div className="plus-admin-plan"><b>{r.period === 'yearly' ? 'Yearly' : r.period === 'monthly' ? 'Monthly' : r.period === 'gift' ? 'Given' : 'Trial'}{Number(r.amount) > 0 ? ` · ${money(r.amount)}` : ''}</b><small>{how(r)}{r.payer_name ? ` · ${r.payer_name}` : ''}{r.payment_ref ? ` · ref ${r.payment_ref}` : ''}</small>{r.match_note && <small className="plus-admin-auto">✓ Auto-confirmed · {r.match_note.replace(/^Matched by /, 'matched by ')}</small>}{r.proof_path && <button type="button" className="plus-admin-proof" onClick={() => openProof(r.proof_path)}>See screenshot</button>}</div>
+          <div className="plus-admin-plan"><b>{r.period === 'yearly' ? 'Yearly' : r.period === 'monthly' ? 'Monthly' : r.period === 'daily' ? '1 day' : r.period === 'gift' ? 'Given' : 'Trial'}{Number(r.amount) > 0 ? ` · ${money(r.amount)}` : ''}</b><small>{how(r)}{r.payer_name ? ` · ${r.payer_name}` : ''}{r.payment_ref ? ` · ref ${r.payment_ref}` : ''}</small>{r.match_note && <small className="plus-admin-auto">✓ Auto-confirmed · {r.match_note.replace(/^Matched by /, 'matched by ')}</small>}{r.proof_path && <button type="button" className="plus-admin-proof" onClick={() => openProof(r.proof_path)}>See screenshot</button>}</div>
           <div className="plus-admin-status">{status(r)}<small>{when(r)}</small></div>
           <div className="plus-admin-act">
             {r.status === 'pending' && <><button type="button" className="btn btn-primary btn-sm" disabled={busyId === r.id} onClick={() => confirm(r)}>Confirm</button><button type="button" className="btn btn-secondary btn-sm" onClick={() => setModal({ kind: 'reject', row: r })}>Not found</button></>}
