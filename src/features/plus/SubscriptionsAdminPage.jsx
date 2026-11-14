@@ -36,7 +36,7 @@ function GiveModal({ users, onClose, onGive }) {
   const [busy, setBusy] = useState(false);
   return <ModalShell title="Give Plus to a user" subtitle="Turns on Bank SMS, Vehicles and the chat for them, free." onClose={onClose}>
     <div className="form-grid">
-      <Field label="User" wide><select value={user} onChange={e => setUser(e.target.value)}><option value="">Choose a user…</option>{users.map(u => <option key={u.id} value={u.id}>{u.full_name || u.email || u.username}</option>)}</select></Field>
+      <Field label="User" wide><select value={user} onChange={e => setUser(e.target.value)}><option value="">Choose a user…</option>{users.map(u => <option key={u.user_id ?? u.id} value={u.user_id ?? u.id}>{u.username ? `${u.username}${u.full_name ? ` · ${u.full_name}` : ""}` : (u.full_name || u.email)}</option>)}</select></Field>
     </div>
     <div className="cc-options" role="radiogroup" aria-label="For how long" style={{ marginTop: 14 }}>
       {[['1w', '1 week'], ['1m', '1 month'], ['12m', '1 year'], ['custom', 'Custom weeks'], ['none', 'No end date']].map(([k, l]) => <button key={k} type="button" role="radio" aria-checked={length === k} className={`cc-option ${length === k ? 'on' : ''}`} onClick={() => setLength(k)}><span><b>{l}</b></span></button>)}
@@ -62,8 +62,8 @@ export function SubscriptionsAdminPage({ supabase, users = [], settings, onSaveS
   const [modal, setModal] = useState(null);
   const [busyId, setBusyId] = useState(null);
   const money = n => new Intl.NumberFormat('en-EG', { style: 'currency', currency, maximumFractionDigits: 0 }).format(Number(n) || 0);
-  const nameOf = id => { const u = users.find(x => String(x.id) === String(id)); return u ? (u.full_name || u.email || u.username) : 'User'; };
-  const emailOf = id => users.find(x => String(x.id) === String(id))?.email || '';
+  const nameOf = id => { const u = users.find(x => String(x.user_id ?? x.id) === String(id)); return u ? (u.full_name || u.email || u.username) : 'User'; };
+  const emailOf = id => users.find(x => String(x.user_id ?? x.id) === String(id))?.email || '';
 
   async function load() {
     setLoading(true);

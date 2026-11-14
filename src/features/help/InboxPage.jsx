@@ -27,8 +27,8 @@ export function InboxPage({ supabase, session, isOwner = false, users = [], from
   const [tab, setTab] = useState('all');
   const [newOpen, setNewOpen] = useState(false);
   const endRef = useRef(null);
-  const userOf = id => users.find(x => String(x.id) === String(id)) || null;
-  const nameOf = id => { const u = userOf(id); return u ? (u.full_name || u.username || u.email) : 'User'; };
+  const userOf = id => users.find(x => String(x.user_id ?? x.id) === String(id)) || null;
+  const nameOf = id => { const u = userOf(id); return u ? (u.username || u.full_name || u.email || 'User') : 'User'; };
 
   const load = useCallback(async () => {
     const { data } = await supabase.from('support_messages').select('*').order('last_at', { ascending: false }).limit(200);
@@ -88,7 +88,7 @@ export function InboxPage({ supabase, session, isOwner = false, users = [], from
               <span className={`sms-pill ${open.status === 'replied' ? 'on' : 'warn'}`}>{open.status === 'replied' ? 'Answered' : isOwner ? 'To answer' : 'Waiting'}</span>
             </div>
             {isOwner && <div className="inbox-user">
-              {[['Email', u?.email], ['Username', u?.username], ['Sent from', open.page], ['Device', open.device], ['User ID', open.user_id]].filter(([, v]) => v).map(([k, v]) => <div key={k}><small>{k}</small><span>{v}</span></div>)}
+              {[['Name', u?.full_name || [u?.first_name, u?.last_name].filter(Boolean).join(' ')], ['Email', u?.email && !/@users\.pocket\.local$/.test(u.email) ? u.email : ''], ['Username', u?.username], ['Sent from', open.page], ['Device', open.device], ['User ID', open.user_id]].filter(([, v]) => v).map(([k, v]) => <div key={k}><small>{k}</small><span>{v}</span></div>)}
             </div>}
             <div className="inbox-msgs">
               {conv.map(m => { const mine = m.from_owner === isOwner; return <div key={m.id} className={`inbox-msg ${mine ? 'mine' : 'theirs'}`}>
