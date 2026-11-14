@@ -44,6 +44,7 @@ import { setCategoryIconOverrides } from './lib/categoryIcons.js';
 import { PlusPage } from './features/plus/PlusPage.jsx';
 import { HelpPage } from './features/help/HelpPage.jsx';
 import { InboxPage, threadUnread } from './features/help/InboxPage.jsx';
+import { ReviewModal } from './features/help/supportFiles.jsx';
 import { LockedSmsTeaser, LockedVehiclesTeaser, TypedByHandCard, SmsHintBanner } from './features/plus/PlusTeasers.jsx';
 import { SubscriptionsAdminPage } from './features/plus/SubscriptionsAdminPage.jsx';
 import { plusState, PLUS_FEATURES, PLUS_DEFAULTS } from './lib/plus.js';
@@ -154,7 +155,7 @@ function App(){
   const [addMoneyGoal,setAddMoneyGoal] = useState(null);
   const [spendGoal,setSpendGoal] = useState(null);
   const [chatOpen,setChatOpen] = useState(false);const [subs,setSubs]=useState([]);const [plusSettings,setPlusSettings]=useState(PLUS_DEFAULTS);const [subsPending,setSubsPending]=useState(0);const [chatStart,setChatStart]=useState('');
-  const [txPresetType,setTxPresetType]=useState('');const [helpFrom,setHelpFrom]=useState('');const [inboxUnread,setInboxUnread]=useState(0);const [txPresetAccount,setTxPresetAccount] = useState('');
+  const [txPresetType,setTxPresetType]=useState('');const [helpFrom,setHelpFrom]=useState('');const [inboxUnread,setInboxUnread]=useState(0);const [reviewThread,setReviewThread]=useState(null);const [txPresetAccount,setTxPresetAccount] = useState('');
   const [cardPay,setCardPay] = useState(null);
   const [providerPay,setProviderPay] = useState(null);
   const [accountsView,setAccountsView] = useState('grid');
@@ -1119,8 +1120,8 @@ function App(){
 
   const needsAccountSetup=cloudReady ? Boolean(session?.user && accountsLoaded && !accounts.some(a=>!isGoalsAccount(a))) : Boolean(localLoaded && !accounts.some(a=>!isGoalsAccount(a)));
   const isAdmin=(cloudReady && ['owner','super_admin'].includes(profile?.role));
-  const refreshInbox=useCallback(async()=>{if(!cloudReady||!session?.user?.id)return;try{const {data}=await supabase.from('support_messages').select('last_at,last_from_owner,user_read_at,owner_read_at').order('last_at',{ascending:false}).limit(200);setInboxUnread((data||[]).filter(t=>threadUnread(t,isAdmin)).length);}catch{}},[session?.user?.id,isAdmin]);
-  useEffect(()=>{refreshInbox();const iv=setInterval(()=>{if(!document.hidden)refreshInbox()},30000);return()=>clearInterval(iv);},[refreshInbox]);
+  const refreshInbox=useCallback(async()=>{if(!cloudReady||!session?.user?.id)return;try{const {data}=await supabase.from('support_messages').select('id,status,rated_at,last_at,last_from_owner,user_read_at,owner_read_at').order('last_at',{ascending:false}).limit(200);setInboxUnread((data||[]).filter(t=>threadUnread(t,isAdmin)).length);if(!isAdmin){const asked=(()=>{try{return JSON.parse(localStorage.getItem('pocket-review-asked')||'[]')}catch{return []}})();const t=(data||[]).find(x=>x.status==='closed'&&!x.rated_at&&!asked.includes(x.id));if(t)setReviewThread(r=>r||t);}}catch{}},[session?.user?.id,isAdmin]);
+  useEffect(()=>{refreshInbox();const iv=setInterval(()=>{if(!document.hidden)refreshInbox()},15000);return()=>clearInterval(iv);},[refreshInbox]);
   useEffect(()=>{
     if(!isAdmin||!supabase){setAccessRequestCounts({total:0,pending:0});return;}
     let alive=true;
@@ -1216,6 +1217,7 @@ function App(){
         {plusPreview&&page==='Bank SMS'&&<LockedSmsTeaser plus={plus} settings={plusSettings} onStartTrial={startPlusTrial} onOpenPlus={()=>setPage('Pocket Plus')}/>}
         {plusPreview&&page==='Vehicle Management'&&<LockedVehiclesTeaser plus={plus} settings={plusSettings} onStartTrial={startPlusTrial} onOpenPlus={()=>setPage('Pocket Plus')}/>}
         {!canSeeCurrentPage&&!(isAdmin&&['Expense categories','Admin access','Access requests','Access management'].includes(page))&&!(!isAdmin&&PLUS_FEATURES.includes(getPageFeature(page)))&&<AccessRestricted profile={profile} onBack={()=>setPage(allowedFeatures[0]?FEATURE_OPTIONS.find(f=>f.key===allowedFeatures[0])?.label:'Overview')} onRequestAccess={requestAccess} requestBusy={accessRequestBusy} requestsOpen={accessRequestsOpen}/> }
+        {reviewThread&&!isAdmin&&<ReviewModal supabase={supabase} thread={reviewThread} onClose={()=>{try{const a=JSON.parse(localStorage.getItem('pocket-review-asked')||'[]');localStorage.setItem('pocket-review-asked',JSON.stringify([...a,reviewThread.id].slice(-50)))}catch{}setReviewThread(null)}} onDone={()=>{try{const a=JSON.parse(localStorage.getItem('pocket-review-asked')||'[]');localStorage.setItem('pocket-review-asked',JSON.stringify([...a,reviewThread.id].slice(-50)))}catch{}setReviewThread(null);setToast('Thank you for your review!');refreshInbox()}}/>}
         {page==='Inbox'&&cloudReady&&<InboxPage supabase={supabase} session={session} isOwner={isAdmin} users={adminUsers} fromPage={helpFrom} onToast={setToast} onChanged={refreshInbox}/>}
         {page==='Help'&&<HelpPage supabase={cloudReady?supabase:null} userEmail={session?.user?.email||''} fromPage={helpFrom} onToast={setToast}/>}
         {page==='Pocket Plus'&&<PlusPage plus={plus} settings={plusSettings} currency={currency} onOpenSms={()=>setPage('Bank SMS')} onStartTrial={startPlusTrial} onPay={sendPlusPayment} onCancelToggle={togglePlusCancel}/>}

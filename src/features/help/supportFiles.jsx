@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { Camera, X } from '../../lib/icons.jsx';
+import { Camera, X, Star } from '../../lib/icons.jsx';
+import { ModalShell } from '../../components/modals/ModalShell.jsx';
+import { Field } from '../../components/ui/Field.jsx';
 
 // Screenshots on Inbox messages. Files go to the private receipts bucket under <conversation user id>/support/.
 export async function uploadSupportShot(supabase, folderUserId, file) {
@@ -43,4 +45,37 @@ export function SupportShot({ supabase, path }) {
   }, [supabase, path]);
   if (!src) return <span className="support-shot loading" aria-label="Loading picture" />;
   return <a className="support-shot" href={src} target="_blank" rel="noopener noreferrer"><img src={src} alt="Screenshot" /></a>;
+}
+
+// After the Owner ends a chat, the user rates it: 1–5 stars and an optional comment.
+const STAR_WORDS = ['', 'Bad', 'Not great', 'Okay', 'Good', 'Great'];
+export function ReviewModal({ supabase, thread, onClose, onDone }) {
+  const [stars, setStars] = useState(0);
+  const [hover, setHover] = useState(0);
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  async function send() {
+    if (!stars) { setErr('Pick 1 to 5 stars.'); return; }
+    setBusy(true); setErr('');
+    const { error } = await supabase.rpc('support_rate', { p_thread: thread.id, p_rating: stars, p_review: text.trim() || null });
+    setBusy(false);
+    if (error) { setErr('Could not send. Try again.'); return; }
+    onDone?.(stars);
+  }
+  const shown = hover || stars;
+  return <ModalShell title="How did we do?" subtitle="We closed your chat with the Pocket team. Tell us how it went." onClose={onClose}>
+    <div className="review-form">
+      <div className="review-stars" role="radiogroup" aria-label="Rating" onMouseLeave={() => setHover(0)}>
+        {[1, 2, 3, 4, 5].map(n => <button key={n} type="button" role="radio" aria-checked={stars === n} aria-label={`${n} star${n === 1 ? '' : 's'}`} className={`review-star ${n <= shown ? 'on' : ''}`} onMouseEnter={() => setHover(n)} onClick={() => setStars(n)}><Star size={34} /></button>)}
+      </div>
+      <p className="review-word">{shown ? STAR_WORDS[shown] : 'Tap a star'}</p>
+      <div className="form-grid"><Field label="Anything to add? (optional)" wide><textarea className="pocket-textarea" rows="3" maxLength={1000} value={text} onChange={e => setText(e.target.value)} placeholder="What went well, or what could be better…" /></Field></div>
+      {err && <p className="cc-error" role="alert">{err}</p>}
+    </div>
+    <div className="modal-actions"><button type="button" className="btn btn-secondary" onClick={onClose}>Not now</button><button type="button" className="btn btn-primary" disabled={busy || !stars} onClick={send}>{busy ? 'Sending…' : 'Send review'}</button></div>
+  </ModalShell>;
+}
+export function StarsLine({ value = 0 }) {
+  return <span className="stars-line" aria-label={`${value} of 5 stars`}>{[1, 2, 3, 4, 5].map(n => <Star key={n} size={14} className={n <= value ? 'on' : ''} />)}</span>;
 }

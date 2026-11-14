@@ -801,3 +801,20 @@
 
 .lg-name-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 @media (max-width:360px){.lg-name-row{grid-template-columns:1fr}}
+
+/* End chat + review */
+.inbox-end{flex:none}
+.inbox-closed{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 16px 16px;padding:14px 16px;border-radius:14px;background:var(--ds-surface-soft,var(--ds-soft))}
+.inbox-closed b{display:block;font-size:14px}.inbox-closed small{font-size:12.5px;color:var(--ds-text-muted)}
+.inbox-review{display:grid;gap:4px;justify-items:end}.inbox-review p{margin:0;font-size:13px;color:var(--ds-text-muted)}
+.review-form{display:grid;gap:12px}
+.review-form>*{margin:0!important}
+.review-stars{display:flex;justify-content:center;gap:6px}
+.review-star{width:52px;height:52px;border:0;background:none;border-radius:12px;display:grid;place-items:center;color:var(--ds-border-strong,#cfd5e2);cursor:pointer;transition:transform .12s}
+.review-star:hover{transform:scale(1.08)}
+.review-star.on{color:#f5b301}
+.review-star.on svg{fill:currentColor}
+.review-word{text-align:center;font:700 14px var(--ds-font-ui);color:var(--ds-text-muted)}
+.stars-line{display:inline-flex;gap:2px;color:var(--ds-border-strong,#cfd5e2)}
+.stars-line .on{color:#f5b301;fill:#f5b301}
+@media (max-width:420px){.inbox-thread-head{flex-wrap:wrap}.inbox-end{order:3}}

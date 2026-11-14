@@ -4,7 +4,7 @@ import { Tabs } from '../../components/ui/Tabs.jsx';
 import { EmptyState } from '../../components/ui/EmptyState.jsx';
 import { Inbox, Send, ArrowLeft, Plus, UserRound } from '../../lib/icons.jsx';
 import { ContactModal } from './HelpPage.jsx';
-import { ShotPicker, SupportShot, uploadSupportShot } from './supportFiles.jsx';
+import { ShotPicker, SupportShot, uploadSupportShot, ReviewModal, StarsLine } from './supportFiles.jsx';
 
 // Inbox: conversations between users and the Pocket team.
 // A user sees their own conversations; an Owner sees everyone's, with the user's details, and replies here.
@@ -28,6 +28,7 @@ export function InboxPage({ supabase, session, isOwner = false, users = [], from
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState('all');
   const [newOpen, setNewOpen] = useState(false);
+  const [rateOpen, setRateOpen] = useState(false);
   const endRef = useRef(null);
   const userOf = id => users.find(x => String(x.user_id ?? x.id) === String(id)) || null;
   const nameOf = id => { const u = userOf(id); return u ? (u.full_name || [u.first_name, u.last_name].filter(Boolean).join(' ') || u.username || u.email || 'User') : 'User'; };
@@ -60,7 +61,16 @@ export function InboxPage({ supabase, session, isOwner = false, users = [], from
     setThreads(o => o.map(t => t.id === open.id ? { ...t, last_at: data.created_at, last_from_owner: isOwner, status: isOwner ? 'replied' : 'new' } : t).sort((a, b) => new Date(b.last_at) - new Date(a.last_at)));
   }
 
-  const list = useMemo(() => threads.filter(t => tab === 'all' || (tab === 'unread' ? threadUnread(t, isOwner) : t.status === tab)), [threads, tab, isOwner]);
+  async function closeChat(reopen) {
+    setBusy(true);
+    const { error } = await supabase.rpc('support_close', { p_thread: open.id, p_open: !!reopen });
+    setBusy(false);
+    if (error) { onToast?.('Could not update the chat.'); return; }
+    onToast?.(reopen ? 'Chat reopened.' : 'Chat ended. The user is asked to rate it.');
+    load();
+  }
+
+  const list = useMemo(() => threads.filter(t => (tab === 'all' ? (!isOwner || t.status !== 'closed') : false) || (tab === 'unread' ? threadUnread(t, isOwner) : t.status === tab)), [threads, tab, isOwner]);
   const unread = threads.filter(t => threadUnread(t, isOwner)).length;
   const lastText = t => t.started_by_owner && t.last_from_owner && t.last_at === t.created_at ? (isOwner ? 'You: ' + t.message : t.message) : t.last_from_owner ? (isOwner ? 'You replied' : 'Pocket team replied') : (isOwner ? t.message : 'You: ' + t.message);
 
@@ -70,7 +80,7 @@ export function InboxPage({ supabase, session, isOwner = false, users = [], from
   return <div className="inbox-page">
     <PageHeading eyebrow={isOwner ? 'SUPPORT' : 'MESSAGES'} title="Inbox" subtitle={isOwner ? 'Messages from Pocket users. Your reply shows in their Inbox.' : 'Your messages with the Pocket team.'}
       actions={!isOwner && <button type="button" className="btn btn-primary" onClick={() => setNewOpen(true)}><Plus size={16} /> New message</button>} />
-    {isOwner && <div className={`inbox-tabs ${open ? 'has-open' : ''}`}><Tabs label="Filter" value={tab} onChange={setTab} items={[{ key: 'all', label: 'All' }, { key: 'unread', label: 'Unread', count: unread }, { key: 'new', label: 'To answer' }, { key: 'replied', label: 'Answered' }]} /></div>}
+    {isOwner && <div className={`inbox-tabs ${open ? 'has-open' : ''}`}><Tabs label="Filter" value={tab} onChange={setTab} items={[{ key: 'all', label: 'All' }, { key: 'unread', label: 'Unread', count: unread }, { key: 'new', label: 'To answer' }, { key: 'replied', label: 'Answered' }, { key: 'closed', label: 'Closed' }]} /></div>}
     <div className={`inbox-layout ${open ? 'has-open' : ''}`}>
       <section className="panel inbox-list" aria-label="Conversations">
         {loading ? <p className="small-muted inbox-pad">Loading…</p> : !list.length
@@ -89,7 +99,8 @@ export function InboxPage({ supabase, session, isOwner = false, users = [], from
             <div className="inbox-thread-head">
               <button type="button" className="icon-btn inbox-back" aria-label="Back to messages" onClick={() => setOpenId(null)}><ArrowLeft size={18} /></button>
               <div><b>{isOwner ? nameOf(open.user_id) : open.started_by_owner ? 'Pocket team' : (TOPIC[open.topic] || 'Message')}</b><small>{isOwner ? `${TOPIC[open.topic] || 'Message'} · started ${when(open.created_at)}` : `Started ${when(open.created_at)}`}</small></div>
-              <span className={`sms-pill ${open.status === 'replied' ? 'on' : 'warn'}`}>{open.status === 'replied' ? 'Answered' : isOwner ? 'To answer' : 'Waiting'}</span>
+              <span className={`sms-pill ${open.status === 'closed' ? 'muted' : open.status === 'replied' ? 'on' : 'warn'}`}>{open.status === 'closed' ? 'Closed' : open.status === 'replied' ? 'Answered' : isOwner ? 'To answer' : 'Waiting'}</span>
+              {isOwner && <button type="button" className="btn btn-secondary btn-sm inbox-end" disabled={busy} onClick={() => closeChat(open.status === 'closed')}>{open.status === 'closed' ? 'Reopen' : 'End chat'}</button>}
             </div>
             {isOwner && <div className="inbox-user">
               {[['Name', u?.full_name || [u?.first_name, u?.last_name].filter(Boolean).join(' ')], ['Email', u?.email && !/@users\.pocket\.local$/.test(u.email) ? u.email : ''], ['Username', u?.username], ['Sent from', open.page], ['Device', open.device], ['User ID', open.user_id]].filter(([, v]) => v).map(([k, v]) => <div key={k}><small>{k}</small><span>{v}</span></div>)}
@@ -102,15 +113,21 @@ export function InboxPage({ supabase, session, isOwner = false, users = [], from
               </div>; })}
               <div ref={endRef} />
             </div>
-            <div className="inbox-compose">
+            {open.status === 'closed' && <div className="inbox-closed">
+              <div><b>{isOwner ? 'You ended this chat' : 'This chat was closed'}</b><small>{open.closed_at ? when(open.closed_at) : ''}{isOwner ? (open.rated_at ? ' · rated by the user' : ' · waiting for a review') : ''}</small></div>
+              {open.rated_at ? <div className="inbox-review"><StarsLine value={open.rating} />{open.review && <p>“{open.review}”</p>}</div>
+                : !isOwner && <button type="button" className="btn btn-primary btn-sm" onClick={() => setRateOpen(true)}>Rate this chat</button>}
+            </div>}
+            {(isOwner || open.status !== 'closed') && <div className="inbox-compose">
               <textarea className="pocket-textarea" rows="2" maxLength={4000} value={text} onChange={e => setText(e.target.value)} placeholder={isOwner ? 'Write your reply…' : 'Write a message…'} aria-label="Message"
                 onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) reply(); }} />
               <ShotPicker compact value={shot} onChange={setShot} />
               <button type="button" className="btn btn-primary" disabled={busy || (!text.trim() && !shot)} onClick={reply} aria-label="Send"><Send size={16} /> Send</button>
-            </div>
+            </div>}
           </>}
       </section>
     </div>
+    {rateOpen && open && <ReviewModal supabase={supabase} thread={open} onClose={() => setRateOpen(false)} onDone={() => { setRateOpen(false); onToast?.('Thank you for your review!'); load(); }} />}
     {newOpen && <ContactModal supabase={supabase} userEmail={session?.user?.email || ''} fromPage={fromPage} onClose={() => setNewOpen(false)} onSent={() => { setNewOpen(false); onToast?.('Message sent. Our reply shows up here in your Inbox.'); load(); }} />}
   </div>;
 }
