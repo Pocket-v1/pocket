@@ -4,6 +4,7 @@ import { Tabs } from '../../components/ui/Tabs.jsx';
 import { EmptyState } from '../../components/ui/EmptyState.jsx';
 import { ModalShell } from '../../components/modals/ModalShell.jsx';
 import { Field } from '../../components/ui/Field.jsx';
+import { ShotPicker, uploadSupportShot } from './supportFiles.jsx';
 import { Search, Mail, Copy, Check } from '../../lib/icons.jsx';
 
 // Help center: search, topics, answers, and a way to reach us.
@@ -42,16 +43,19 @@ const CONTACT_TOPICS = [['problem', 'Something is wrong'], ['plus', 'Plus & paym
 export function ContactModal({ supabase, userEmail, fromPage, onClose, onSent }) {
   const [topic, setTopic] = useState('problem');
   const [text, setText] = useState('');
+  const [shot, setShot] = useState(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   async function send() {
     if (!text.trim()) { setErr('Write your message first.'); return; }
     setBusy(true); setErr('');
     try {
-      const { data, error } = await supabase.functions.invoke('support-message', { body: { topic, message: text.trim(), page: fromPage, device: navigator.userAgent } });
+      let attachment_path = null;
+      if (shot) { const { data: { user } } = await supabase.auth.getUser(); attachment_path = await uploadSupportShot(supabase, user.id, shot); }
+      const { data, error } = await supabase.functions.invoke('support-message', { body: { topic, message: text.trim(), page: fromPage, device: navigator.userAgent, attachment_path } });
       if (error || !data?.ok) { let msg = data?.error; try { msg = msg || (await error?.context?.json())?.error; } catch { /* ignore */ } setErr(msg || 'Could not send. Check your connection and try again.'); setBusy(false); return; }
       onSent();
-    } catch { setErr('Could not send. Check your connection and try again.'); setBusy(false); }
+    } catch (e) { setErr(e?.message || 'Could not send. Check your connection and try again.'); setBusy(false); }
   }
   return <ModalShell title="Send us a message" subtitle="A real person reads every message. Our reply shows up in your Inbox, next to the bell." onClose={onClose}>
     <div className="help-form">
@@ -61,6 +65,7 @@ export function ContactModal({ supabase, userEmail, fromPage, onClose, onSent })
       <div className="form-grid">
         <Field label="Your message" wide><textarea className="pocket-textarea" rows="6" maxLength={4000} value={text} onChange={e => setText(e.target.value)} placeholder={topic === 'problem' ? 'Tell us what happened and what you expected…' : topic === 'plus' ? 'Which plan, how you paid and when…' : 'Tell us more…'} /></Field>
       </div>
+      <ShotPicker value={shot} onChange={setShot} />
       <p className="small-muted help-form-note">Your name, plan and the page you were on are sent with it, so you don't need to explain.</p>
       {err && <p className="cc-error" role="alert">{err}</p>}
     </div>

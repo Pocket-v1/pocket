@@ -14,7 +14,7 @@ function initialStyle(){
 }
 
 export function AuthScreen(p){
- const {authMode,setAuthMode,authName,setAuthName,authGender,setAuthGender,authEmail,setAuthEmail,authUsername,setAuthUsername,authPassword,setAuthPassword,authConfirmPassword,setAuthConfirmPassword,authMsg,setAuthMsg,stayLoggedIn,setStayLoggedIn,busy,signIn,signInWithGoogle,signUp,resetPassword,updatePassword,resendConfirmation}=p;
+ const {authMode,setAuthMode,authName,setAuthName,authFirst='',setAuthFirst=()=>{},authLast='',setAuthLast=()=>{},authGender,setAuthGender,authEmail,setAuthEmail,authUsername,setAuthUsername,authPassword,setAuthPassword,authConfirmPassword,setAuthConfirmPassword,authMsg,setAuthMsg,stayLoggedIn,setStayLoggedIn,busy,signIn,signInWithGoogle,signUp,resetPassword,updatePassword,resendConfirmation}=p;
  const mode=authMode==='choice'?'signin':authMode;
  const isSignin=mode==='signin', isSignup=mode==='signup', isForgot=mode==='forgot', isUpdatePassword=mode==='update-password';
  const showTabs=isSignin||isSignup;
@@ -35,7 +35,7 @@ export function AuthScreen(p){
  const orRow=<div className="lg-or" style={i()}><span/>or<span/></div>;
  const fields=<>
   {isSignup&&<>
-   <label className="lg-field" style={i()}><span>Full name<em className="req" aria-hidden="true"> *</em></span><input autoComplete="name" required value={authName} onChange={e=>setAuthName(e.target.value)} placeholder="What should we call you?"/></label>
+   <div className="lg-name-row" style={i()}><label className="lg-field"><span>First name<em className="req" aria-hidden="true"> *</em></span><input autoComplete="given-name" required value={authFirst} onChange={e=>{setAuthFirst(e.target.value);setAuthName(`${e.target.value} ${authLast}`.trim())}} placeholder="Nora"/></label><label className="lg-field"><span>Last name<em className="req" aria-hidden="true"> *</em></span><input autoComplete="family-name" required value={authLast} onChange={e=>{setAuthLast(e.target.value);setAuthName(`${authFirst} ${e.target.value}`.trim())}} placeholder="Radwan"/></label></div>
    <fieldset className="lg-field lg-gender" style={i()}><legend>Gender</legend><div className="lg-pills">{[{value:'female',label:'Female'},{value:'male',label:'Male'},{value:'prefer_not_to_say',label:'Prefer not to say'}].map(g=><button key={g.value} type="button" className={authGender===g.value?'on':''} aria-pressed={authGender===g.value} onClick={()=>setAuthGender(g.value)}>{authGender===g.value&&<Check size={14}/>}{g.label}</button>)}</div><small>Used to personalize suggested transaction categories. You can change it later in Account &amp; Profile.</small></fieldset>
   </>}
   {isSignup&&<label className="lg-field" style={i()}><span>Username<em className="req" aria-hidden="true"> *</em></span><input autoComplete="username" required minLength={3} maxLength={32} value={authUsername} onChange={e=>setAuthUsername(e.target.value)} placeholder="e.g. nora.m"/><UsernameStatus value={authUsername} onStatus={setUnStatus}/></label>}

@@ -180,7 +180,7 @@ function App(){
   const [authEmail,setAuthEmail] = useState('');
   const [authMsg,setAuthMsg] = useState('');
   const [authMode,setAuthMode] = useState('choice');
-  const [authName,setAuthName] = useState('');
+  const [authName,setAuthName] = useState('');const [authFirst,setAuthFirst]=useState('');const [authLast,setAuthLast]=useState('');
   const [authUsername,setAuthUsername] = useState('');
   const [authGender,setAuthGender] = useState('');
   const [authPassword,setAuthPassword] = useState('');
@@ -863,12 +863,15 @@ function App(){
   }
   async function signUp(e){
     e.preventDefault(); if(!supabase)return;
+    const firstName=authFirst.trim().replace(/\s+/g,' '),lastName=authLast.trim().replace(/\s+/g,' ');
+    if(!firstName||!lastName){setAuthMsg('Enter your first name and last name.');return;}
+    const fullName=`${firstName} ${lastName}`;
     if(authPassword.length<10){setAuthMsg('Use a password with at least 10 characters.');return;}
     const username=authUsername.trim();
     if(!/^[a-zA-Z0-9._-]{3,32}$/.test(username)){setAuthMsg('Choose a username (3–32 characters: letters, numbers, dots, underscores or hyphens).');return;}
     setBusy(true);setAuthMsg('');
     if(!authEmail.trim()){
-      const {error:fnError}=await supabase.functions.invoke('public-signup',{body:{full_name:authName.trim(),gender:authGender,avatar:defaultAvatarForGender(authGender),username,password:authPassword}});
+      const {error:fnError}=await supabase.functions.invoke('public-signup',{body:{full_name:fullName,first_name:firstName,last_name:lastName,gender:authGender,avatar:defaultAvatarForGender(authGender),username,password:authPassword}});
       if(fnError){let msg=fnError.message;try{const j=await fnError.context?.json?.();if(j?.error)msg=j.error;}catch{}setBusy(false);setAuthMsg(msg||'Could not create the account.');return;}
       const {error:inError}=await supabase.auth.signInWithPassword({email:`${username.toLowerCase().replace(/[^a-z0-9._-]/g,'-')}@users.pocket.local`,password:authPassword});
       setBusy(false);
@@ -878,7 +881,7 @@ function App(){
     const {data,error}=await supabase.auth.signUp({
       email:authEmail.trim(),
       password:authPassword,
-      options:{data:{full_name:authName.trim(),username,gender:authGender,avatar:defaultAvatarForGender(authGender)},emailRedirectTo:authRedirectUrl()}
+      options:{data:{full_name:fullName,first_name:firstName,last_name:lastName,username,gender:authGender,avatar:defaultAvatarForGender(authGender)},emailRedirectTo:authRedirectUrl()}
     });
     setBusy(false);
     if(error){setAuthMsg(error.message);return;}
@@ -1185,7 +1188,7 @@ function App(){
       <div className="pocket-loading-foot"><span className="pocket-loading-status-dot"/> Secure sign-in <span className="pocket-loading-separator">·</span> Your data stays protected</div>
     </section>
   </main>;}
-  if(cloudReady && (!session || authMode==='update-password')) return <AuthScreen {...{authMode,setAuthMode,authName,setAuthName,authGender,setAuthGender,authEmail,setAuthEmail,authUsername,setAuthUsername,authPassword,setAuthPassword,authConfirmPassword,setAuthConfirmPassword,authMsg,setAuthMsg,stayLoggedIn,setStayLoggedIn,busy,signIn,signInWithGoogle,signUp,resetPassword,updatePassword,resendConfirmation}} />;
+  if(cloudReady && (!session || authMode==='update-password')) return <AuthScreen {...{authMode,setAuthMode,authName,setAuthName,authFirst,setAuthFirst,authLast,setAuthLast,authGender,setAuthGender,authEmail,setAuthEmail,authUsername,setAuthUsername,authPassword,setAuthPassword,authConfirmPassword,setAuthConfirmPassword,authMsg,setAuthMsg,stayLoggedIn,setStayLoggedIn,busy,signIn,signInWithGoogle,signUp,resetPassword,updatePassword,resendConfirmation}} />;
   if(!cloudReady) return <main className="auth-page pocket-auth-page"><section className="auth-panel pocket-auth-panel"><div className="auth-choice-card pocket-auth-choice-card"><div className="auth-mobile-brand pocket-mobile-brand"><b>Pocket</b></div><h2>Connect Pocket to Supabase</h2><p className="auth-subtitle">Local and browser-based data storage is disabled. Configure <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> in your deployment environment, then redeploy.</p></div></section></main>;
   return <div className={`app-shell sidebar-${isDesktopNav?sidebarSize:'comfortable'}`} lang="en" dir="ltr">
     <aside className={`sidebar ${sidebarOpen?'sidebar-open':''}`} onMouseOver={e=>{if(!(isDesktopNav&&sidebarSize==='compact')){if(navTip)setNavTip(null);return}const el=e.target.closest('[data-label]');if(!el){if(navTip)setNavTip(null);return}const r=el.getBoundingClientRect();setNavTip({label:el.dataset.label,top:r.top+r.height/2,left:r.right+10})}} onMouseLeave={()=>setNavTip(null)}>

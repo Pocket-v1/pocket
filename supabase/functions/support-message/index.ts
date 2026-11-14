@@ -33,7 +33,7 @@ function emailHtml(m, u, appUrl) {
    <table style="width:100%;border-collapse:collapse;margin-top:6px">
     ${row('Name', esc(u.name))}${row('Email', `<a href="mailto:${esc(u.email)}" style="color:#2449df">${esc(u.email)}</a>`)}${row('Username', esc(u.username))}
     ${row('Pocket Plus', esc(u.plus || 'No'))}${row('Accounts · transactions', esc(u.counts))}${row('Joined', esc(u.joined))}
-    ${row('Sent from page', esc(m.page))}${row('Device', esc(m.device))}${row('Sent at', esc(cairo(m.created_at)) + ' (Cairo)')}${row('User ID', `<span style="font-family:monospace;font-size:12px">${esc(u.id)}</span>`)}
+    ${row('Screenshot', m.attachment_path ? 'Attached (open it in the Pocket Inbox)' : '')}${row('Sent from page', esc(m.page))}${row('Device', esc(m.device))}${row('Sent at', esc(cairo(m.created_at)) + ' (Cairo)')}${row('User ID', `<span style="font-family:monospace;font-size:12px">${esc(u.id)}</span>`)}
    </table>
    <div style="margin-top:22px;font-size:12px;color:#6c7182">Reply to this email to answer ${esc(u.firstName || 'the user')} directly. Message ID ${esc(m.id)} · <a href="${esc(appUrl)}" style="color:#2449df">Open Pocket</a></div>
   </div>
@@ -65,7 +65,9 @@ Deno.serve(async req => {
   const message = String(p.message || '').trim().slice(0, 4000);
   if (!message) return json({ ok: false, error: 'Write your message first.' }, 400);
   const topic = TOPICS[p.topic] ? p.topic : 'other';
-  const { data: m, error } = await service.from('support_messages').insert({ user_id: user.id, topic, message, page: String(p.page || '').slice(0, 80) || null, device: String(p.device || '').slice(0, 300) || null }).select().single();
+  const ap = String(p.attachment_path || '');
+  const attachment_path = ap.startsWith(`${user.id}/support/`) && !ap.includes('..') ? ap.slice(0, 200) : null;
+  const { data: m, error } = await service.from('support_messages').insert({ user_id: user.id, topic, message, attachment_path, page: String(p.page || '').slice(0, 80) || null, device: String(p.device || '').slice(0, 300) || null }).select().single();
   if (error) return json({ ok: false, error: 'Could not send. Please try again.' }, 500);
 
   const [{ data: prof }, { data: subs }, { count: acc }, { count: tx }] = await Promise.all([

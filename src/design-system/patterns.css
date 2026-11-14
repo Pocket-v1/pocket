@@ -785,3 +785,19 @@
 .inbox-page>.page-heading,.help-page>.page-heading,.plus-teaser>.page-heading{margin-bottom:4px}
 .page-heading .heading-actions:empty{display:none}
 .inbox-tabs .ds-tabs,.help-page>.ds-tabs{margin:0!important}
+
+/* Screenshots on Inbox messages */
+.shot-add{display:flex;align-items:center;gap:8px;width:100%;min-height:46px;padding:0 14px;border:1px dashed var(--ds-brand);border-radius:12px;background:var(--ds-surface);color:var(--ds-brand);font:700 13.5px var(--ds-font-ui);cursor:pointer}
+.shot-chip{display:inline-flex;align-items:center;gap:10px;padding:6px 6px 6px 6px;border:1px solid var(--ds-border);border-radius:12px;background:var(--ds-surface);font-size:13px;font-weight:600}
+.shot-chip img{width:40px;height:40px;object-fit:cover;border-radius:8px}
+.shot-chip button{width:28px;height:28px;border:0;border-radius:8px;background:var(--ds-surface-soft,var(--ds-soft));color:var(--ds-text);display:grid;place-items:center;cursor:pointer}
+.shot-pick.compact{flex:none}
+.shot-pick.compact .shot-btn{width:46px;height:46px}
+.shot-pick.compact .shot-chip{padding:3px;gap:4px}
+.support-shot{display:block;width:min(240px,100%);border-radius:14px;overflow:hidden;border:1px solid var(--ds-border);background:var(--ds-surface-soft,var(--ds-soft))}
+.support-shot img{display:block;width:100%;max-height:320px;object-fit:cover}
+.support-shot.loading{height:140px}
+.inbox-msg.mine .support-shot{margin-left:auto}
+
+.lg-name-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:360px){.lg-name-row{grid-template-columns:1fr}}

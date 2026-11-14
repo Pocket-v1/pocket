@@ -25,13 +25,16 @@ Deno.serve(async (req) => {
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   if (!url || !serviceKey) return json({ error: 'Sign-up is temporarily unavailable.' }, 503);
 
-  let body: { username?: unknown; password?: unknown; full_name?: unknown; gender?: unknown; avatar?: unknown };
+  let body: { username?: unknown; password?: unknown; full_name?: unknown; first_name?: unknown; last_name?: unknown; gender?: unknown; avatar?: unknown };
   try { body = await req.json(); } catch { return json({ error: 'Invalid request.' }, 400); }
   const username = String(body.username || '').trim();
   const password = String(body.password || '');
-  const fullName = String(body.full_name || '').trim().replace(/\s+/g, ' ').slice(0, 80);
+  const clean = (v: unknown) => String(v || '').trim().replace(/\s+/g, ' ').slice(0, 40);
+  let firstName = clean(body.first_name), lastName = clean(body.last_name);
+  if (!firstName && !lastName) { const parts = clean(body.full_name).split(' '); firstName = parts.shift() || ''; lastName = parts.join(' '); }
+  const fullName = `${firstName} ${lastName}`.trim();
   const gender = ['male', 'female', 'prefer_not_to_say'].includes(String(body.gender)) ? String(body.gender) : 'prefer_not_to_say';
-  if (!fullName) return json({ error: 'Enter your name.' }, 400);
+  if (!firstName || !lastName) return json({ error: 'Enter your first name and last name.' }, 400);
   if (!/^[a-zA-Z0-9._-]{3,32}$/.test(username)) return json({ error: 'Username must be 3–32 characters: letters, numbers, dots, underscores or hyphens.' }, 400);
   if (password.length < 8) return json({ error: 'Use a password with at least 8 characters.' }, 400);
   if (password.toLowerCase().includes(username.toLowerCase()) || COMMON_PASSWORDS.has(password.toLowerCase())) return json({ error: 'Choose a password that is harder to guess (not your username or a common password).' }, 400);
@@ -45,12 +48,11 @@ Deno.serve(async (req) => {
   if (lookupError) return json({ error: 'Could not check the username. Try again.' }, 500);
   if (taken?.length) return json({ error: 'That username is already taken.' }, 409);
 
-  const [firstName, ...rest] = fullName.split(' ');
   const { error: createError } = await service.auth.admin.createUser({
     email: `${username.toLowerCase()}@users.pocket.local`,
     password,
     email_confirm: true,
-    user_metadata: { username, first_name: firstName, last_name: rest.join(' '), full_name: fullName, gender, avatar: String(body.avatar || '').slice(0, 200) || undefined },
+    user_metadata: { username, first_name: firstName, last_name: lastName, full_name: fullName, gender, avatar: String(body.avatar || '').slice(0, 200) || undefined },
   });
   if (createError) return json({ error: /already/i.test(createError.message) ? 'That username is already taken.' : createError.message }, 400);
   return json({ ok: true });

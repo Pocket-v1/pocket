@@ -68,12 +68,18 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   if (req.method !== 'POST') return json({ ok: false, error: 'Method not allowed' }, 405);
   const url = Deno.env.get('SUPABASE_URL'), anon = Deno.env.get('SUPABASE_ANON_KEY'), role = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  const resendKey = Deno.env.get('RESEND_API_KEY'), cronSecret = Deno.env.get('CRON_SECRET');
+  let resendKey = Deno.env.get('RESEND_API_KEY') || '', cronSecret = Deno.env.get('CRON_SECRET') || '';
   const from = Deno.env.get('EMAIL_FROM') || 'Pocket <onboarding@resend.dev>';
-  const appUrl = Deno.env.get('APP_URL') || 'https://forma.vercel.app';
+  const appUrl = Deno.env.get('APP_URL') || 'https://pocket-egypt.vercel.app';
   if (!url || !anon || !role) return json({ ok: false, error: 'Server configuration is incomplete.' }, 503);
-  if (!resendKey) return json({ ok: false, error: 'Email sending is not set up yet (RESEND_API_KEY missing).' }, 503);
   const service = createClient(url, role, { auth: { persistSession: false, autoRefreshToken: false } });
+  // Fallbacks kept in the server-only private_secrets table (set in the database, never in code).
+  let dbCron = '';
+  {
+    const { data: rows } = await service.from('private_secrets').select('name,value').in('name', ['CRON_SECRET', 'RESEND_API_KEY']);
+    for (const r of rows || []) { if (r.name === 'CRON_SECRET') dbCron = r.value; if (r.name === 'RESEND_API_KEY' && !resendKey) resendKey = r.value; }
+  }
+  if (!resendKey) return json({ ok: false, error: 'Email sending is not set up yet (RESEND_API_KEY missing).' }, 503);
   const body = await req.json().catch(() => ({}));
   const today = cairoToday();
 
@@ -107,7 +113,8 @@ Deno.serve(async (req) => {
       return r === 'sent' ? json({ ok: true, result: r }) : json({ ok: false, error: r === 'no-verified-email' ? 'Add and verify your email first.' : r }, 400);
     }
     // Daily run from pg_cron.
-    if (!cronSecret || !safeEqual(req.headers.get('x-cron-secret') || '', cronSecret)) {
+    const given = req.headers.get('x-cron-secret') || '';
+    if (!((cronSecret && safeEqual(given, cronSecret)) || (dbCron && safeEqual(given, dbCron)))) {
       await allow(service, `cronbad:${clientIp(req)}`, 10, 600);
       return json({ ok: false, error: 'Not allowed.' }, 401);
     }
