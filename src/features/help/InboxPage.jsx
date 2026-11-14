@@ -37,16 +37,31 @@ export function InboxPage({ supabase, session, isOwner = false, users = [], from
     const { data } = await supabase.from('support_messages').select('*').order('last_at', { ascending: false }).limit(200);
     setThreads(data || []); setLoading(false); onChanged?.();
   }, [supabase]);
-  useEffect(() => { load(); const iv = setInterval(() => { if (!document.hidden) load(); }, 20000); return () => clearInterval(iv); }, [load]);
 
   const open = threads.find(t => t.id === openId) || null;
-  const loadMsgs = useCallback(async id => {
+  const openRef = useRef(null); openRef.current = openId;
+  const seenRef = useRef({});
+  const loadMsgs = useCallback(async (id, mark = false) => {
     const { data } = await supabase.from('support_replies').select('*').eq('thread_id', id).order('created_at');
-    setMsgs(data || []);
-    await supabase.rpc('support_mark_read', { p_thread: id });
-    setThreads(o => o.map(t => t.id === id ? { ...t, [isOwner ? 'owner_read_at' : 'user_read_at']: new Date().toISOString() } : t)); onChanged?.();
+    if (openRef.current !== id) return;
+    const rows = data || [];
+    setMsgs(o => (o.length === rows.length && o[o.length - 1]?.id === rows[rows.length - 1]?.id ? o : rows));
+    const fromOther = rows.filter(m => m.from_owner !== isOwner).length;
+    if (mark || fromOther > (seenRef.current[id] ?? fromOther)) {
+      await supabase.rpc('support_mark_read', { p_thread: id });
+      setThreads(o => o.map(t => t.id === id ? { ...t, [isOwner ? 'owner_read_at' : 'user_read_at']: new Date().toISOString() } : t)); onChanged?.();
+    }
+    seenRef.current[id] = fromOther;
   }, [supabase, isOwner]);
-  useEffect(() => { if (openId) loadMsgs(openId); }, [openId, loadMsgs]);
+  useEffect(() => { if (openId) loadMsgs(openId, true); }, [openId, loadMsgs]);
+  // Live: refresh every 3 seconds, and right away when Pocket hears of a change.
+  useEffect(() => {
+    load();
+    const tick = () => { if (document.hidden) return; load(); if (openRef.current) loadMsgs(openRef.current); };
+    const iv = setInterval(tick, 3000);
+    window.addEventListener('pocket-inbox-changed', tick);
+    return () => { clearInterval(iv); window.removeEventListener('pocket-inbox-changed', tick); };
+  }, [load, loadMsgs]);
   useEffect(() => { endRef.current?.scrollIntoView({ block: 'end' }); }, [msgs, openId]);
 
   async function reply() {

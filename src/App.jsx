@@ -1121,7 +1121,9 @@ function App(){
   const needsAccountSetup=cloudReady ? Boolean(session?.user && accountsLoaded && !accounts.some(a=>!isGoalsAccount(a))) : Boolean(localLoaded && !accounts.some(a=>!isGoalsAccount(a)));
   const isAdmin=(cloudReady && ['owner','super_admin'].includes(profile?.role));
   const refreshInbox=useCallback(async()=>{if(!cloudReady||!session?.user?.id)return;try{const {data}=await supabase.from('support_messages').select('id,user_id,status,rated_at,last_at,last_from_owner,user_read_at,owner_read_at').order('last_at',{ascending:false}).limit(200);setInboxUnread((data||[]).filter(t=>threadUnread(t,isAdmin)).length);{const asked=(()=>{try{return JSON.parse(localStorage.getItem('pocket-review-asked')||'[]')}catch{return []}})();const t=(data||[]).find(x=>x.user_id===session.user.id&&x.status==='closed'&&!x.rated_at&&!asked.includes(x.id));if(t)setReviewThread(r=>r||t);}}catch{}},[session?.user?.id,isAdmin]);
-  useEffect(()=>{refreshInbox();const iv=setInterval(()=>{if(!document.hidden)refreshInbox()},15000);return()=>clearInterval(iv);},[refreshInbox]);
+  useEffect(()=>{refreshInbox();const iv=setInterval(()=>{if(!document.hidden)refreshInbox()},3000);return()=>clearInterval(iv);},[refreshInbox]);
+  // Live Inbox: Supabase tells us the moment a conversation or message changes (row security applies).
+  useEffect(()=>{if(!cloudReady||!session?.user?.id)return;const ping=()=>{refreshInbox();window.dispatchEvent(new Event('pocket-inbox-changed'));};const ch=supabase.channel('pocket-inbox-'+session.user.id).on('postgres_changes',{event:'*',schema:'public',table:'support_messages'},ping).on('postgres_changes',{event:'INSERT',schema:'public',table:'support_replies'},ping).subscribe();return()=>{supabase.removeChannel(ch);};},[session?.user?.id,refreshInbox]);
   useEffect(()=>{
     if(!isAdmin||!supabase){setAccessRequestCounts({total:0,pending:0});return;}
     let alive=true;
