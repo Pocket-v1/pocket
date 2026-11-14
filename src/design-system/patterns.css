@@ -494,3 +494,6 @@
 .sms-pill.bad{color:var(--ds-danger);background:var(--ds-bad-soft,#fdeaec)}
 .sms-pill.muted{color:var(--ds-text-muted);background:var(--ds-surface-soft,var(--ds-soft))}
 @media (max-width:760px){.plus-grid{grid-template-columns:1fr}.plus-admin-row{grid-template-columns:minmax(0,1fr) auto;gap:8px 12px}.plus-admin-plan{grid-column:1/2}.plus-admin-status{grid-column:2;grid-row:1;justify-items:end}.plus-admin-act{grid-column:1/-1;justify-content:flex-start}}
+
+/* Anything marked hidden stays hidden, whatever its display style */
+[hidden]{display:none!important}

@@ -21,3 +21,6 @@ export const FEATURE_OPTIONS = [
 export const PAGE_FEATURE = {'Overview':'overview','Transactions':'transactions','Bank SMS':'bank_sms','Accounts':'accounts','Cash flow calendar':'calendar','Budgets':'budgets','Savings goals':'goals','Subscriptions & bills':'subscriptions','Recurring payments':'subscriptions','Debts & installments':'debts','Insights & forecast':'insights','Reports':'insights','Insights & reports':'insights','Expense categories':'expense_categories','Vehicle Management':'vehicle_management','Vehicles':'vehicle_management'};
 
 export const POCKET_VALID_PAGES = new Set(['Overview','Transactions','Bank SMS','Accounts','Cash flow calendar','Budgets','Savings goals','Subscriptions & bills','Recurring payments','Debts & installments','Insights & forecast','Insights & reports','Reports','Admin access','Expense categories','Vehicle Management']);
+
+// Which feature each popup needs. Used to block a popup when the user does not have that page.
+export const MODAL_FEATURE = {transaction:'transactions','account-from-transaction':'transactions',import:'transactions',goal:'goals',debt:'debts','debt-payment':'debts','credit-account':'debts',budget:'budgets',recurring:'subscriptions',account:'accounts'};

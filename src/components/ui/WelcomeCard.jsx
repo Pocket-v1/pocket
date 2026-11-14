@@ -14,7 +14,7 @@ export function WelcomeCard({ avatar, greeting, name, subtitle, month, setMonth,
     </div>
     <div className="welcome-actions">
       <MonthPicker month={month} setMonth={setMonth}/>
-      <button className="btn welcome-add" onClick={onAdd}><Plus size={17}/> Add transaction</button>
+      {onAdd&&<button className="btn welcome-add" onClick={onAdd}><Plus size={17}/> Add transaction</button>}
     </div>
   </section>;
 }
