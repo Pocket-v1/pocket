@@ -248,21 +248,15 @@ alter table public.profiles add column if not exists updated_at timestamptz not 
 alter table public.profiles drop constraint if exists profiles_role_check;
 alter table public.profiles add constraint profiles_role_check check (role in ('owner','super_admin','user'));
 
--- Backfill emails for existing profiles, and reserve the owner role for the configured owner.
+-- Backfill emails for existing profiles, (roles are kept as they are).
 update public.profiles p
 set email = coalesce(u.email, p.email, ''),
     full_name = coalesce(nullif(p.full_name,''), u.raw_user_meta_data ->> 'full_name', ''),
-    role = case when lower(coalesce(u.email,p.email,'')) = 'mahmoudadel240@gmail.com' then 'owner' else p.role end,
     updated_at = now()
 from auth.users u
 where u.id = p.id;
 
--- Ensure the owner profile exists if the owner already registered before this migration.
-insert into public.profiles (id,email,full_name,role,enabled_features)
-select u.id, u.email, coalesce(u.raw_user_meta_data ->> 'full_name',''), 'owner', '{}'::text[]
-from auth.users u
-where lower(u.email) = 'mahmoudadel240@gmail.com'
-on conflict (id) do update set email=excluded.email, role='owner', updated_at=now();
+-- Owners are set by an existing Owner in the app; no email is written here.
 
 create or replace function public.handle_new_user()
 returns trigger
@@ -273,13 +267,13 @@ as $$
 declare
   v_role text;
 begin
-  v_role := case when lower(coalesce(new.email,'')) = 'mahmoudadel240@gmail.com' then 'owner' else 'user' end;
+  v_role := 'user';
   insert into public.profiles (id,email,full_name,role,enabled_features,created_at,updated_at)
   values (new.id, coalesce(new.email,''), coalesce(new.raw_user_meta_data ->> 'full_name',''), v_role, '{}'::text[], now(), now())
   on conflict (id) do update
     set email=excluded.email,
         full_name=case when excluded.full_name<>'' then excluded.full_name else public.profiles.full_name end,
-        role=case when lower(excluded.email)='mahmoudadel240@gmail.com' then 'owner' else public.profiles.role end,
+        role = public.profiles.role,
         updated_at=now();
   return new;
 end;
@@ -701,7 +695,7 @@ security definer set search_path = ''
 as $$
 declare v_role text;
 begin
-  v_role := case when lower(coalesce(new.email,'')) = 'mahmoudadel240@gmail.com' then 'owner' else 'user' end;
+  v_role := 'user';
   insert into public.profiles (id,email,username,full_name,role,enabled_features,created_at,updated_at)
   values (
     new.id,
@@ -714,7 +708,7 @@ begin
     email = case when excluded.email <> '' then excluded.email else public.profiles.email end,
     username = coalesce(excluded.username, public.profiles.username),
     full_name = case when excluded.full_name <> '' then excluded.full_name else public.profiles.full_name end,
-    role = case when lower(excluded.email)='mahmoudadel240@gmail.com' then 'owner' else public.profiles.role end,
+    role = public.profiles.role,
     updated_at=now();
   return new;
 end;
@@ -1138,7 +1132,7 @@ security definer set search_path = ''
 as $$
 declare v_role text;
 begin
-  v_role := case when lower(coalesce(new.email,'')) = 'mahmoudadel240@gmail.com' then 'owner' else 'user' end;
+  v_role := 'user';
   insert into public.profiles (id,email,username,first_name,last_name,gender,full_name,role,enabled_features,created_at,updated_at)
   values (
     new.id,
@@ -1157,7 +1151,7 @@ begin
     last_name = coalesce(nullif(excluded.last_name,''), public.profiles.last_name),
     gender = coalesce(nullif(excluded.gender,''), public.profiles.gender),
     full_name = case when excluded.full_name <> '' then excluded.full_name else public.profiles.full_name end,
-    role = case when lower(excluded.email)='mahmoudadel240@gmail.com' then 'owner' else public.profiles.role end,
+    role = public.profiles.role,
     updated_at=now();
   return new;
 end;
@@ -1258,7 +1252,7 @@ security definer set search_path = ''
 as $$
 declare v_role text;
 begin
-  v_role := case when lower(coalesce(new.email,'')) = 'mahmoudadel240@gmail.com' then 'owner' else 'user' end;
+  v_role := 'user';
   insert into public.profiles (id,email,username,first_name,last_name,gender,full_name,role,enabled_features,created_at,updated_at)
   values (
     new.id,
@@ -1277,7 +1271,7 @@ begin
     last_name = coalesce(nullif(excluded.last_name,''), public.profiles.last_name),
     gender = coalesce(nullif(excluded.gender,''), public.profiles.gender),
     full_name = case when excluded.full_name <> '' then excluded.full_name else public.profiles.full_name end,
-    role = case when lower(excluded.email)='mahmoudadel240@gmail.com' then 'owner' else public.profiles.role end,
+    role = public.profiles.role,
     updated_at=now();
   return new;
 end;
@@ -1668,7 +1662,7 @@ security definer set search_path = ''
 as $$
 declare v_role text;
 begin
-  v_role := case when lower(coalesce(new.email,'')) = 'mahmoudadel240@gmail.com' then 'owner' else 'user' end;
+  v_role := 'user';
   insert into public.profiles (id,email,username,first_name,last_name,gender,full_name,role,enabled_features,created_at,updated_at)
   values (
     new.id,
@@ -1687,7 +1681,7 @@ begin
     last_name = coalesce(nullif(excluded.last_name,''), public.profiles.last_name),
     gender = coalesce(nullif(excluded.gender,''), public.profiles.gender),
     full_name = case when excluded.full_name <> '' then excluded.full_name else public.profiles.full_name end,
-    role = case when lower(excluded.email)='mahmoudadel240@gmail.com' then 'owner' else public.profiles.role end,
+    role = public.profiles.role,
     updated_at=now();
   return new;
 end;
@@ -1835,7 +1829,7 @@ security definer set search_path = ''
 as $$
 declare v_role text;
 begin
-  v_role := case when lower(coalesce(new.email,'')) = 'mahmoudadel240@gmail.com' then 'owner' else 'user' end;
+  v_role := 'user';
   insert into public.profiles (id,email,username,first_name,last_name,gender,full_name,role,enabled_features,created_at,updated_at)
   values (
     new.id,
@@ -1854,7 +1848,7 @@ begin
     last_name = coalesce(nullif(excluded.last_name,''), public.profiles.last_name),
     gender = coalesce(nullif(excluded.gender,''), public.profiles.gender),
     full_name = case when excluded.full_name <> '' then excluded.full_name else public.profiles.full_name end,
-    role = case when lower(excluded.email)='mahmoudadel240@gmail.com' then 'owner' else public.profiles.role end,
+    role = public.profiles.role,
     updated_at=now();
   return new;
 end;
