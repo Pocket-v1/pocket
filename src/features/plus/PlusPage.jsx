@@ -38,7 +38,7 @@ function PayModal({ settings, currency, onClose, onSubmit, initialPeriod }) {
   const m = methods.find(x => x[0] === method);
   const money = n => new Intl.NumberFormat('en-EG', { style: 'currency', currency, maximumFractionDigits: 0 }).format(n);
   const monthlyYear = Number(s.monthly_price) * 12;
-  const saving = Number(s.yearly_price) > 0 && monthlyYear > Number(s.yearly_price) ? Math.round((1 - Number(s.yearly_price) / monthlyYear) * 100) : 0;
+  const saving = Number(s.yearly_price) > 0 && monthlyYear > Number(s.yearly_price) ? Math.round((monthlyYear - Number(s.yearly_price)) / Number(s.monthly_price)) : 0;
   async function copy() { try { await navigator.clipboard.writeText(m[2]); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* ignore */ } }
   async function go() {
     if (!handle.trim()) { setErr('Add the InstaPay address or wallet number you paid from, so we can find your payment.'); return; }
@@ -47,20 +47,25 @@ function PayModal({ settings, currency, onClose, onSubmit, initialPeriod }) {
     setBusy(false);
     if (!ok) setErr('Could not send it. Check your connection and try again.');
   }
-  const tabs = [Number(s.monthly_price) > 0 && { key: 'monthly', label: 'Monthly' }, Number(s.yearly_price) > 0 && { key: 'yearly', label: saving ? `Yearly · save ${saving}%` : 'Yearly' }].filter(Boolean);
+  const tabs = [Number(s.monthly_price) > 0 && { key: 'monthly', label: 'Monthly' }, Number(s.yearly_price) > 0 && { key: 'yearly', label: saving ? `Yearly · ${saving} month${saving === 1 ? '' : 's'} free` : 'Yearly' }].filter(Boolean);
   return <ModalShell title="Pay for Pocket Plus" subtitle="Send the amount, then tell us where it came from. We turn Plus on as soon as we see it." onClose={onClose}>
+    <div className="plus-pay">
     {tabs.length > 1 && <Tabs label="Billing period" value={period} onChange={setPeriod} items={tabs} />}
-    <div className="plus-amount"><span>{period === 'yearly' ? 'Pay once for 12 months' : 'Pay for 1 month'}</span><b>{money(price)}</b></div>
+    <div className="plus-amount">
+      <div className="plus-amount-t"><span className="plus-chip gold">Plus</span><b>{period === 'yearly' ? 'Yearly plan' : 'Monthly plan'}</b><small>{period === 'yearly' ? `Pay once for 12 months · about ${money(price / 12)} a month` : 'Pay for 1 month · cancel any time'}</small></div>
+      <div className="plus-amount-n"><b>{money(price)}</b><small>{period === 'yearly' ? 'per year' : 'per month'}</small></div>
+    </div>
     <div className="cc-options" role="radiogroup" aria-label="How you pay">
       {methods.map(([k, label, to]) => <button key={k} type="button" role="radio" aria-checked={method === k} className={`cc-option ${method === k ? 'on' : ''}`} onClick={() => setMethod(k)}><span><b>{label}</b><small>Send to {to}</small></span></button>)}
     </div>
     {m && <div className="plus-sendto"><div><small>Send {money(price)} to</small><b>{m[2]}</b></div><button type="button" className="btn btn-secondary btn-sm" onClick={copy}>{copied ? <><Check size={14} /> Copied</> : <><Copy size={14} /> Copy</>}</button></div>}
-    <div className="form-grid" style={{ marginTop: 14 }}>
+    <div className="form-grid">
       <Field label={m?.[3] || 'Paid from'} wide><input value={handle} onChange={e => setHandle(e.target.value)} placeholder={method === 'wallet' ? '010…' : 'name@instapay'} autoComplete="off" /></Field>
       <Field label="Transaction number (optional)" wide><input value={ref} onChange={e => setRef(e.target.value)} placeholder="From the confirmation SMS" autoComplete="off" /></Field>
     </div>
     {err && <p className="cc-error" role="alert">{err}</p>}
-    <p className="small-muted" style={{ marginTop: 10 }}>Plus turns on once the Owner confirms the payment, usually within a day. You keep any free-trial days left.</p>
+    <p className="small-muted">Plus turns on once the Owner confirms the payment, usually within a day. You keep any free-trial days left.</p>
+    </div>
     <div className="modal-actions"><button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button><button type="button" className="btn btn-primary" disabled={busy || !method || !price} onClick={go}>{busy ? 'Sending…' : 'I sent the money'}</button></div>
   </ModalShell>;
 }
