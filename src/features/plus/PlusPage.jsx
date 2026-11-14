@@ -3,7 +3,7 @@ import { PageHeading } from '../../components/ui/PageHeading.jsx';
 import { ModalShell } from '../../components/modals/ModalShell.jsx';
 import { Field } from '../../components/ui/Field.jsx';
 import { Tabs } from '../../components/ui/Tabs.jsx';
-import { Check, Copy, MessageSquare, Sparkles, Receipt, Mic, Clock, CheckCircle2, TriangleAlert, Star } from '../../lib/icons.jsx';
+import { Car, Check, Copy, MessageSquare, Sparkles, Receipt, Mic, Clock, CheckCircle2, TriangleAlert, Star } from '../../lib/icons.jsx';
 import { PLUS_DEFAULTS } from '../../lib/plus.js';
 
 // Pocket Plus for regular users: paywall, free trial, pay (InstaPay / wallet), and "Your plan".
@@ -15,6 +15,7 @@ const PERKS = [
   [Sparkles, 'Learns your shops', 'Regular shops are filled in and can be approved automatically.'],
   [Mic, 'Add by voice', 'Say “صرفت 200 على أكل” and check the card.'],
   [Receipt, 'Snap a receipt', 'Pocket reads the total, shop and date from the photo.'],
+  [Car, 'Vehicles', 'Fuel, service and running costs for each car.'],
 ];
 
 function PayModal({ settings, currency, onClose, onSubmit }) {
@@ -83,7 +84,7 @@ export function PlusPage({ plus, settings, currency = 'EGP', onStartTrial, onPay
     : null;
 
   return <div className="plus-page">
-    <PageHeading eyebrow="POCKET PLUS" title={plus.active ? 'Your plan' : 'Pocket Plus'} subtitle={plus.active ? 'Bank SMS and the chat are on for you.' : 'Let your bank SMS fill Pocket for you.'} />
+    <PageHeading eyebrow="POCKET PLUS" title={plus.active ? 'Your plan' : 'Pocket Plus'} subtitle={plus.active ? 'Bank SMS, Vehicles and the chat are on for you.' : 'Let your bank SMS fill Pocket for you.'} />
     {status}
     <div className="plus-grid">
       <section className="panel plus-perks">
@@ -102,4 +103,20 @@ export function PlusPage({ plus, settings, currency = 'EGP', onStartTrial, onPay
     </div>
     {payOpen && <PayModal settings={s} currency={currency} onClose={() => setPayOpen(false)} onSubmit={async d => { const ok = await onPay(d); if (ok) setPayOpen(false); return ok; }} />}
   </div>;
+}
+
+// Shown on top of Bank SMS / Vehicles for users without Plus: the page is visible, but locked until they subscribe.
+export function PlusLockBanner({ feature, plus, settings, onStartTrial, onOpenPlus }) {
+  const [busy, setBusy] = useState(false);
+  const s = { ...PLUS_DEFAULTS, ...settings };
+  const name = feature === 'vehicle_management' ? 'Vehicles' : 'Bank SMS';
+  const why = feature === 'vehicle_management' ? 'Track fuel, service and running costs for each car.' : 'Let your bank SMS fill Pocket for you, ready to approve.';
+  return <section className="panel plus-lock" role="region" aria-label={`${name} needs Pocket Plus`}>
+    <span className="plus-status-ic brand"><Star size={20} /></span>
+    <div className="plus-status-t"><b>{name} is part of Pocket Plus</b><small>{plus.pending ? 'Your payment is waiting for confirmation. This opens as soon as it is confirmed.' : plus.ended ? `Your Plus ended. ${why}` : why}</small></div>
+    <div className="plus-lock-actions">
+      {!plus.trialUsed && <button type="button" className="btn btn-primary" disabled={busy} onClick={async () => { setBusy(true); await onStartTrial(); setBusy(false); }}>{busy ? 'Starting…' : `Try free for ${Number(s.trial_days) || 14} days`}</button>}
+      <button type="button" className={`btn ${plus.trialUsed ? 'btn-primary' : 'btn-secondary'}`} onClick={onOpenPlus}>{plus.pending ? 'See status' : 'See plans'}</button>
+    </div>
+  </section>;
 }

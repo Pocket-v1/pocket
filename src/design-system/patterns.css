@@ -497,3 +497,9 @@
 
 /* Anything marked hidden stays hidden, whatever its display style */
 [hidden]{display:none!important}
+
+/* Plus-locked page: visible but not usable until the user subscribes */
+.plus-lock{margin:0 0 16px;display:flex;align-items:center;gap:14px;padding:16px 18px;border:1px solid var(--ds-brand-soft,#eaf0ff);background:linear-gradient(0deg,var(--ds-surface),var(--ds-surface)),var(--ds-brand-soft);box-shadow:inset 3px 0 0 transparent}
+.plus-lock-actions{display:flex;gap:8px;flex-wrap:wrap;flex:none}
+.plus-preview{opacity:.55;filter:grayscale(.35);pointer-events:none;user-select:none}
+@media (max-width:760px){.plus-lock{flex-wrap:wrap}.plus-lock-actions{width:100%}.plus-lock-actions .btn{flex:1}}

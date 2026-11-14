@@ -29,16 +29,18 @@ function SettingsModal({ settings, onClose, onSave }) {
 
 function GiveModal({ users, onClose, onGive }) {
   const [user, setUser] = useState('');
-  const [length, setLength] = useState('1');
+  const [length, setLength] = useState('1m');
+  const [weeks, setWeeks] = useState('2');
   const [busy, setBusy] = useState(false);
-  return <ModalShell title="Give Plus to a user" subtitle="Turns on Bank SMS and the chat for them, free." onClose={onClose}>
+  return <ModalShell title="Give Plus to a user" subtitle="Turns on Bank SMS, Vehicles and the chat for them, free." onClose={onClose}>
     <div className="form-grid">
       <Field label="User" wide><select value={user} onChange={e => setUser(e.target.value)}><option value="">Choose a user…</option>{users.map(u => <option key={u.id} value={u.id}>{u.full_name || u.email || u.username}</option>)}</select></Field>
     </div>
     <div className="cc-options" role="radiogroup" aria-label="For how long" style={{ marginTop: 14 }}>
-      {[['1', '1 month'], ['12', '1 year'], ['0', 'No end date']].map(([k, l]) => <button key={k} type="button" role="radio" aria-checked={length === k} className={`cc-option ${length === k ? 'on' : ''}`} onClick={() => setLength(k)}><span><b>{l}</b></span></button>)}
+      {[['1w', '1 week'], ['1m', '1 month'], ['12m', '1 year'], ['custom', 'Custom weeks'], ['none', 'No end date']].map(([k, l]) => <button key={k} type="button" role="radio" aria-checked={length === k} className={`cc-option ${length === k ? 'on' : ''}`} onClick={() => setLength(k)}><span><b>{l}</b></span></button>)}
     </div>
-    <div className="modal-actions"><button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button><button type="button" className="btn btn-primary" disabled={!user || busy} onClick={async () => { setBusy(true); await onGive(user, Number(length)); setBusy(false); }}>{busy ? 'Saving…' : 'Give Plus'}</button></div>
+    {length === 'custom' && <div className="form-grid" style={{ marginTop: 14 }}><Field label="Number of weeks" hint={Number(weeks) > 0 ? `Ends ${new Date(Date.now() + Number(weeks) * 7 * 864e5).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}` : ''}><input type="number" inputMode="numeric" min="1" max="520" value={weeks} onChange={e => setWeeks(e.target.value)} /></Field></div>}
+    <div className="modal-actions"><button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button><button type="button" className="btn btn-primary" disabled={!user || busy || (length === 'custom' && !(Number(weeks) > 0))} onClick={async () => { setBusy(true); await onGive(user, length === 'none' ? null : length === 'custom' ? { weeks: Number(weeks) } : length.endsWith('w') ? { weeks: Number(length.slice(0, -1)) } : { months: Number(length.slice(0, -1)) }); setBusy(false); }}>{busy ? 'Saving…' : 'Give Plus'}</button></div>
   </ModalShell>;
 }
 
@@ -95,8 +97,8 @@ export function SubscriptionsAdminPage({ supabase, users = [], settings, onSaveS
   const confirm = r => update(r, { status: 'active', current_period_end: nextPeriodEnd(r.period, (byUser[r.user_id] || []).filter(x => x.id !== r.id), now) }, `Plus is on for ${nameOf(r.user_id)}`);
   async function reject(r, note) { if (await update(r, { status: 'rejected', admin_note: note || null }, 'Marked as not found')) setModal(null); }
   const stop = r => update(r, { status: 'cancelled', current_period_end: new Date().toISOString(), trial_ends_at: r.status === 'trial' ? new Date().toISOString() : r.trial_ends_at }, `Plus stopped for ${nameOf(r.user_id)}`);
-  async function give(userId, months) {
-    const end = months ? (() => { const d = new Date(); d.setMonth(d.getMonth() + months); return d.toISOString(); })() : null;
+  async function give(userId, len) {
+    const end = len ? (() => { const d = new Date(); if (len.weeks) d.setDate(d.getDate() + len.weeks * 7); else d.setMonth(d.getMonth() + len.months); return d.toISOString(); })() : null;
     const { data, error } = await supabase.from('subscriptions').insert({ user_id: userId, period: 'gift', status: 'active', payment_method: 'gift', amount: 0, current_period_end: end }).select().single();
     if (error) { onToast?.(error.message); return; }
     setRows(o => [data, ...o]); setModal(null); onToast?.(`Plus given to ${nameOf(userId)}`);
@@ -112,7 +114,7 @@ export function SubscriptionsAdminPage({ supabase, users = [], settings, onSaveS
   const how = r => r.payment_method === 'instapay' ? `InstaPay · ${r.payer_handle || ''}` : r.payment_method === 'wallet' ? `Wallet · ${r.payer_handle || ''}` : r.payment_method === 'gift' ? 'Given by the Owner' : 'Free trial';
 
   return <div className="plus-admin">
-    <PageHeading eyebrow="ADMIN" title="Subscriptions" subtitle="Pocket Plus turns on Bank SMS and the chat." actions={<div className="plus-admin-actions"><button type="button" className="btn btn-secondary" onClick={() => setModal({ kind: 'settings' })}><Settings2 size={16} /> Settings</button><button type="button" className="btn btn-primary" onClick={() => setModal({ kind: 'give' })}>Give Plus</button></div>} />
+    <PageHeading eyebrow="ADMIN" title="Subscriptions" subtitle="Pocket Plus turns on Bank SMS, Vehicles and the chat." actions={<div className="plus-admin-actions"><button type="button" className="btn btn-secondary" onClick={() => setModal({ kind: 'settings' })}><Settings2 size={16} /> Settings</button><button type="button" className="btn btn-primary" onClick={() => setModal({ kind: 'give' })}>Give Plus</button></div>} />
     <div className="metric-grid">
       <MetricCard label="Paying" value={String(paying.size)} icon={Users} tone="green" note="Plus that someone paid for" />
       <MetricCard label="On trial" value={String(trials.size)} icon={Star} tone="blue" note={`${Number({ ...PLUS_DEFAULTS, ...settings }.trial_days) || 14}-day free trial`} />
