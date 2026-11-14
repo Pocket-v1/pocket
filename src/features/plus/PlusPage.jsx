@@ -139,11 +139,15 @@ function PlusPitch({ plus, s, canPay, money, status, busy, onTrial, payOpen, set
     </section>
     {status}
     <div className="plus-pitch-body">
+      <div className="plus-pitch-main">
       <div className="plus-feature-grid">{PITCH_PERKS.map(([Icon, title, text], i) => <div className={`plus-feature tone-${i}`} key={title}><span className="plus-feature-ic"><Icon size={18} /></span><b>{title}</b><small>{text}</small></div>)}</div>
       <section className="panel plus-compare" aria-label="Free and Plus compared">
         <div className="plus-compare-row head"><span>What you get</span><span>Free</span><span>Plus</span></div>
         {rows.map(([t, free]) => <div className="plus-compare-row" key={t}><span>{t}</span><span className={free ? 'yes' : 'no'}>{free ? '✓' : '—'}</span><span className="yes">✓</span></div>)}
       </section>
+      </div>
+      <aside className="panel plus-checkout" aria-label="Choose your plan">
+      <div className="plus-checkout-head"><b>Choose your plan</b><small>Try everything free first. Pay only if you keep it.</small></div>
       {(m > 0 || y > 0) && <div className="plus-prices" role="radiogroup" aria-label="Billing period">
         {y > 0 && <button type="button" role="radio" aria-checked={period === 'yearly'} className={`plus-price ${period === 'yearly' ? 'on' : ''}`} onClick={() => setPeriod('yearly')}>{save > 0 && <span className="plus-price-tag">Best value · {save} month{save === 1 ? '' : 's'} free</span>}<span className="plus-price-t"><b>Yearly</b><small>{money(y)} a year · about {money(y / 365)} a day</small></span><b className="plus-price-n">{money(y)}</b></button>}
         {m > 0 && <button type="button" role="radio" aria-checked={period === 'monthly'} className={`plus-price ${period === 'monthly' ? 'on' : ''}`} onClick={() => setPeriod('monthly')}><span className="plus-price-t"><b>Monthly</b><small>Cancel any time</small></span><b className="plus-price-n">{money(m)}</b></button>}
@@ -154,6 +158,7 @@ function PlusPitch({ plus, s, canPay, money, status, busy, onTrial, payOpen, set
         {plus.trialUsed && !canPay && <p className="small-muted">Payments are not open yet. Ask the Owner to turn Plus on for you.</p>}
         <div className="plus-trust"><span>✓ No card needed</span><span>✓ Reminder before it ends</span><span>✓ Cancel any time</span></div>
       </div>
+      </aside>
     </div>
     {payOpen && <PayModal settings={s} currency={currency} initialPeriod={period} onClose={() => setPayOpen(false)} onSubmit={async d => { const ok = await onPay(d); if (ok) setPayOpen(false); return ok; }} />}
   </div>;

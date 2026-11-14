@@ -650,3 +650,16 @@
 /* responsive */
 @media (max-width:900px){.plus-hero{grid-template-columns:1fr;padding:24px 20px}.plus-feature-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.plus-pitch-body,.plus-teaser-grid,.plus-example-list{grid-template-columns:1fr}}
 @media (max-width:420px){.plus-hero{border-radius:20px}.plus-feature{padding:14px}.plus-compare-row{grid-template-columns:minmax(0,1fr) 48px 48px;padding:11px 14px;font-size:13px}.plus-nudge-btn{justify-self:stretch}}
+
+/* A · desktop: content on the left, sticky plan card on the right */
+.plus-pitch-body{grid-template-columns:minmax(0,1fr) minmax(320px,380px)!important;gap:20px!important}
+.plus-pitch-main{display:grid;gap:16px;align-content:start}
+.plus-pitch-main .plus-feature-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.plus-checkout{position:sticky;top:88px;margin:0;padding:20px;display:grid;gap:16px;align-self:start}
+.plus-checkout-head b{display:block;font:700 18px var(--ds-font-display);letter-spacing:-.02em}
+.plus-checkout-head small{font-size:13px;color:var(--ds-text-muted)}
+.plus-checkout .plus-pitch-foot{grid-column:auto;padding:0}
+.plus-checkout .plus-pitch-cta{width:100%}
+.plus-checkout .plus-price{padding-top:22px}
+.plus-checkout .plus-price.on{padding-top:21px}
+@media (max-width:900px){.plus-pitch-body{grid-template-columns:1fr!important}.plus-checkout{position:static}}
