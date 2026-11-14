@@ -118,9 +118,9 @@ function PlusPitch({ plus, s, canPay, money, status, busy, onTrial, payOpen, set
   const save = m > 0 && y > 0 && m * 12 > y ? Math.round((m * 12 - y) / m) : 0;
   const days = Number(s.trial_days) || 14;
   const rows = [['Accounts, budgets, goals, bills', true], ['Reports and calendar', true], ['Bank SMS, auto-approve', false], ['Voice and receipt photos', false], ['Vehicles', false]];
-  const cta = plus.pending ? null : !plus.trialUsed
-    ? <button type="button" className="btn btn-primary plus-pitch-cta" disabled={busy} onClick={onTrial}>{busy ? 'Starting…' : `Start ${days} days free`}</button>
-    : canPay ? <button type="button" className="btn btn-primary plus-pitch-cta" onClick={() => setPayOpen(true)}>Get Pocket Plus</button> : null;
+  const payBtn = canPay ? <button type="button" className="btn btn-primary plus-pitch-cta" onClick={() => setPayOpen(true)}>Subscribe now</button> : null;
+  const trialBtn = !plus.trialUsed ? <button type="button" className={`btn ${canPay ? 'btn-secondary' : 'btn-primary'} plus-pitch-cta`} disabled={busy} onClick={onTrial}>{busy ? 'Starting…' : `Try free for ${days} days`}</button> : null;
+  const cta = plus.pending ? null : <>{payBtn}{trialBtn}</>;
   return <div className="plus-pitch">
     <section className="plus-hero">
       <div className="plus-hero-copy">
@@ -147,14 +147,13 @@ function PlusPitch({ plus, s, canPay, money, status, busy, onTrial, payOpen, set
       </section>
       </div>
       <aside className="panel plus-checkout" aria-label="Choose your plan">
-      <div className="plus-checkout-head"><b>Choose your plan</b><small>Try everything free first. Pay only if you keep it.</small></div>
+      <div className="plus-checkout-head"><b>Choose your plan</b><small>Subscribe now, or try it free first.</small></div>
       {(m > 0 || y > 0) && <div className="plus-prices" role="radiogroup" aria-label="Billing period">
         {y > 0 && <button type="button" role="radio" aria-checked={period === 'yearly'} className={`plus-price ${period === 'yearly' ? 'on' : ''}`} onClick={() => setPeriod('yearly')}>{save > 0 && <span className="plus-price-tag">Best value · {save} month{save === 1 ? '' : 's'} free</span>}<span className="plus-price-t"><b>Yearly</b><small>{money(y)} a year · about {money(y / 365)} a day</small></span><b className="plus-price-n">{money(y)}</b></button>}
         {m > 0 && <button type="button" role="radio" aria-checked={period === 'monthly'} className={`plus-price ${period === 'monthly' ? 'on' : ''}`} onClick={() => setPeriod('monthly')}><span className="plus-price-t"><b>Monthly</b><small>Cancel any time</small></span><b className="plus-price-n">{money(m)}</b></button>}
       </div>}
       <div className="plus-pitch-foot">
         {cta}
-        {!plus.trialUsed && canPay && !plus.pending && <button type="button" className="plus-pitch-skip" onClick={() => setPayOpen(true)}>Skip the trial and pay now</button>}
         {plus.trialUsed && !canPay && <p className="small-muted">Payments are not open yet. Ask the Owner to turn Plus on for you.</p>}
         <div className="plus-trust"><span>✓ No card needed</span><span>✓ Reminder before it ends</span><span>✓ Cancel any time</span></div>
       </div>
