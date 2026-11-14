@@ -105,10 +105,15 @@ export function SubscriptionsAdminPage({ supabase, users = [], settings, onSaveS
     setRows(o => [data, ...o]); setModal(null); onToast?.(`Plus given to ${nameOf(userId)}`);
   }
 
+  async function openProof(path) {
+    const { data, error } = await supabase.storage.from('receipts').createSignedUrl(path, 300);
+    if (error || !data?.signedUrl) { onToast?.('Could not open the screenshot.'); return; }
+    window.open(data.signedUrl, '_blank', 'noopener');
+  }
   const status = r => {
     if (r.status === 'pending') return <span className="sms-pill warn">To confirm</span>;
     if (r.status === 'rejected') return <span className="sms-pill bad">Not found</span>;
-    if (rowIsLive(r, now)) return r.status === 'trial' ? <span className="sms-pill">Trial</span> : <span className="sms-pill on">{r.period === 'gift' ? 'Given' : 'Active'}</span>;
+    if (rowIsLive(r, now)) return r.status === 'trial' ? <span className="sms-pill">Trial</span> : <span className="sms-pill on">{r.period === 'gift' ? 'Given' : r.auto_confirmed ? 'Active · auto' : 'Active'}</span>;
     return <span className="sms-pill muted">{r.status === 'cancelled' ? 'Stopped' : 'Ended'}</span>;
   };
   const when = r => r.status === 'pending' ? `Sent ${fmtDate(r.created_at)}` : r.status === 'trial' ? (rowIsLive(r, now) ? `${daysLeft(r.trial_ends_at)} days left` : `Ended ${fmtDate(r.trial_ends_at)}`) : r.current_period_end ? `${rowIsLive(r, now) ? (r.cancel_at_period_end ? 'Ends' : 'Renews') : 'Ended'} ${fmtDate(r.current_period_end)}` : 'No end date';
@@ -119,7 +124,7 @@ export function SubscriptionsAdminPage({ supabase, users = [], settings, onSaveS
     <div className="metric-grid">
       <MetricCard label="Paying" value={String(paying.size)} icon={Users} tone="green" note="Plus that someone paid for" />
       <MetricCard label="On trial" value={String(trials.size)} icon={Star} tone="blue" note={`${Number({ ...PLUS_DEFAULTS, ...settings }.trial_days) || 14}-day free trial`} />
-      <MetricCard label="To confirm" value={String(pending.length)} icon={Clock} tone="orange" note={pending.length ? 'Check your InstaPay or wallet' : 'Nothing waiting'} />
+      <MetricCard label="To confirm" value={String(pending.length)} icon={Clock} tone="orange" note={pending.length ? 'No matching SMS yet. Check by hand' : 'Nothing waiting'} />
       <MetricCard label="This month" value={money(income)} icon={CircleDollarSign} tone="purple" note="Payments you confirmed" />
     </div>
     <Tabs label="Subscriptions" value={tab} onChange={setTab} items={[{ key: 'confirm', label: 'To confirm', count: pending.length }, { key: 'active', label: 'Active' }, { key: 'trial', label: 'Trial' }, { key: 'ended', label: 'Ended' }, { key: 'all', label: 'All' }]} />
@@ -127,7 +132,7 @@ export function SubscriptionsAdminPage({ supabase, users = [], settings, onSaveS
       {loading ? <p className="small-muted">Loading…</p> : !list.length ? <div className="smi-empty"><span className="smi-empty-ic"><Star size={18} /></span><p>{tab === 'confirm' ? 'No payments waiting. New ones show up here.' : 'Nothing here yet.'}</p></div>
         : list.map(r => <div className="plus-admin-row" key={r.id}>
           <div className="plus-admin-who"><b>{nameOf(r.user_id)}</b><small>{emailOf(r.user_id)}</small></div>
-          <div className="plus-admin-plan"><b>{r.period === 'yearly' ? 'Yearly' : r.period === 'monthly' ? 'Monthly' : r.period === 'gift' ? 'Given' : 'Trial'}{Number(r.amount) > 0 ? ` · ${money(r.amount)}` : ''}</b><small>{how(r)}{r.payment_ref ? ` · ref ${r.payment_ref}` : ''}</small></div>
+          <div className="plus-admin-plan"><b>{r.period === 'yearly' ? 'Yearly' : r.period === 'monthly' ? 'Monthly' : r.period === 'gift' ? 'Given' : 'Trial'}{Number(r.amount) > 0 ? ` · ${money(r.amount)}` : ''}</b><small>{how(r)}{r.payer_name ? ` · ${r.payer_name}` : ''}{r.payment_ref ? ` · ref ${r.payment_ref}` : ''}</small>{r.match_note && <small className="plus-admin-auto">✓ Auto-confirmed · {r.match_note.replace(/^Matched by /, 'matched by ')}</small>}{r.proof_path && <button type="button" className="plus-admin-proof" onClick={() => openProof(r.proof_path)}>See screenshot</button>}</div>
           <div className="plus-admin-status">{status(r)}<small>{when(r)}</small></div>
           <div className="plus-admin-act">
             {r.status === 'pending' && <><button type="button" className="btn btn-primary btn-sm" disabled={busyId === r.id} onClick={() => confirm(r)}>Confirm</button><button type="button" className="btn btn-secondary btn-sm" onClick={() => setModal({ kind: 'reject', row: r })}>Not found</button></>}

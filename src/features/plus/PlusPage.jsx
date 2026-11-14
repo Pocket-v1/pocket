@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { readPaymentShot } from '../../lib/receiptReader.js';
 import { PageHeading } from '../../components/ui/PageHeading.jsx';
 import { ModalShell } from '../../components/modals/ModalShell.jsx';
 import { Field } from '../../components/ui/Field.jsx';
 import { Tabs } from '../../components/ui/Tabs.jsx';
-import { Car, Check, Copy, MessageSquare, Sparkles, Receipt, Mic, Clock, CheckCircle2, TriangleAlert, Star, Landmark, Smartphone } from '../../lib/icons.jsx';
+import { Car, Check, Copy, MessageSquare, Sparkles, Receipt, Mic, Clock, CheckCircle2, TriangleAlert, Star, Landmark, Smartphone, Camera, X } from '../../lib/icons.jsx';
 import { PLUS_DEFAULTS } from '../../lib/plus.js';
 
 // Pocket Plus for regular users: paywall, free trial, pay (InstaPay / wallet), and "Your plan".
@@ -31,6 +32,9 @@ function PayModal({ settings, currency, onClose, onSubmit, initialPeriod }) {
   const [method, setMethod] = useState(methods[0]?.[0] || '');
   const [handle, setHandle] = useState('');
   const [ref, setRef] = useState('');
+  const [name, setName] = useState('');
+  const [shot, setShot] = useState(null); // { blob, url, status: 'reading'|'ok'|'warn', notes: [] }
+  const fileRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const [copied, setCopied] = useState(false);
@@ -45,10 +49,29 @@ function PayModal({ settings, currency, onClose, onSubmit, initialPeriod }) {
     try { await navigator.clipboard.writeText(m[2]); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* ignore */ }
     if (ipnLink) window.location.href = ipnLink;
   }
+  async function readShot(file) {
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    setShot({ blob: file, url, status: 'reading', progress: 0, notes: [] });
+    try {
+      const r = await readPaymentShot(file, pr => setShot(o => o && { ...o, progress: pr }));
+      const notes = []; let bad = false;
+      const want = String(m?.[2] || '').toLowerCase();
+      if (method === 'instapay' && r.handles.length) { if (want && !r.handles.includes(want)) { bad = true; notes.push(`This went to ${r.handles[0]}, not ${m[2]}.`); } else notes.push(`Sent to ${want || r.handles[0]}`); }
+      if (r.amount) { if (r.amount + 0.001 < price) { bad = true; notes.push(`The amount is ${money(r.amount)}. The plan is ${money(price)}.`); } else notes.push(`Amount ${money(r.amount)}`); }
+      if (r.date && (Date.now() - new Date(`${r.date}T23:59:59`).getTime()) > 3 * 864e5) { bad = true; notes.push('This transfer is more than 2 days old.'); }
+      if (r.ref) { setRef(v => v || r.ref); notes.push(`Transaction number ${r.ref}`); }
+      if (method === 'wallet' && r.phones.length && !handle) setHandle(r.phones.find(x => x !== String(m?.[2] || '').replace(/\D/g, '')) || '');
+      if (!r.amount && !r.ref) notes.push('We could not read it well. Fill in the details below.');
+      setShot({ blob: r.blob || file, url, status: bad ? 'warn' : 'ok', notes });
+    } catch { setShot({ blob: file, url, status: 'warn', notes: ['We could not read it. Fill in the details below.'] }); }
+  }
   async function go() {
-    if (!handle.trim()) { setErr('Add the InstaPay address or wallet number you paid from, so we can find your payment.'); return; }
+    if (shot?.status === 'reading') { setErr('Wait a moment, we are still reading the screenshot.'); return; }
+    if (!handle.trim()) { setErr(method === 'wallet' ? 'Add the wallet number you sent from, so we can find your payment.' : 'Add your InstaPay address, so we can find your payment.'); return; }
+    if (method === 'instapay' && !name.trim() && !ref.trim()) { setErr('Add your name as it shows in your bank, or the transaction number, so we can find your payment.'); return; }
     setBusy(true); setErr('');
-    const ok = await onSubmit({ period, method, handle: handle.trim(), ref: ref.trim(), amount: price });
+    const ok = await onSubmit({ period, method, handle: handle.trim(), ref: ref.trim(), name: name.trim(), proof: shot?.blob || null, amount: price });
     setBusy(false);
     if (!ok) setErr('Could not send it. Check your connection and try again.');
   }
@@ -65,12 +88,18 @@ function PayModal({ settings, currency, onClose, onSubmit, initialPeriod }) {
     </div>
     {m && <div className="plus-sendto"><div><small>Send {money(price)} to</small><b>{m[2]}</b></div><div className="plus-sendto-actions"><button type="button" className="btn btn-secondary btn-sm" onClick={copy}>{copied ? <><Check size={14} /> Copied</> : <><Copy size={14} /> Copy</>}</button>{method === 'instapay' && ipnLink && <button type="button" className="btn btn-primary btn-sm plus-open-app" onClick={openApp}>Open InstaPay</button>}</div></div>}
     {m && method === 'instapay' && ipnLink && <p className="small-muted plus-open-note">Opens InstaPay with {m[2]} filled in. Type {money(price)} and send.</p>}
+    <div className="plus-shot">
+      <input ref={fileRef} type="file" accept="image/*" hidden onChange={e => { readShot(e.target.files?.[0]); e.target.value = ''; }} />
+      {!shot ? <button type="button" className="plus-shot-drop" onClick={() => fileRef.current?.click()}><span className="plus-method-ic instapay"><Camera size={20} /></span><span><b>Add the transfer screenshot</b><small>Pocket reads it and fills the details. It also makes confirming faster.</small></span></button>
+        : <div className={`plus-shot-card ${shot.status}`}><img src={shot.url} alt="Your transfer screenshot" /><div className="plus-shot-t"><b>{shot.status === 'reading' ? `Reading… ${shot.progress || 0}%` : shot.status === 'ok' ? 'Screenshot checked' : 'Please check this'}</b>{shot.notes.map(n => <small key={n}>{n}</small>)}</div><button type="button" className="plus-hint-x" aria-label="Remove screenshot" onClick={() => setShot(null)}><X size={14} /></button></div>}
+    </div>
     <div className="form-grid">
+      {method === 'instapay' && <Field label="Your name as it shows in your bank" wide hint="We match it with the name in our bank message."><input value={name} onChange={e => setName(e.target.value)} placeholder="Ahmed Mohamed Ali" autoComplete="name" /></Field>}
       <Field label={m?.[3] || 'Paid from'} wide><input value={handle} onChange={e => setHandle(e.target.value)} placeholder={method === 'wallet' ? '010…' : 'name@instapay'} autoComplete="off" /></Field>
-      <Field label="Transaction number (optional)" wide><input value={ref} onChange={e => setRef(e.target.value)} placeholder="From the confirmation SMS" autoComplete="off" /></Field>
+      <Field label="Transaction number (optional)" wide hint={method === 'instapay' ? 'In InstaPay: the transfer details, “Reference”.' : undefined}><input value={ref} onChange={e => setRef(e.target.value)} placeholder="From the confirmation screen or SMS" autoComplete="off" /></Field>
     </div>
     {err && <p className="cc-error" role="alert">{err}</p>}
-    <p className="small-muted">Plus turns on once the Owner confirms the payment, usually within a day. You keep any free-trial days left.</p>
+    <p className="small-muted">Plus usually turns on by itself within minutes of your payment arriving. If not, we check it by hand within a day. You keep any free-trial days left.</p>
     </div>
     <div className="modal-actions"><button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button><button type="button" className="btn btn-primary" disabled={busy || !method || !price} onClick={go}>{busy ? 'Sending…' : 'I sent the money'}</button></div>
   </ModalShell>;
@@ -87,7 +116,7 @@ export function PlusPage({ plus, settings, currency = 'EGP', onStartTrial, onPay
   const cur = plus.current;
 
   const status = (() => {
-    if (plus.pending) return <section className="panel plus-status"><span className="plus-status-ic warn"><Clock size={20} /></span><div className="plus-status-t"><b>Payment sent, waiting for confirmation</b><small>{money(plus.pending.amount)} · {plus.pending.payment_method === 'instapay' ? 'InstaPay' : 'Wallet'} from {plus.pending.payer_handle} · {fmtDate(plus.pending.created_at)}</small></div><span className="sms-pill warn">Pending</span></section>;
+    if (plus.pending) return <section className="panel plus-status"><span className="plus-status-ic warn"><Clock size={20} /></span><div className="plus-status-t"><b>Payment sent. Plus turns on as soon as it arrives</b><small>{money(plus.pending.amount)} · {plus.pending.payment_method === 'instapay' ? 'InstaPay' : 'Wallet'} from {plus.pending.payer_handle} · {fmtDate(plus.pending.created_at)}</small></div><span className="sms-pill warn">Pending</span></section>;
     if (plus.active && plus.kind === 'trial') return <section className="panel plus-status"><span className="plus-status-ic brand"><Star size={20} /></span><div className="plus-status-t"><b>Free trial · {plus.daysLeft} {plus.daysLeft === 1 ? 'day' : 'days'} left</b><small>Ends {fmtDate(plus.endsAt)}. Pay before then to keep Bank SMS.</small><div className="plus-track"><i style={{ width: `${Math.max(4, Math.min(100, (1 - plus.daysLeft / (Number(s.trial_days) || 14)) * 100))}%` }} /></div></div><span className="sms-pill on">Trial</span></section>;
     if (plus.active) return <section className="panel plus-status"><span className="plus-status-ic ok"><CheckCircle2 size={20} /></span><div className="plus-status-t"><b>Pocket Plus is on</b><small>{plus.kind === 'gift' ? (plus.endsAt ? `Given by the Owner until ${fmtDate(plus.endsAt)}` : 'Given by the Owner, no end date') : `${cur.period === 'yearly' ? 'Yearly' : 'Monthly'} · ${cur.cancel_at_period_end ? 'ends' : 'renews'} ${fmtDate(plus.endsAt)}`}</small></div><span className="sms-pill on">Active</span></section>;
     if (plus.rejected) return <section className="panel plus-status"><span className="plus-status-ic bad"><TriangleAlert size={20} /></span><div className="plus-status-t"><b>We couldn’t find your payment</b><small>{plus.rejected.admin_note || 'Check the amount and where you sent it, then send the details again.'}</small></div></section>;

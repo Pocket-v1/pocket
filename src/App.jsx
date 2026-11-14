@@ -719,11 +719,16 @@ function App(){
     if(error){setToast(error.message);return false;}
     setSubs(o=>[data,...o]);setToast('Your free trial started. Bank SMS is open.');return true;
   }
-  async function sendPlusPayment({period,method,handle,ref,amount}){
-    const {data,error}=await supabase.from('subscriptions').insert({user_id:session.user.id,status:'pending',period,payment_method:method,payer_handle:handle,payment_ref:ref||null,amount}).select().single();
-    if(error){setToast(error.message);return false;}
-    setSubs(o=>[data,...o]);setToast('Got it. Plus turns on once the payment is confirmed.');return true;
+  async function sendPlusPayment({period,method,handle,ref,name,proof,amount}){
+    let proof_path=null;
+    if(proof){try{const uid=session.user.id;const path=`${uid}/plus/${Date.now()}-${Math.random().toString(36).slice(2,8)}.jpg`;const {error:ue}=await supabase.storage.from('receipts').upload(path,proof,{contentType:proof.type||'image/jpeg',upsert:false});if(!ue)proof_path=path;}catch{}}
+    const {data,error}=await supabase.from('subscriptions').insert({user_id:session.user.id,status:'pending',period,payment_method:method,payer_handle:handle,payer_name:name||null,payment_ref:ref||null,proof_path,amount}).select().single();
+    if(error){setToast(/subscriptions_payment_ref_once|duplicate key/i.test(error.message)?'This transaction number was already used for another payment.':error.message);return false;}
+    const {data:fresh}=await supabase.from('subscriptions').select('*').eq('id',data.id).maybeSingle();const row=fresh||data;
+    setSubs(o=>[row,...o]);setToast(row.status==='active'?'Payment found. Pocket Plus is on!':'Got it. Plus turns on as soon as your payment arrives.');return true;
   }
+  const plusPendingId=subs.find(r=>r.status==='pending')?.id||null;
+  useEffect(()=>{if(!plusPendingId||!supabase||!session?.user?.id)return;let alive=true;const tick=async()=>{if(document.hidden)return;const {data}=await supabase.from('subscriptions').select('*').eq('user_id',session.user.id).order('created_at',{ascending:false});if(!alive||!data)return;setSubs(data);if(!data.some(r=>r.status==='pending')){const ok=data.find(r=>r.id===plusPendingId);if(ok?.status==='active')setToast('Payment found. Pocket Plus is on!');}};const iv=setInterval(tick,20000);return()=>{alive=false;clearInterval(iv)};},[plusPendingId]);
   async function togglePlusCancel(row){
     const {data,error}=await supabase.from('subscriptions').update({cancel_at_period_end:!row.cancel_at_period_end}).eq('id',row.id).select().single();
     if(error){setToast(error.message);return;}
