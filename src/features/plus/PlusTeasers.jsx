@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { PageHeading } from '../../components/ui/PageHeading.jsx';
-import { Star, Car, X } from '../../lib/icons.jsx';
+import { Star, X } from '../../lib/icons.jsx';
 import { parseSms } from '../../lib/smsParser.js';
 import { PLUS_DEFAULTS } from '../../lib/plus.js';
 
@@ -53,23 +53,42 @@ export function LockedSmsTeaser(props) {
   </div>;
 }
 
-// C · Vehicles without Plus
+// C · Vehicles without Plus (same layout as Bank SMS)
+function fuelTry(text) {
+  const nums = String(text).replace(/,/g, '').match(/\d+(\.\d+)?/g) || [];
+  const [l, price, km] = nums.map(Number);
+  if (!l || !price) return null;
+  const lper100 = 7.4, perKm = (price / l) * lper100 / 100;
+  return { l, price, km, lper100, perKm };
+}
 export function LockedVehiclesTeaser(props) {
+  const [text, setText] = useState('30 L · EGP 472.50 · 84,250 km');
+  const r = useMemo(() => fuelTry(text), [text]);
   return <div className="plus-teaser">
-    <PageHeading eyebrow="VEHICLES" title={<>Your car, costed <span className="plus-chip">Plus</span></>} subtitle="Know what your car really costs every month, and never miss an oil change." />
+    <PageHeading eyebrow="CAR COSTS" title={<>Vehicles <span className="plus-chip">Plus</span></>} subtitle="Know what your car really costs every month, and never miss an oil change." />
     <div className="plus-teaser-grid">
-      <section className="panel plus-teaser-card plus-car" aria-label="Example car">
-        <span className="plus-example-tag">Example</span>
-        <div className="plus-car-head"><span className="plus-car-ic"><Car size={22} /></span><span><b>Toyota Corolla 2019</b><small>84,250 km</small></span></div>
-        <div className="plus-car-stats"><div><small>This month</small><b>2,140</b></div><div><small>Per km</small><b>0.32</b></div><div><small>L / 100 km</small><b>7.4</b></div></div>
-        <div className="plus-car-due"><b>Oil change due in 1,750 km</b><small>About 3 weeks at your pace</small></div>
-        <div className="plus-car-rows"><div><span>Fuel · Wataniya · 30 L</span><b>−450</b></div><div><span>Service · oil + filter</span><b>−1,800</b></div></div>
-      </section>
       <section className="panel plus-teaser-card">
-        <h2>Start with your car</h2>
-        <p className="plus-teaser-p">Add your car and log fill-ups in seconds. Plus works out cost per km and fuel use, and reminds you before each service.</p>
+        <h2>Know what your car really costs</h2>
+        <ol className="plus-steps">
+          <li><span>1</span>Add your car and its odometer</li>
+          <li><span>2</span>Log a fill-up or service in seconds</li>
+          <li><span>3</span>Pocket shows cost per km and reminds you</li>
+        </ol>
         <TrialButtons {...props} />
+        <p className="small-muted">Fuel, service, parking and tolls in one place.</p>
       </section>
+      <section className="panel plus-teaser-card plus-try">
+        <div className="plus-try-head"><h2>Try it now with one fill-up</h2><span className="sms-pill on">Free</span></div>
+        <label className="field"><span>Liters, price and odometer</span><input value={text} onChange={e => setText(e.target.value)} /></label>
+        {r ? <div className="plus-try-result"><div><b>Fuel · {r.lper100} L / 100 km</b><small>{r.perKm.toFixed(2)} EGP per km · today</small></div><b className="plus-try-amt">−{fmtMoney(r.price)}</b></div>
+          : <p className="small-muted">Write the liters and the price, like “30 L · EGP 472.50”.</p>}
+        {r && <p className="small-muted">✓ Worked out right away. With Plus this updates on its own after every fill-up.</p>}
+      </section>
+    </div>
+    <div className="plus-divider"><span>Example of your car</span></div>
+    <div className="plus-example-list" aria-label="Example, not your data">
+      <div className="panel plus-example"><div className="plus-example-top"><small>Toyota Corolla 2019 · 84,250 km</small><span className="sms-pill warn">Soon</span></div><div className="plus-example-main"><b>Oil change</b><b className="plus-example-amt">in 1,750 km</b></div><small>About 3 weeks at your pace · last one cost 1,800</small><div className="plus-example-btns"><span>Later</span><span className="on">Remind me</span></div></div>
+      <div className="panel plus-example"><div className="plus-example-main"><span><b>Fuel · Wataniya</b><small>30 L · yesterday</small></span><b className="plus-example-amt">−450</b></div></div>
     </div>
   </div>;
 }

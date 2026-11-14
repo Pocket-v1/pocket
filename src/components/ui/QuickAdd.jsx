@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Fuel, MessageCircle, MessageSquare, Plus, Receipt, Wrench, X , Mic, Camera} from '../../lib/icons.jsx';
+import { ArrowDownLeft, ArrowLeftRight, Fuel, MessageCircle, MessageSquare, Plus, Receipt, Wrench, X , Mic, Camera} from '../../lib/icons.jsx';
 
 export function QuickAdd({onPlus=null,canTransact=true,onTransaction,onType,onVoice,onPhoto,onSms,smsPending=0,onFuel,onService,showVehicles}){
  const [open,setOpen]=useState(false);const ref=useRef(null);
@@ -9,7 +9,10 @@ export function QuickAdd({onPlus=null,canTransact=true,onTransaction,onType,onVo
  if(!items.length&&!onPlus)return null;
  return <div className="quick-add" ref={ref}>
   {open&&<button type="button" className="quick-add-scrim" aria-label="Close quick add" onClick={()=>setOpen(false)}/>}
-  {open&&<div className="quick-add-menu" role="menu">{items.map(i=><button key={i.label} type="button" role="menuitem" className="quick-add-item" onClick={run(i.fn)}><span><i.icon size={18}/></span><b>{i.label}{i.sub&&<small>{i.sub}</small>}</b></button>)}{onPlus&&<button type="button" role="menuitem" className="quick-add-plus" onClick={run(onPlus)}><span className="quick-add-plus-head"><b>Faster ways to add</b><span className="plus-chip">Try Plus free</span></span><span className="quick-add-plus-tiles"><span><MessageCircle size={18}/>Type</span><span><Mic size={18}/>Say</span><span><Camera size={18}/>Snap</span></span><small>Or let your bank SMS add it for you</small></button>}</div>}
+  {open&&(onPlus?<div className="quick-add-menu quick-add-sheet" role="menu">
+   {canTransact&&<div className="quick-add-tiles">{[['Expense',Plus,'tone-brand'],['Income',ArrowDownLeft,'tone-good'],['Transfer',ArrowLeftRight,'tone-plain']].map(([t,I,c])=><button key={t} type="button" role="menuitem" className={`quick-add-tile ${c}`} onClick={run(()=>onTransaction(t))}><I size={22}/><b>{t}</b></button>)}</div>}
+   <button type="button" role="menuitem" className="quick-add-plus" onClick={run(onPlus)}><span className="quick-add-plus-head"><b>Faster ways to add</b><span className="plus-chip gold">Plus</span></span><span className="quick-add-plus-tiles"><span><MessageCircle size={22}/>Type</span><span><Mic size={22}/>Say</span><span><Camera size={22}/>Snap</span></span><small>Or let your bank SMS add it for you</small></button>
+  </div>:<div className="quick-add-menu" role="menu">{items.map(i=><button key={i.label} type="button" role="menuitem" className="quick-add-item" onClick={run(i.fn)}><span><i.icon size={18}/></span><b>{i.label}{i.sub&&<small>{i.sub}</small>}</b></button>)}</div>)}
   <button type="button" className={`quick-add-fab ${open?'open':''}`} aria-label={open?'Close quick add':'Quick add'} aria-expanded={open} onClick={()=>setOpen(v=>!v)}>{open?<X size={22}/>:<Plus size={24}/>}</button>
  </div>;
 }

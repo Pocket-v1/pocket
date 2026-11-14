@@ -12,6 +12,7 @@
 :root {
   /* ---- Brand + status colors ---- */
   --ds-brand: #3157f6;
+  --ds-plus-ink: #131a3a; --ds-plus-ink-2: #222b55; --ds-plus-gold: #e9d8a6;
   --ds-brand-hover: #2449df;
   --ds-brand-soft: #eaf0ff;          /* tinted icon/chip backgrounds */
   --ds-success: #32b98a;

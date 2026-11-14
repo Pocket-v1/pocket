@@ -11,8 +11,8 @@ import { isGoalsAccount } from '../../lib/features.js';
 import { localISODate, shortDate } from '../../lib/format.js';
 import { supabase } from '../../lib/supabase.js';
 
-export function TransactionModal({initial,onClose,onSave,currency='EGP',accounts=[],transactions=[],goals=[],debts=[],recordDebtInstallment,gender='',onAddAccount,defaultAccountId='',presetAccountId='',session}){
- const initialType=initial?.type||'Expense';
+export function TransactionModal({presetType='',initial,onClose,onSave,currency='EGP',accounts=[],transactions=[],goals=[],debts=[],recordDebtInstallment,gender='',onAddAccount,defaultAccountId='',presetAccountId='',session}){
+ const initialType=initial?.type||presetType||'Expense';
  const [step,setStep]=useState(1);const single=true;const [showMore,setShowMore]=useState(false);
  const [customCategoryInput,setCustomCategoryInput]=useState('');
  const [customSubcategoryInput,setCustomSubcategoryInput]=useState('');
