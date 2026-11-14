@@ -724,3 +724,9 @@
 .help-contact-mail{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;background:none;color:#c9d0ea;font:600 12.5px var(--ds-font-ui);cursor:pointer;padding:4px;overflow-wrap:anywhere}
 :root[data-theme="dark"] .help-contact{background:#0b1024;border:1px solid rgba(233,216,166,.18)}
 @media (max-width:900px){.help-layout{grid-template-columns:1fr}.help-contact{position:static}}
+
+.help-form{display:grid;gap:14px}
+.help-form>*{margin:0!important}
+.help-topics{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.help-topics .cc-option{min-height:48px;justify-content:center;text-align:center}
+.help-form-note{line-height:1.5}

@@ -1210,7 +1210,7 @@ function App(){
         {plusPreview&&page==='Bank SMS'&&<LockedSmsTeaser plus={plus} settings={plusSettings} onStartTrial={startPlusTrial} onOpenPlus={()=>setPage('Pocket Plus')}/>}
         {plusPreview&&page==='Vehicle Management'&&<LockedVehiclesTeaser plus={plus} settings={plusSettings} onStartTrial={startPlusTrial} onOpenPlus={()=>setPage('Pocket Plus')}/>}
         {!canSeeCurrentPage&&!(isAdmin&&['Expense categories','Admin access','Access requests','Access management'].includes(page))&&!(!isAdmin&&PLUS_FEATURES.includes(getPageFeature(page)))&&<AccessRestricted profile={profile} onBack={()=>setPage(allowedFeatures[0]?FEATURE_OPTIONS.find(f=>f.key===allowedFeatures[0])?.label:'Overview')} onRequestAccess={requestAccess} requestBusy={accessRequestBusy} requestsOpen={accessRequestsOpen}/> }
-        {page==='Help'&&<HelpPage userEmail={session?.user?.email||''} fromPage={helpFrom} onToast={setToast}/>}
+        {page==='Help'&&<HelpPage supabase={cloudReady?supabase:null} userEmail={session?.user?.email||''} fromPage={helpFrom} onToast={setToast}/>}
         {page==='Pocket Plus'&&<PlusPage plus={plus} settings={plusSettings} currency={currency} onOpenSms={()=>setPage('Bank SMS')} onStartTrial={startPlusTrial} onPay={sendPlusPayment} onCancelToggle={togglePlusCancel}/>}
         {page==='Subscriptions'&&isAdmin&&<SubscriptionsAdminPage supabase={supabase} users={adminUsers} settings={plusSettings} onSaveSettings={savePlusSettings} currency={currency} onToast={setToast} onPendingCount={setSubsPending}/>}
         {page==='Expense categories'&&(isAdmin||allowedFeatures.includes('expense_categories'))&&<ExpenseCategoriesPage session={session} supabase={supabase}/>}

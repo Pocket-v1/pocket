@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react';
 import { PageHeading } from '../../components/ui/PageHeading.jsx';
 import { Tabs } from '../../components/ui/Tabs.jsx';
 import { EmptyState } from '../../components/ui/EmptyState.jsx';
+import { ModalShell } from '../../components/modals/ModalShell.jsx';
+import { Field } from '../../components/ui/Field.jsx';
 import { Search, Mail, Copy, Check } from '../../lib/icons.jsx';
 
 // Help center: search, topics, answers, and a way to reach us.
@@ -34,7 +36,40 @@ const FAQ = [
   ['account', 'How do I delete my account?', 'Send us a message from this page using the email on your account, and we delete your account and all your data.'],
 ];
 
-export function HelpPage({ userEmail = '', fromPage = '', onToast }) {
+const CONTACT_TOPICS = [['problem', 'Something is wrong'], ['plus', 'Plus & payment'], ['idea', 'An idea'], ['other', 'Something else']];
+
+// The message form: sent to Pocket support with the user's details, reply comes by email.
+function ContactModal({ supabase, userEmail, fromPage, onClose, onSent }) {
+  const [topic, setTopic] = useState('problem');
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  async function send() {
+    if (!text.trim()) { setErr('Write your message first.'); return; }
+    setBusy(true); setErr('');
+    try {
+      const { data, error } = await supabase.functions.invoke('support-message', { body: { topic, message: text.trim(), page: fromPage, device: navigator.userAgent } });
+      if (error || !data?.ok) { let msg = data?.error; try { msg = msg || (await error?.context?.json())?.error; } catch { /* ignore */ } setErr(msg || 'Could not send. Check your connection and try again.'); setBusy(false); return; }
+      onSent();
+    } catch { setErr('Could not send. Check your connection and try again.'); setBusy(false); }
+  }
+  return <ModalShell title="Send us a message" subtitle="A real person reads every message. We reply by email within a day." onClose={onClose}>
+    <div className="help-form">
+      <div className="cc-options help-topics" role="radiogroup" aria-label="What is it about?">
+        {CONTACT_TOPICS.map(([k, label]) => <button key={k} type="button" role="radio" aria-checked={topic === k} className={`cc-option ${topic === k ? 'on' : ''}`} onClick={() => setTopic(k)}><span><b>{label}</b></span></button>)}
+      </div>
+      <div className="form-grid">
+        <Field label="Your message" wide><textarea className="pocket-textarea" rows="6" maxLength={4000} value={text} onChange={e => setText(e.target.value)} placeholder={topic === 'problem' ? 'Tell us what happened and what you expected…' : topic === 'plus' ? 'Which plan, how you paid and when…' : 'Tell us more…'} /></Field>
+      </div>
+      <p className="small-muted help-form-note">We reply to <b>{userEmail || 'your account email'}</b>. Your name, plan and the page you were on are sent with it, so you don't need to explain.</p>
+      {err && <p className="cc-error" role="alert">{err}</p>}
+    </div>
+    <div className="modal-actions"><button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button><button type="button" className="btn btn-primary" disabled={busy} onClick={send}>{busy ? 'Sending…' : 'Send message'}</button></div>
+  </ModalShell>;
+}
+
+export function HelpPage({ supabase = null, userEmail = '', fromPage = '', onToast }) {
+  const [contactOpen, setContactOpen] = useState(false);
   const [topic, setTopic] = useState('all');
   const [q, setQ] = useState('');
   const [open, setOpen] = useState(null);
@@ -63,9 +98,10 @@ export function HelpPage({ userEmail = '', fromPage = '', onToast }) {
       </section>
       <aside className="help-contact" aria-label="Contact us">
         <div className="help-contact-head"><span className="help-contact-ic"><Mail size={20} /></span><span><b>Still need help?</b><small>We reply within a day</small></span></div>
-        <a className="btn help-contact-btn" href={mailto}>Send us a message</a>
+        {supabase ? <button type="button" className="btn help-contact-btn" onClick={() => setContactOpen(true)}>Send us a message</button> : <a className="btn help-contact-btn" href={mailto}>Send us a message</a>}
         <button type="button" className="help-contact-mail" onClick={copy}>{copied ? <><Check size={14} /> Copied</> : <>or email {SUPPORT_EMAIL} <Copy size={14} /></>}</button>
       </aside>
     </div>
+    {contactOpen && <ContactModal supabase={supabase} userEmail={userEmail} fromPage={fromPage} onClose={() => setContactOpen(false)} onSent={() => { setContactOpen(false); onToast?.('Message sent. We will reply to your email within a day.'); }} />}
   </div>;
 }
