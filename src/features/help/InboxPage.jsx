@@ -28,7 +28,7 @@ export function InboxPage({ supabase, session, isOwner = false, users = [], from
   const [newOpen, setNewOpen] = useState(false);
   const endRef = useRef(null);
   const userOf = id => users.find(x => String(x.user_id ?? x.id) === String(id)) || null;
-  const nameOf = id => { const u = userOf(id); return u ? (u.username || u.full_name || u.email || 'User') : 'User'; };
+  const nameOf = id => { const u = userOf(id); return u ? (u.full_name || [u.first_name, u.last_name].filter(Boolean).join(' ') || u.username || u.email || 'User') : 'User'; };
 
   const load = useCallback(async () => {
     const { data } = await supabase.from('support_messages').select('*').order('last_at', { ascending: false }).limit(200);
