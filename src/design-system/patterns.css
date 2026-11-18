@@ -818,3 +818,15 @@
 .stars-line{display:inline-flex;gap:2px;color:var(--ds-border-strong,#cfd5e2)}
 .stars-line .on{color:#f5b301;fill:#f5b301}
 @media (max-width:420px){.inbox-thread-head{flex-wrap:wrap}.inbox-end{order:3}}
+
+/* Quick add: compact lists */
+.quick-add-lists{width:200px;gap:8px}
+.quick-add-card{display:flex;flex-direction:column;padding:4px;border-radius:16px;background:var(--ds-surface);border:1px solid var(--ds-border);box-shadow:0 8px 24px rgba(19,26,58,.18)}
+.quick-add-fast{flex-direction:row;align-items:center;gap:6px;padding:4px 4px 4px 0}
+.quick-add-row{flex:1;display:flex;align-items:center;gap:10px;min-height:44px;padding:0 10px;border:0;border-radius:12px;background:transparent;color:var(--ds-text);font:700 14px var(--ds-font-ui);text-align:left;cursor:pointer}
+.quick-add-row b{flex:1;font-weight:700}
+.quick-add-row svg{color:var(--ds-brand);flex:none}
+.quick-add-row.muted-icon svg{color:var(--ds-text-muted)}
+.quick-add-row:hover,.quick-add-icon:hover{background:var(--ds-surface-soft,var(--ds-soft))}
+.quick-add-icon{flex:none;width:40px;height:40px;border:0;border-radius:12px;display:grid;place-items:center;background:var(--ds-brand-soft);color:var(--ds-brand);cursor:pointer}
+.quick-add-badge{min-width:20px;height:20px;padding:0 6px;border-radius:99px;background:var(--ds-danger,#d6304a);color:#fff;font:800 11px var(--ds-font-ui);display:grid;place-items:center}
