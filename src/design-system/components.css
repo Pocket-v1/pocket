@@ -1034,3 +1034,20 @@ body .btn.btn-sm{font-size:13px!important;min-height:34px!important}
 /* Tabs inside a toolbar or card sit tight, without the page margin */
 .period-switch .ds-tabs,.chat-fields .ds-tabs,.modal .ds-tabs{margin:0}
 .period-switch .ds-tabs{width:auto}
+
+/* Toggle: a switch row (title + help + switch) */
+.ds-toggle{display:flex;align-items:center;gap:12px;width:100%;padding:13px 14px;border:1px solid var(--ds-border);border-radius:14px;background:var(--ds-surface);color:var(--ds-text);text-align:left;cursor:pointer;font:inherit}
+.ds-toggle.on{border-color:var(--ds-brand);background:var(--ds-brand-soft,#eaf0ff)}
+.ds-toggle-text{flex:1;min-width:0;display:grid;gap:3px}
+.ds-toggle-text b{font-size:14px}
+.ds-toggle-text small{font-size:12.5px;line-height:1.45;color:var(--ds-text-muted)}
+.ds-toggle-switch{flex:none;position:relative;width:44px;height:26px;border-radius:99px;background:var(--ds-border-strong,#cfd5e2);transition:background .15s}
+.ds-toggle-switch i{position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .15s}
+.ds-toggle.on .ds-toggle-switch{background:var(--ds-brand)}
+.ds-toggle.on .ds-toggle-switch i{transform:translateX(18px)}
+.ds-toggle:focus-visible{outline:3px solid color-mix(in srgb,var(--ds-brand) 35%,transparent);outline-offset:2px}
+.ds-toggle.compact{padding:10px 12px}
+.ds-toggle.compact .ds-toggle-text b{font-size:13px}
+:root[data-theme="dark"] .ds-toggle.on{background:color-mix(in srgb,var(--ds-brand) 16%,transparent)}
+/* "Not counted" tag on a transaction left out of totals */
+.tx-not-counted{display:inline-flex;align-items:center;margin-left:6px;padding:2px 8px;border-radius:99px;background:var(--ds-surface-soft,var(--ds-soft));color:var(--ds-text-muted);font:700 10.5px var(--ds-font-ui);white-space:nowrap;vertical-align:middle}

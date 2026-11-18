@@ -1,3 +1,4 @@
+import { Toggle } from '../../components/ui/Toggle.jsx';
 import { createPortal } from 'react-dom';
 import { MetricCard } from '../../components/ui/MetricCard.jsx';
 import { ArrowLeftRight, BarChart3, Check, ChevronDown, Copy, Inbox, History, MessageSquare, Pencil, RefreshCw, RotateCcw, Search, Settings2, X, Clock, CheckCircle2, Download, Eye, EyeOff, FileSpreadsheet, FileText, Plus, Scissors, Trash2, TriangleAlert } from '../../lib/icons.jsx';
@@ -84,7 +85,7 @@ function SmsCard({ payTargets = [], conf, sug, onAutoRule, xfer, onTransfer, cur
   const splits = x._splits || null;
   const splitSum = splits ? splits.reduce((n, r) => n + (Number(r.amount) || 0), 0) : 0;
   const remain = amt - splitSum;
-  const startEdit = () => { patch(x.id, { _snap: { _type: x._type, _amount: x._amount, _acc: x._acc, _cat: x._cat, _desc: x._desc, _splits: x._splits || null, _to: x._to || '', _pay: x._pay || '' } }); setEditing(x.id, true); };
+  const startEdit = () => { patch(x.id, { _snap: { _type: x._type, _amount: x._amount, _acc: x._acc, _cat: x._cat, _desc: x._desc, _excl: !!x._excl, _splits: x._splits || null, _to: x._to || '', _pay: x._pay || '' } }); setEditing(x.id, true); };
   const cancelEdit = () => { if (x._snap) patch(x.id, { ...x._snap, _snap: null }); setEditing(x.id, false); };
   const setSplit = (i, k, v) => patch(x.id, { _splits: splits.map((r, j) => j === i ? { ...r, [k]: v } : r) });
   const [dx, setDx] = useState(0);
@@ -112,6 +113,7 @@ function SmsCard({ payTargets = [], conf, sug, onAutoRule, xfer, onTransfer, cur
       {x._type === 'Transfer' && <Field label="To account"><select value={x._to || ''} onChange={e => patch(x.id, { _to: e.target.value })}><option value="">Choose…</option>{usable.filter(a => String(a.id) !== String(x._acc)).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></Field>}
       {!splits && x._type !== 'Transfer' && <Field label="Category"><select value={x._cat} onChange={e => patch(x.id, { _cat: e.target.value })}><option value="">{isIn ? 'Other income' : 'Other'}</option>{cats.map(c => <option key={c}>{c}</option>)}</select></Field>}
       <Field label="Description" wide><input value={x._desc} onChange={e => patch(x.id, { _desc: e.target.value })} placeholder="Where was it?" /></Field>
+      {x._type !== 'Transfer' && <div className="field field-wide"><Toggle compact label="Leave out of totals" hint="Money passing through, like a transfer that came back." checked={!!x._excl} onChange={v => patch(x.id, { _excl: v })} /></div>}
       {splits && <div className="smx-splits wide">{splits.map((r, i) => <div className="smx-split" key={i}><select value={r.cat} onChange={e => setSplit(i, 'cat', e.target.value)} aria-label="Category"><option value="">{isIn ? 'Other income' : 'Other'}</option>{cats.map(c => <option key={c}>{c}</option>)}</select><input inputMode="decimal" value={r.amount} onChange={e => setSplit(i, 'amount', e.target.value)} placeholder="Amount" aria-label="Part amount" /><button type="button" className="icon-btn" aria-label="Remove part" onClick={() => patch(x.id, { _splits: splits.length > 2 ? splits.filter((_, j) => j !== i) : null })}><Trash2 size={15} /></button></div>)}
         <div className="smx-split-foot"><button type="button" className="btn btn-sm" onClick={() => patch(x.id, { _splits: [...splits, { cat: '', amount: remain > 0 ? String(Math.round(remain * 100) / 100) : '' }] })}><Plus size={14} /> Add part</button><small className={Math.abs(remain) < 0.01 ? 'ok' : 'bad'}>{Math.abs(remain) < 0.01 ? 'Parts add up' : remain > 0 ? `${fmt(remain)} left to assign` : `${fmt(-remain)} too much`}</small></div></div>}
       {!splits && amt > 0 && x._type !== 'Transfer' && <button type="button" className="sms-link smx-splitbtn" onClick={() => patch(x.id, { _splits: [{ cat: x._cat, amount: String(Math.round(amt / 2 * 100) / 100) }, { cat: '', amount: String(Math.round(amt / 2 * 100) / 100) }] })}><Scissors size={13} /> Split into categories</button>}
@@ -298,7 +300,7 @@ export function SmsPage({ focusAccount = null, onFocusDone, debts = [], recurrin
     const note = `From bank SMS: ${x.body}${cur ? ` | Original ${cur} ${amount} @ ${rate}` : ''}`.slice(0, 500);
     const ids = [];
     for (const part of list) {
-      const saved = await onApprove({ transaction_date: localISODate(new Date(x.received_at)), type: x._type, category: part.cat, subcategory: null, description: part.label, amount: part.amount, need_want: x._type === 'Expense' ? 'Need' : null, fixed_variable: 'Variable', payment_method: acc?.name || 'Unassigned', account_id: x._acc, to_account_id: null, goal_id: null, debt_id: null, recurring: false, notes: note });
+      const saved = await onApprove({ exclude_from_totals: x._type !== 'Transfer' && !!x._excl, transaction_date: localISODate(new Date(x.received_at)), type: x._type, category: part.cat, subcategory: null, description: part.label, amount: part.amount, need_want: x._type === 'Expense' ? 'Need' : null, fixed_variable: 'Variable', payment_method: acc?.name || 'Unassigned', account_id: x._acc, to_account_id: null, goal_id: null, debt_id: null, recurring: false, notes: note });
       if (!saved) { if (ids.length && onUndoTx) await onUndoTx(ids); return false; }
       ids.push(saved.id);
     }

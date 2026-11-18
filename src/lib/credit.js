@@ -151,11 +151,13 @@ export const providerOwner = (debt, accounts = []) => accounts.find(a => String(
  * - A purchase on a credit card or installment app is only recorded: it is not an expense yet.
  * - Paying the card / the app (a transfer into it) IS the expense, so it is counted then.
  * - Refunds into a card are not income.
+ * - Transactions marked "Leave out of totals" are skipped.
  */
 export function reportView(transactions = [], accounts = []) {
   const byId = new Map(accounts.map(a => [String(a.id), a]));
   const out = [];
   for (const t of transactions) {
+    if (t.exclude_from_totals) continue; // money passing through: moves balances, not counted in reports
     const from = byId.get(String(t.account_id)), to = byId.get(String(t.to_account_id));
     if (t.type === 'Expense' && isLiability(from)) continue;
     if (t.type === 'Income' && isLiability(from)) continue;
