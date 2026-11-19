@@ -1245,6 +1245,28 @@ function App(){
   const refreshInbox=useCallback(async()=>{if(!cloudReady||!session?.user?.id)return;try{const {data}=await supabase.from('support_messages').select('id,user_id,status,rated_at,last_at,last_from_owner,user_read_at,owner_read_at').order('last_at',{ascending:false}).limit(200);setInboxUnread((data||[]).filter(t=>threadUnread(t,isAdmin)).length);{const asked=(()=>{try{return JSON.parse(localStorage.getItem('pocket-review-asked')||'[]')}catch{return []}})();const t=(data||[]).find(x=>x.user_id===session.user.id&&x.status==='closed'&&!x.rated_at&&!asked.includes(x.id));if(t)setReviewThread(r=>r||t);}}catch{}},[session?.user?.id,isAdmin]);
   useEffect(()=>{refreshInbox();const iv=setInterval(()=>{if(!document.hidden)refreshInbox()},3000);return()=>clearInterval(iv);},[refreshInbox]);
   // Live Inbox: Supabase tells us the moment a conversation or message changes (row security applies).
+  // Live data: other devices, friends and bank SMS update the app in place, with no loading state.
+  const frRef=useRef(null);frRef.current=fr;
+  useEffect(()=>{
+    if(!cloudReady||!session?.user?.id)return;const uid=session.user.id;
+    const apply=setter=>p=>{const n=p.new,o=p.old;if(p.eventType==='DELETE'){setter(list=>list.filter(x=>String(x.id)!==String(o?.id)));return;}if(!n?.id)return;setter(list=>{const i=list.findIndex(x=>String(x.id)===String(n.id));if(i<0)return [n,...list];const c=list.slice();c[i]={...c[i],...n};return c;});};
+    let t=null;const friendsLater=()=>{clearTimeout(t);t=setTimeout(()=>frRef.current?.refresh(),400);};
+    const smsCount=()=>supabase.from('sms_inbox').select('id',{count:'exact',head:true}).eq('status','pending').then(r=>{if(!r.error)setPendingSms(r.count||0)});
+    const mine={schema:'public',filter:`user_id=eq.${uid}`};
+    const ch=supabase.channel('pocket-live-'+uid)
+      .on('postgres_changes',{...mine,event:'*',table:'transactions'},apply(setTransactions))
+      .on('postgres_changes',{...mine,event:'*',table:'financial_accounts'},apply(setAccounts))
+      .on('postgres_changes',{...mine,event:'*',table:'debts'},apply(setDebts))
+      .on('postgres_changes',{...mine,event:'*',table:'budgets'},apply(setBudgets))
+      .on('postgres_changes',{...mine,event:'*',table:'savings_goals'},apply(setGoals))
+      .on('postgres_changes',{...mine,event:'*',table:'recurring_payments'},apply(setRecurring))
+      .on('postgres_changes',{...mine,event:'*',table:'sms_inbox'},smsCount)
+      .on('postgres_changes',{schema:'public',event:'*',table:'loans_given'},friendsLater)
+      .on('postgres_changes',{schema:'public',event:'*',table:'loan_payments'},friendsLater)
+      .on('postgres_changes',{schema:'public',event:'*',table:'friendships'},friendsLater)
+      .subscribe();
+    return()=>{clearTimeout(t);supabase.removeChannel(ch);};
+  },[cloudReady,session?.user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(()=>{if(!cloudReady||!session?.user?.id)return;const ping=()=>{refreshInbox();window.dispatchEvent(new Event('pocket-inbox-changed'));};const ch=supabase.channel('pocket-inbox-'+session.user.id).on('postgres_changes',{event:'*',schema:'public',table:'support_messages'},ping).on('postgres_changes',{event:'INSERT',schema:'public',table:'support_replies'},ping).subscribe();return()=>{supabase.removeChannel(ch);};},[session?.user?.id,refreshInbox]);
   useEffect(()=>{
     if(!isAdmin||!supabase){setAccessRequestCounts({total:0,pending:0});return;}

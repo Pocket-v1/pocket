@@ -1,0 +1,1 @@
+-- Add core tables to supabase_realtime (applied as "realtime_core_tables"). Additive; RLS still applies.
