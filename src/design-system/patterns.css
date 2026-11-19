@@ -850,3 +850,20 @@
 .lent-history b{color:var(--ds-text)}.lent-history b.is-in{color:var(--ds-ok,#187d55)}
 .lent-mark-link{align-self:flex-start;border:0;background:none;padding:6px 0;font:700 13px var(--ds-font-ui);color:var(--ds-brand);cursor:pointer}
 .lent-mark-row{display:flex;gap:8px;align-items:center}.lent-mark-row input{flex:1;min-width:0}
+
+/* Friends */
+.friends-add{display:flex;flex-direction:column;gap:12px;padding:16px;margin-bottom:20px}
+.friends-add-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}.friends-add-field{flex:1;min-width:200px;margin:0}
+.friends-invite{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--ds-text-muted)}
+.friends-link{font-size:12px;padding:4px 8px;border-radius:8px;background:var(--ds-surface-soft,var(--ds-soft));word-break:break-all}
+.friends-section{margin-bottom:20px}.friends-section h2{font:800 16px var(--ds-font-display);margin:0 0 10px}
+.friends-list{display:flex;flex-direction:column;border:1px solid var(--ds-border);border-radius:16px;background:var(--ds-surface);overflow:hidden}
+.friend-row{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--ds-border);flex-wrap:wrap}.friend-row:last-child{border-bottom:0}
+.friend-main{flex:1;min-width:120px;display:flex;flex-direction:column}.friend-main small{color:var(--ds-text-muted);font-size:12.5px}
+.friend-net{font:700 13px var(--ds-font-ui);color:var(--ds-text-muted)}.friend-net.is-in{color:var(--ds-ok,#187d55)}.friend-net.is-out{color:var(--ds-danger,#d6304a)}
+.friend-actions{display:flex;gap:8px;align-items:center}
+.lent-share{margin:0;font-size:12.5px;color:var(--ds-text-muted)}.lent-share.is-bad{color:var(--ds-danger,#d6304a)}
+.lent-pending{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-radius:12px;background:var(--ds-brand-soft);font-size:13px;color:var(--ds-text)}
+.lent-confirm{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.lent-confirm select{flex:1;min-width:140px}
+.lent-foot{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.lent-avatar.is-owe{background:var(--ds-surface-soft,var(--ds-soft));color:var(--ds-text-muted)}
