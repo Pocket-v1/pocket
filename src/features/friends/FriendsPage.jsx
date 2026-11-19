@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useEffect } from 'react';
-import { Check, ChevronRight, Copy, UserPlus, Users, X } from '../../lib/icons.jsx';
+import { Check, ChevronRight, Copy, QrCode, Search, Share, Users, X } from '../../lib/icons.jsx';
 import { isGoalsAccount } from '../../lib/features.js';
 import { localISODate, shortDate } from '../../lib/format.js';
 import { EmptyState } from '../../components/ui/EmptyState.jsx';
@@ -32,7 +32,7 @@ const MSG={sent:'Request sent',accepted:'You are now friends',already:'You are a
 
 export function FriendsPage({friends=[],loans=[],owe=[],transactions=[],currency='EGP',onAdd,onRespond,onInvite,onLendMoney,accounts=[],allFriends=[],requestConfirm,setToast,onSplit,onBorrow,categories=[],payments=[],focusFriend=null}){
  const [lendTo,setLendTo]=useState(null);const [split,setSplit]=useState(false);const [openId,setOpenId]=useState(focusFriend);
- const [name,setName]=useState('');const [busy,setBusy]=useState(false);const [link,setLink]=useState('');const [qr,setQr]=useState('');
+ const [name,setName]=useState('');const [busy,setBusy]=useState(false);const [link,setLink]=useState('');const [qr,setQr]=useState('');const [copied,setCopied]=useState(false);const [showQr,setShowQr]=useState(false);
  const fmt=n=>new Intl.NumberFormat('en-EG',{style:'currency',currency,maximumFractionDigits:0}).format(Number(n)||0);
  const incoming=friends.filter(f=>f.status==='pending'&&f.incoming),outgoing=friends.filter(f=>f.status==='pending'&&!f.incoming),accepted=friends.filter(f=>f.status==='accepted'),blocked=friends.filter(f=>f.status==='blocked');
  const waitingFor=f=>loans.some(l=>String(l.friend_id)===String(f.friend_id)&&['pending','requested'].includes(l.share_status))||owe.some(l=>String(l.lender_id)===String(f.friend_id)&&['pending','requested'].includes(l.share_status));
@@ -40,16 +40,25 @@ export function FriendsPage({friends=[],loans=[],owe=[],transactions=[],currency
  const netText=f=>{const n=net(f);return n>0?`Owes you ${fmt(n)}`:n<0?`You owe ${fmt(-n)}`:waitingFor(f)?'Waiting to confirm':'All settled';};
  async function add(e){e.preventDefault();if(!name.trim())return;setBusy(true);try{const r=await onAdd(name.trim());setToast(MSG[r]||'Could not send the request');if(r==='sent'||r==='accepted')setName('');}finally{setBusy(false)}}
  useEffect(()=>{let live=true;(async()=>{const l=await onInvite();if(!live||!l)return;setLink(l);try{const Q=await import('qrcode');const url=await Q.toDataURL(l,{margin:1,width:220,color:{dark:'#131a3a',light:'#ffffff'}});if(live)setQr(url);}catch{}})();return()=>{live=false}},[]); // eslint-disable-line react-hooks/exhaustive-deps
- async function copy(){if(!link)return;try{await navigator.clipboard.writeText(link);setToast('Invite link copied');}catch{window.prompt('Copy this invite link',link);}}
+ async function copy(){if(!link)return;try{await navigator.clipboard.writeText(link);setCopied(true);setTimeout(()=>setCopied(false),1600);}catch{window.prompt('Copy this invite link',link);}}
+ async function share(){if(!link)return;const data={title:'Pocket',text:'Join me on Pocket to track money together.',url:link};if(navigator.share){try{await navigator.share(data);}catch{}}else copy();}
  const open=accepted.find(f=>f.friend_id===openId);
  return <>
   <PageHeading eyebrow="PEOPLE" title="Friends" subtitle="Lend, borrow and split with friends. They only see what is between you, never your accounts." actions={accepted.length>0&&<button className="btn btn-primary" onClick={()=>setSplit(true)}><Users size={17}/> Split a bill</button>}/>
-  <section className="panel friends-add">
-   <form className="friends-add-row" onSubmit={add}><label className="field friends-add-field"><span>Username or email</span><input value={name} onChange={e=>setName(e.target.value)} placeholder="@username or email" autoCapitalize="none" autoCorrect="off" inputMode="email"/></label><button className="btn btn-primary" disabled={busy||!name.trim()}><UserPlus size={16}/> {busy?'Sending…':'Send request'}</button></form>
-   <div className="friends-invite"><div className="friends-invite-copy"><b>Not on Pocket yet?</b><span>Share the link or let them scan the code. When they sign up, your friend request is waiting for them.</span><button type="button" className="btn btn-secondary btn-sm" onClick={copy} disabled={!link}><Copy size={14}/> Copy invite link</button></div>{qr?<img className="friends-qr" src={qr} alt="QR code for your Pocket invite link" width="132" height="132"/>:<span className="friends-qr is-empty" aria-hidden="true"/>}</div>
+  <section className="friends-hero">
+   <div className="friends-orbit" aria-hidden="true"><span>A</span><span>S</span><span>M</span></div>
+   <b className="friends-hero-title">Bring a friend to Pocket</b>
+   <span className="friends-hero-text">When they sign up, your friend request is waiting for them.</span>
+   <div className="friends-hero-actions">
+    <button type="button" className="friends-hero-share" onClick={share} disabled={!link}><Share size={16}/> Share invite</button>
+    <button type="button" className="friends-hero-icon" onClick={copy} disabled={!link} aria-label={copied?'Copied':'Copy invite link'} title="Copy invite link">{copied?<Check size={18} className="friends-pop"/>:<Copy size={18}/>}</button>
+    <button type="button" className={`friends-hero-icon ${showQr?'is-on':''}`} onClick={()=>setShowQr(v=>!v)} disabled={!link} aria-label={showQr?'Hide QR code':'Show QR code'} aria-expanded={showQr} title="QR code"><QrCode size={18}/></button>
+   </div>
+   {showQr&&qr&&<img className="friends-hero-qr friends-pop" src={qr} alt="QR code for your Pocket invite link" width="148" height="148"/>}
   </section>
+  <form className="friends-find" onSubmit={add}><Search size={16}/><input value={name} onChange={e=>setName(e.target.value)} placeholder="Add by username or email" aria-label="Add a friend by username or email" autoCapitalize="none" autoCorrect="off" inputMode="email"/><button className="btn btn-primary btn-sm" disabled={busy||!name.trim()}>{busy?'Sending…':'Add'}</button></form>
   {incoming.length>0&&<section className="friends-section"><h2>Requests</h2><div className="friends-list">{incoming.map(f=><div className="friend-item" key={f.id}><span className="lent-avatar">{(f.name||'?').charAt(0).toUpperCase()}</span><span className="friend-main"><b>{f.name}</b><small>@{f.username} wants to be friends</small></span><span className="friend-actions"><button className="btn btn-secondary btn-sm" onClick={()=>onRespond(f.id,'decline')}>Decline</button><button className="btn btn-primary btn-sm" onClick={()=>onRespond(f.id,'accept')}><Check size={14}/> Accept</button></span></div>)}</div></section>}
-  <section className="friends-section"><h2>Your friends</h2>{accepted.length?<div className="friends-list">{accepted.map(f=>{const n=net(f);return <button type="button" className="friend-item is-link" key={f.id} onClick={()=>setOpenId(f.friend_id)}><span className="lent-avatar">{(f.name||'?').charAt(0).toUpperCase()}</span><span className="friend-main"><b>{f.name}</b><small>@{f.username}</small></span><span className={`friend-net ${n>0?'is-in':n<0?'is-out':''}`}>{netText(f)}</span><ChevronRight size={16}/></button>})}</div>:<EmptyState panel icon={Users} title="No friends yet" text="Add a friend by their Pocket username or email, or share your invite link."/>}</section>
+  <section className="friends-section"><h2>Your friends</h2>{accepted.length?<div className="friends-list">{accepted.map((f,i)=>{const n=net(f);return <button type="button" className="friend-item is-link friends-rise" style={{animationDelay:`${Math.min(i,8)*60+80}ms`}} key={f.id} onClick={()=>setOpenId(f.friend_id)}><span className="lent-avatar">{(f.name||'?').charAt(0).toUpperCase()}</span><span className="friend-main"><b>{f.name}</b><small>@{f.username}</small></span><span className={`friend-net ${n>0?'is-in':n<0?'is-out':''}`}>{netText(f)}</span><ChevronRight size={16}/></button>})}</div>:<EmptyState panel icon={Users} title="No friends yet" text="Add a friend by their Pocket username or email, or share your invite link."/>}</section>
   {outgoing.length>0&&<section className="friends-section"><h2>Sent requests</h2><div className="friends-list">{outgoing.map(f=><div className="friend-item" key={f.id}><span className="lent-avatar">{(f.name||'?').charAt(0).toUpperCase()}</span><span className="friend-main"><b>{f.name}</b><small>@{f.username} · waiting</small></span><span className="friend-actions"><button className="btn btn-secondary btn-sm" onClick={()=>onRespond(f.id,'remove')}>Cancel</button></span></div>)}</div></section>}
   {blocked.length>0&&<details className="debt-done"><summary>Blocked ({blocked.length})</summary><div className="debt-done-list">{blocked.map(f=><div className="debt-done-row" key={f.id}><div><b>{f.name}</b></div><button className="select-lite" onClick={()=>onRespond(f.id,'unblock')}>Unblock</button></div>)}</div></details>}
   {open&&<FriendSheet f={open} n={net(open)} netText={netText(open)} loans={loans} owe={owe} transactions={transactions} fmt={fmt} onClose={()=>setOpenId(null)} onLend={()=>{setLendTo(open);setOpenId(null)}} onBorrow={()=>{onBorrow(open);setOpenId(null)}} onSplit={()=>{setSplit(true);setOpenId(null)}} onRemove={()=>requestConfirm('Remove friend?',`Remove ${open.name} from your friends? Loans you already confirmed stay for both of you.`,()=>{onRespond(open.id,'remove');setOpenId(null)},'Remove')}/>}
