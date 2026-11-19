@@ -9,7 +9,7 @@ const money = (n, c) => { try { return new Intl.NumberFormat('en-EG', { style: '
 const SR = typeof window !== 'undefined' ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
 const FUEL_TYPES = ['80 Octane', '92 Octane', '95 Octane', '98 Octane', 'Diesel', 'Electric charging', 'Gas'];
 const SERVICE_TYPES = ['Oil change', 'Routine maintenance', 'Tires', 'Brakes', 'Battery', 'Repair', 'Other'];
-const TITLES = { expense: 'Expense', income: 'Income', transfer: 'Transfer', debt: 'Debt payment', bill: 'Bill payment', goal: 'Goal deposit', fuel: 'Fuel', service: 'Car service', budget: 'Budget', newbill: 'New monthly bill', lend: 'Money lent' };
+const TITLES = { expense: 'Expense', income: 'Income', transfer: 'Transfer', debt: 'Debt payment', bill: 'Bill payment', goal: 'Goal deposit', fuel: 'Fuel', service: 'Car service', budget: 'Budget', newbill: 'New monthly bill', lend: 'Lent' };
 
 function Draft({ m, ctx, onChange, onSave, onCancel }) {
   const d = m.draft;
