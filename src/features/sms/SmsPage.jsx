@@ -1,3 +1,4 @@
+import { defaultNeedWant } from '../../lib/needWant.js';
 import { Toggle } from '../../components/ui/Toggle.jsx';
 import { createPortal } from 'react-dom';
 import { MetricCard } from '../../components/ui/MetricCard.jsx';
@@ -300,7 +301,7 @@ export function SmsPage({ focusAccount = null, onFocusDone, debts = [], recurrin
     const note = `From bank SMS: ${x.body}${cur ? ` | Original ${cur} ${amount} @ ${rate}` : ''}`.slice(0, 500);
     const ids = [];
     for (const part of list) {
-      const saved = await onApprove({ exclude_from_totals: x._type !== 'Transfer' && !!x._excl, transaction_date: localISODate(new Date(x.received_at)), type: x._type, category: part.cat, subcategory: null, description: part.label, amount: part.amount, need_want: x._type === 'Expense' ? 'Need' : null, fixed_variable: 'Variable', payment_method: acc?.name || 'Unassigned', account_id: x._acc, to_account_id: null, goal_id: null, debt_id: null, recurring: false, notes: note });
+      const saved = await onApprove({ exclude_from_totals: x._type !== 'Transfer' && !!x._excl, transaction_date: localISODate(new Date(x.received_at)), type: x._type, category: part.cat, subcategory: null, description: part.label, amount: part.amount, need_want: x._type === 'Expense' ? defaultNeedWant(part.cat, part.sub) : null, fixed_variable: 'Variable', payment_method: acc?.name || 'Unassigned', account_id: x._acc, to_account_id: null, goal_id: null, debt_id: null, recurring: false, notes: note });
       if (!saved) { if (ids.length && onUndoTx) await onUndoTx(ids); return false; }
       ids.push(saved.id);
     }

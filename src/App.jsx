@@ -1,3 +1,4 @@
+import { defaultNeedWant, rememberNeedWant } from './lib/needWant.js';
 import { Inbox, CircleHelp, Star, Search, PanelLeftClose, PanelLeftOpen, ArrowLeftRight, ArrowUpRight, Bell, CalendarDays, CarFront, ChartNoAxesCombined, Check, ChevronDown, CircleDollarSign, CreditCard, Fuel, History, LayoutDashboard, Lock, LogOut, Mail, Menu, MessageSquare, Moon, Repeat2, Settings, SlidersHorizontal, Sun, Target, UserRound, Users, Wallet, Wrench, X, XCircle } from './lib/icons.jsx';
 import { useSheetManager } from './hooks/useSheetManager.js';
 import * as XLSX from 'xlsx';
@@ -586,6 +587,7 @@ function App(){
     });
   }
   async function submitTransaction(form){
+    if(form?.type==='Expense'&&form.need_want)rememberNeedWant(form.category,form.subcategory,form.need_want);
     {const lk=sharedLoanOf(editing);if(lk){setToast(`This is linked to a loan with ${lk}. Change it from Debts & installments.`);return false;}}
     if(!editing && !accounts.some(a=>!isGoalsAccount(a))){
       setModal(null);
@@ -616,7 +618,7 @@ function App(){
     if(isCard(source)&&Number(source.credit_limit)>0){available=Number(source.credit_limit)-cardSummary(source,transactions,undefined,debts).owed;}
     if(editing && String(editing.account_id)===String(source?.id) && (editing.type==='Expense'||editing.type==='Transfer')) available+=Number(editing.amount||0);
     if((form.type==='Expense'||form.type==='Transfer') && Number(form.amount)>available){const shown=new Intl.NumberFormat('en-EG',{style:'currency',currency,maximumFractionDigits:2}).format(Math.max(0,available));setToast((isCard(source)||isProvider(source))?`Could not add: this is over the limit on ${source.name}. Available credit: ${shown}.`:`Insufficient balance in ${source?.name||'this account'}. Available: ${shown}.`);return;}
-    const payload={friend_id:form.friend_id||null,exclude_from_totals:form.type!=='Transfer'&&!!form.exclude_from_totals,transaction_date:form.transaction_date,type:form.type,category:form.type==='Transfer'?'Transfer':form.category,subcategory:form.type==='Transfer'?(form.goal_id?(goals.find(g=>String(g.id)===String(form.goal_id))?.name||'Transfer'):'Transfer'):(form.subcategory||null),description:form.description,amount:Number(form.amount),need_want:form.type==='Expense'?form.need_want:null,fixed_variable:form.fixed_variable,payment_method:accounts.find(a=>String(a.id)===String(form.account_id))?.name||'Unassigned',account_id:form.account_id||null,to_account_id:form.type==='Transfer'?form.to_account_id||null:null,goal_id:form.type==='Transfer'?(form.goal_id||null):null,debt_id:form.type==='Income'&&form.loan_mode==='new'?null:(form.debt_id||null),recurring:form.type==='Transfer'?false:form.recurring,notes:form.notes};
+    const payload={friend_id:form.friend_id||null,exclude_from_totals:form.type!=='Transfer'&&!!form.exclude_from_totals,transaction_date:form.transaction_date,type:form.type,category:form.type==='Transfer'?'Transfer':form.category,subcategory:form.type==='Transfer'?(form.goal_id?(goals.find(g=>String(g.id)===String(form.goal_id))?.name||'Transfer'):'Transfer'):(form.subcategory||null),description:form.description,amount:Number(form.amount),need_want:form.type==='Expense'?(form.need_want||defaultNeedWant(form.category,form.subcategory)):null,fixed_variable:form.fixed_variable,payment_method:accounts.find(a=>String(a.id)===String(form.account_id))?.name||'Unassigned',account_id:form.account_id||null,to_account_id:form.type==='Transfer'?form.to_account_id||null:null,goal_id:form.type==='Transfer'?(form.goal_id||null):null,debt_id:form.type==='Income'&&form.loan_mode==='new'?null:(form.debt_id||null),recurring:form.type==='Transfer'?false:form.recurring,notes:form.notes};
     if(form.receipt_path)payload.receipt_path=form.receipt_path;
     const saved=await saveRecord('transactions',payload,editing?.id);if(!saved)return;
     setTransactions(old=>editing?old.map(x=>x.id===editing.id?saved:x):[saved,...old]);
@@ -853,7 +855,7 @@ function App(){
   async function splitBill(v){
     const acc=accounts.find(a=>String(a.id)===String(v.accountId));if(!acc){setToast('Choose the account you paid from.');return false;}
     const splitId=crypto.randomUUID?crypto.randomUUID():String(Date.now());
-    if(v.myShare>0){const t=await saveRecord('transactions',{transaction_date:v.date,type:'Expense',category:v.category,subcategory:'',description:v.title,amount:v.myShare,need_want:'Need',fixed_variable:'Variable',payment_method:acc.name,account_id:acc.id,to_account_id:null,goal_id:null,debt_id:null,recurring:false,notes:`Split with ${v.people.map(p=>p.name).join(', ')}`});if(!t)return false;setTransactions(o=>[t,...o]);}
+    if(v.myShare>0){const t=await saveRecord('transactions',{transaction_date:v.date,type:'Expense',category:v.category,subcategory:'',description:v.title,amount:v.myShare,need_want:defaultNeedWant(v.category,''),fixed_variable:'Variable',payment_method:acc.name,account_id:acc.id,to_account_id:null,goal_id:null,debt_id:null,recurring:false,notes:`Split with ${v.people.map(p=>p.name).join(', ')}`});if(!t)return false;setTransactions(o=>[t,...o]);}
     for(const p of v.people){const ok=await lendMoney({person:p.name,friendId:p.friend_id,amount:p.amount??v.share,accountId:acc.id,date:v.date,note:`Split: ${v.title}`,splitId,splitCategory:v.category,quiet:true});if(!ok)return false;}
     setToast(`Split sent to ${v.people.length} friend${v.people.length===1?'':'s'}. Each share is recorded once they confirm.`);return true;
   }
@@ -893,7 +895,7 @@ function App(){
   }
   async function chatSave(d){
     {const need={lend:'debts',expense:'transactions',income:'transactions',transfer:'transactions',goal:'goals',debt:'debts',bill:'subscriptions',newbill:'subscriptions',budget:'budgets',fuel:'vehicle_management',service:'vehicle_management'}[d.kind];if(need&&!hasFeature(need)){setToast('This part of Pocket is not turned on for your account.');return false;}}
-    const base={transaction_date:d.date,subcategory:'',description:d.description||'',need_want:'Need',fixed_variable:'Variable',account_id:d.accountId||'',to_account_id:'',goal_id:'',debt_id:'',recurring:false,notes:'Added by typing',loan_mode:'none'};
+    const base={transaction_date:d.date,subcategory:'',description:d.description||'',need_want:d.kind==='expense'?defaultNeedWant(d.category,''):'Need',fixed_variable:'Variable',account_id:d.accountId||'',to_account_id:'',goal_id:'',debt_id:'',recurring:false,notes:'Added by typing',loan_mode:'none'};
     if(d.kind==='expense'||d.kind==='income'){let receipt_path='';if(d.receiptFile){receipt_path=await uploadReceipt(d.receiptFile);if(!receipt_path)setToast('The receipt photo could not be uploaded. Saving the transaction without it.');}return !!(await submitTransaction({...base,type:d.type,category:d.category,amount:d.amount,notes:d.receiptFile?'Added from a receipt photo':base.notes,receipt_path}));}
     if(d.kind==='budget'){const m=monthStart(d.month);const old=budgets.find(b=>b.category===d.category&&String(b.month||'').slice(0,7)===String(d.month));const saved=await saveRecord('budgets',{category:d.category,month:m,amount:Number(d.amount)},old?.id);if(!saved)return false;setBudgets(o=>[saved,...o.filter(x=>String(x.id)!==String(saved.id)&&!(x.category===saved.category&&String(x.month||'').slice(0,7)===String(saved.month||'').slice(0,7)))]);setToast(`Budget for ${d.category} saved`);return true;}
     if(d.kind==='newbill'){const saved=await saveRecord('recurring_payments',{name:d.name||'Bill',category:d.category||'Bills & Utilities',subcategory:null,amount:Number(d.amount),frequency:'Monthly',next_due_date:d.nextDue||null,account_id:d.accountId||null,auto_pay:false,paid_this_cycle:false,last_paid_date:null,pay_by_date:null,paid_amount:0});if(!saved)return false;setRecurring(o=>[saved,...o]);setToast(`${saved.name} added to Subscriptions & bills`);return true;}
