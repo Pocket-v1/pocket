@@ -854,7 +854,7 @@ function App(){
     const acc=accounts.find(a=>String(a.id)===String(v.accountId));if(!acc){setToast('Choose the account you paid from.');return false;}
     const splitId=crypto.randomUUID?crypto.randomUUID():String(Date.now());
     if(v.myShare>0){const t=await saveRecord('transactions',{transaction_date:v.date,type:'Expense',category:v.category,subcategory:'',description:v.title,amount:v.myShare,need_want:'Need',fixed_variable:'Variable',payment_method:acc.name,account_id:acc.id,to_account_id:null,goal_id:null,debt_id:null,recurring:false,notes:`Split with ${v.people.map(p=>p.name).join(', ')}`});if(!t)return false;setTransactions(o=>[t,...o]);}
-    for(const p of v.people){const ok=await lendMoney({person:p.name,friendId:p.friend_id,amount:v.share,accountId:acc.id,date:v.date,note:`Split: ${v.title}`,splitId,splitCategory:v.category,quiet:true});if(!ok)return false;}
+    for(const p of v.people){const ok=await lendMoney({person:p.name,friendId:p.friend_id,amount:p.amount??v.share,accountId:acc.id,date:v.date,note:`Split: ${v.title}`,splitId,splitCategory:v.category,quiet:true});if(!ok)return false;}
     setToast(`Split sent to ${v.people.length} friend${v.people.length===1?'':'s'}. Each share is recorded once they confirm.`);return true;
   }
   async function makeInvite(loan){

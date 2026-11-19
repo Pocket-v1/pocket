@@ -9,31 +9,45 @@ import { LoanModal, loanStatus } from '../debts/OwedToMe.jsx';
 
 function SplitModal({friends,accounts,categories,currency,onClose,onSubmit}){
  const usable=accounts.filter(a=>!isGoalsAccount(a));
- const [title,setTitle]=useState('');const [total,setTotal]=useState('');const [date,setDate]=useState(localISODate());const [accountId,setAccountId]=useState(usable[0]?.id||'');const [category,setCategory]=useState(categories.find(c=>/food|dining/i.test(c))||categories[0]||'Other');const [picked,setPicked]=useState([]);const [me,setMe]=useState(true);const [busy,setBusy]=useState(false);const [q,setQ]=useState('');
+ const [title,setTitle]=useState('');const [total,setTotal]=useState('');const [date,setDate]=useState(localISODate());const [accountId,setAccountId]=useState(usable[0]?.id||'');const [category,setCategory]=useState(categories.find(c=>/food|dining/i.test(c))||categories[0]||'Other');
+ const [picked,setPicked]=useState([]);const [me,setMe]=useState(true);const [busy,setBusy]=useState(false);const [q,setQ]=useState('');const [listOpen,setListOpen]=useState(true);const [details,setDetails]=useState(false);const [mode,setMode]=useState('equal');const [amounts,setAmounts]=useState({});
  const fmt=n=>new Intl.NumberFormat('en-EG',{style:'currency',currency,maximumFractionDigits:2}).format(Number(n)||0);
- const people=friends.filter(f=>picked.includes(f.friend_id));const parts=people.length+(me?1:0);const t=Number(total||0);const share=parts?Math.round(t/parts*100)/100:0;
- const ok=title.trim()&&t>0&&accountId&&people.length>0;
+ const r2=n=>Math.round(n*100)/100;
+ const people=friends.filter(f=>picked.includes(f.friend_id));const parts=people.length+(me?1:0);const t=Number(total||0);
+ const equalShare=parts?r2(t/parts):0;
+ const shareOf=f=>mode==='equal'?equalShare:Number(amounts[f.friend_id]||0);
+ const friendsSum=r2(people.reduce((s,f)=>s+shareOf(f),0));const myShare=me?r2(Math.max(0,t-friendsSum)):0;
+ const left=r2(t-friendsSum-(mode==='custom'&&me?myShare:0));
+ const customOk=mode==='equal'||(people.every(f=>shareOf(f)>0)&&friendsSum<=t+0.001&&(me||Math.abs(friendsSum-t)<0.01));
+ const ok=title.trim()&&t>0&&accountId&&people.length>0&&customOk;
  const shown=friends.filter(f=>!q.trim()||`${f.name} ${f.username}`.toLowerCase().includes(q.trim().toLowerCase())).sort((a,b)=>Number(picked.includes(b.friend_id))-Number(picked.includes(a.friend_id)));
  const toggle=id=>setPicked(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id]);
- async function submit(){if(!ok)return;setBusy(true);try{await onSubmit({title:title.trim(),total:t,date,accountId,category,people,share,myShare:me?Math.round((t-share*people.length)*100)/100:0})}finally{setBusy(false)}}
+ const names=[...(me?['You']:[]),...people.map(p=>p.name)];const label=names.length?`${names.slice(0,3).join(', ')}${names.length>3?` +${names.length-3}`:''}`:'Choose who is in';
+ const acc=usable.find(a=>String(a.id)===String(accountId));
+ async function submit(){if(!ok)return;setBusy(true);try{await onSubmit({title:title.trim(),total:t,date,accountId,category,people:people.map(f=>({...f,amount:r2(shareOf(f))})),myShare})}finally{setBusy(false)}}
  return <div className="modal-backdrop" onMouseDown={e=>e.target===e.currentTarget&&onClose()}><section className="modal debt-pay" role="dialog" aria-modal="true" aria-labelledby="split-title">
-  <div className="debt-pay-head"><div><span className="debt-pay-eyebrow">Friends</span><h2 id="split-title">Split a bill</h2><p>You paid. Each friend's share is recorded once they confirm.</p></div><button type="button" className="debt-pay-close" onClick={onClose} aria-label="Close">×</button></div>
+  <div className="debt-pay-head"><div><span className="debt-pay-eyebrow">Friends</span><h2 id="split-title">Split a bill</h2><p>You paid. Each share is recorded once that friend confirms.</p></div><button type="button" className="debt-pay-close" onClick={onClose} aria-label="Close">×</button></div>
   <div className="debt-pay-body">
-   <label className="debt-pay-field"><span>What was it?</span><input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Dinner" autoFocus/></label>
-   <div className="debt-pay-row"><label className="debt-pay-field"><span>Total paid</span><input type="number" inputMode="decimal" min="0.01" step="0.01" value={total} onChange={e=>setTotal(e.target.value)}/></label><label className="debt-pay-field"><span>Date</span><input type="date" value={date} onChange={e=>setDate(e.target.value)}/></label></div>
-   <div className="debt-pay-row"><label className="debt-pay-field"><span>Paid from</span><select value={accountId} onChange={e=>setAccountId(e.target.value)}>{usable.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select></label><label className="debt-pay-field"><span>Category of your share</span><select value={category} onChange={e=>setCategory(e.target.value)}>{categories.map(c=><option key={c} value={c}>{c}</option>)}</select></label></div>
-   <div className="split-pick">
-    <div className="split-pick-head"><span>Split with</span>{people.length>0&&<b>{people.length} selected</b>}</div>
+   <div className="split-top"><label className="debt-pay-field"><span>What was it?</span><input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Dinner" autoFocus/></label><label className="debt-pay-field split-total"><span>Total</span><input type="number" inputMode="decimal" min="0.01" step="0.01" value={total} onChange={e=>setTotal(e.target.value)} placeholder="0"/></label></div>
+   <button type="button" className="split-who" aria-expanded={listOpen} onClick={()=>setListOpen(v=>!v)}>
+    <span className="split-stack">{me&&<span className="split-av is-me">Me</span>}{people.slice(0,me?2:3).map(f=><span key={f.friend_id} className="split-av">{(f.name||'?').charAt(0).toUpperCase()}</span>)}{names.length>3&&<span className="split-av">+{names.length-3}</span>}</span>
+    <span className="split-who-text"><b>{label}</b><small>{listOpen?'Tap to close the list':'Tap to change who is in'}</small></span><ChevronRight size={16} className="split-chev"/>
+   </button>
+   {listOpen&&<div className="split-pick">
     {friends.length>5&&<label className="split-search"><Search size={15}/><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search friends" aria-label="Search friends"/></label>}
     <div className="split-list" role="group" aria-label="Friends to split with">
-     <label className="split-row is-me"><input type="checkbox" checked={me} onChange={e=>setMe(e.target.checked)}/><span className="split-av">Me</span><span className="split-name">Me too</span></label>
+     <label className="split-row is-me"><input type="checkbox" checked={me} onChange={e=>setMe(e.target.checked)}/><span className="split-av is-me">Me</span><span className="split-name">Me too</span></label>
      {shown.map(f=><label key={f.friend_id} className={`split-row ${picked.includes(f.friend_id)?'is-on':''}`}><input type="checkbox" checked={picked.includes(f.friend_id)} onChange={()=>toggle(f.friend_id)}/><span className="split-av">{(f.name||'?').charAt(0).toUpperCase()}</span><span className="split-name">{f.name}<small>@{f.username}</small></span></label>)}
      {!shown.length&&<p className="lent-note">No friend matches “{q}”.</p>}
     </div>
-   </div>
-   <div className="debt-pay-summary"><div><span>Each share</span><b>{fmt(share)}</b></div><p>{people.length?`${people.map(p=>p.name).join(', ')} ${people.length===1?'owes':'each owe'} you ${fmt(share)}.${me?` Your share ${fmt(Math.max(0,t-share*people.length))} is saved as spending now.`:''}`:'Pick at least one friend.'}</p></div>
+   </div>}
+   {people.length>0&&<div className="split-modes" role="tablist" aria-label="How to split"><button type="button" role="tab" aria-selected={mode==='equal'} className={mode==='equal'?'is-on':''} onClick={()=>setMode('equal')}>Split equally</button><button type="button" role="tab" aria-selected={mode==='custom'} className={mode==='custom'?'is-on':''} onClick={()=>{setMode('custom');setAmounts(a=>{const n={...a};people.forEach(f=>{if(!n[f.friend_id])n[f.friend_id]=String(equalShare||'')});return n;});}}>Custom amounts</button></div>}
+   {mode==='custom'&&people.length>0&&<div className="split-custom">{people.map(f=><label key={f.friend_id} className="split-custom-row"><span className="split-av">{(f.name||'?').charAt(0).toUpperCase()}</span><span className="split-name">{f.name}</span><input type="number" inputMode="decimal" min="0.01" step="0.01" aria-label={`Amount for ${f.name}`} value={amounts[f.friend_id]??''} onChange={e=>setAmounts(a=>({...a,[f.friend_id]:e.target.value}))}/></label>)}{me&&<div className="split-custom-row is-me"><span className="split-av is-me">Me</span><span className="split-name">Your share</span><b>{fmt(myShare)}</b></div>}<p className={`split-assigned ${customOk?'is-ok':'is-bad'}`}>{friendsSum>t+0.001?`Friends' shares are ${fmt(friendsSum-t)} more than the total.`:!me&&Math.abs(friendsSum-t)>=0.01?`${fmt(t-friendsSum)} still to assign.`:`${fmt(friendsSum+myShare)} of ${fmt(t)} assigned ✓`}</p></div>}
+   <div className="split-sum"><div><span>{mode==='equal'?'Each pays':'Friends pay'}</span><b>{fmt(mode==='equal'?equalShare:friendsSum)}</b></div><div><span>You get back</span><b className="is-in">{fmt(friendsSum)}</b></div></div>
+   <div className="split-meta"><span>{acc?.name||'Choose account'}</span><span>·</span><span>{category}</span><span>·</span><span>{date===localISODate()?'Today':shortDate(date)}</span><button type="button" onClick={()=>setDetails(v=>!v)}>{details?'Done':'Change'}</button></div>
+   {details&&<div className="debt-pay-row"><label className="debt-pay-field"><span>Paid from</span><select value={accountId} onChange={e=>setAccountId(e.target.value)}>{usable.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select></label><label className="debt-pay-field"><span>Category</span><select value={category} onChange={e=>setCategory(e.target.value)}>{categories.map(c=><option key={c} value={c}>{c}</option>)}</select></label><label className="debt-pay-field"><span>Date</span><input type="date" value={date} onChange={e=>setDate(e.target.value)}/></label></div>}
   </div>
-  <div className="debt-pay-actions"><button className="btn btn-secondary" type="button" onClick={onClose}>Cancel</button><button className="btn btn-primary" type="button" disabled={busy||!ok} onClick={submit}>{busy?'Sending…':'Split and send'}</button></div>
+  <div className="debt-pay-actions"><button className="btn btn-secondary" type="button" onClick={onClose}>Cancel</button><button className="btn btn-primary" type="button" disabled={busy||!ok} onClick={submit}>{busy?'Sending…':people.length?`Send to ${people.length} friend${people.length===1?'':'s'}`:'Split and send'}</button></div>
  </section></div>;
 }
 
