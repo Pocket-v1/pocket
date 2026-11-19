@@ -945,3 +945,5 @@
 .split-row.is-on .split-av,.split-row.is-me .split-av{background:var(--ds-brand-soft);color:var(--ds-brand)}
 .split-name{flex:1;min-width:0;display:flex;flex-direction:column;font:700 14px var(--ds-font-ui);color:var(--ds-text)}.split-name small{font-weight:500;font-size:12px;color:var(--ds-text-muted)}
 .split-list .lent-note{padding:12px;text-align:center}
+
+.friend-sheet-foot{display:flex;justify-content:center;gap:16px}
