@@ -867,3 +867,5 @@
 .lent-confirm{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.lent-confirm select{flex:1;min-width:140px}
 .lent-foot{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .lent-avatar.is-owe{background:var(--ds-surface-soft,var(--ds-soft));color:var(--ds-text-muted)}
+
+.lent-quick{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
