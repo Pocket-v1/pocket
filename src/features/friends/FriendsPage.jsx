@@ -90,20 +90,22 @@ export function FriendsPage({friends=[],loans=[],owe=[],transactions=[],currency
  </>;
 }
 
-function FriendSheet({f,n,netText,loans,owe,transactions,fmt,onClose,onLend,onBorrow,onSplit,onRemove,onBlock}){
- const [tab,setTab]=useState('loans');const [menu,setMenu]=useState(false);
+function FriendSheet({f,n,netText,loans,owe,transactions,fmt,onClose,onRemove,onBlock}){
+ const [menu,setMenu]=useState(false);
  useEffect(()=>{const k=e=>{if(e.key==='Escape')onClose()};window.addEventListener('keydown',k);return()=>window.removeEventListener('keydown',k)},[onClose]);
  const status=s=>s==='confirmed'?null:s==='rejected'?'Not confirmed':'Waiting to confirm';
  const rows=[...loans.filter(l=>String(l.friend_id)===String(f.friend_id)).map(l=>{const st=loanStatus(l,transactions);return {id:l.id,date:l.lent_on,title:l.note?l.note.replace(/^Split: /,'Split · '):'You lent',amount:Number(l.amount),dir:'in',sub:status(l.share_status)||(st.done?'Paid back':`${fmt(st.left)} left`)};}),
   ...owe.filter(l=>String(l.lender_id)===String(f.friend_id)).map(l=>{const left=Math.max(0,Number(l.amount)-Number(l.back||0));return {id:l.id,date:l.lent_on,title:l.note?l.note.replace(/^Split: /,'Split · '):'You borrowed',amount:Number(l.amount),dir:'out',sub:status(l.share_status)||(left>0.001?`${fmt(left)} left`:'Paid back')};})].sort((a,b)=>String(b.date).localeCompare(String(a.date)));
  const spent=transactions.filter(t=>String(t.friend_id)===String(f.friend_id)&&!t.loan_given_id).sort((a,b)=>String(b.transaction_date).localeCompare(String(a.transaction_date)));
  return <div className="modal-backdrop" onMouseDown={e=>e.target===e.currentTarget&&onClose()}><section className="modal friend-sheet" role="dialog" aria-modal="true" aria-labelledby="friend-sheet-title">
-  <div className="friend-sheet-top"><div className="friend-menu-wrap"><button type="button" className="icon-btn" aria-label="More options" aria-expanded={menu} aria-haspopup="menu" onClick={()=>setMenu(v=>!v)}><MoreHorizontal size={18}/></button>{menu&&<div className="friend-menu" role="menu"><button type="button" role="menuitem" onClick={()=>{setMenu(false);onRemove()}}><UserMinus size={16}/> Remove friend</button><button type="button" role="menuitem" className="is-danger" onClick={()=>{setMenu(false);onBlock()}}><Block size={16}/> Block</button></div>}</div><button type="button" className="debt-pay-close" onClick={onClose} aria-label="Close">×</button></div>
-  <div className="friend-sheet-head"><span className="friend-sheet-avatar">{(f.name||'?').charAt(0).toUpperCase()}</span><h2 id="friend-sheet-title">{f.name}</h2><small>@{f.username}</small></div>
-  <div className={`friend-sheet-balance ${n>0?'is-in':n<0?'is-out':''}`}><span>{n>0?'Owes you':n<0?'You owe':'Balance'}</span><b>{n===0?netText:fmt(Math.abs(n))}</b></div>
-  <div className="friend-sheet-actions"><button className="btn btn-primary" onClick={onLend}>Lend</button><button className="btn btn-secondary" onClick={onBorrow}>Borrow</button><button className="btn btn-secondary" onClick={onSplit}>Split</button></div>
-  <div className="friend-sheet-tabs" role="tablist"><button role="tab" aria-selected={tab==='loans'} className={tab==='loans'?'is-on':''} onClick={()=>setTab('loans')}>Loans ({rows.length})</button><button role="tab" aria-selected={tab==='spent'} className={tab==='spent'?'is-on':''} onClick={()=>setTab('spent')}>Spent together ({spent.length})</button></div>
-  <div className="friend-sheet-list">{tab==='loans'?(rows.length?rows.map(r=><div className="friend-sheet-row" key={r.id}><span className={`friend-dir ${r.dir==='in'?'is-in':'is-out'}`} aria-hidden="true">{r.dir==='in'?'↑':'↓'}</span><span className="friend-main"><b>{r.title}</b><small>{shortDate(r.date)} · {r.sub}</small></span><b>{fmt(r.amount)}</b></div>):<p className="lent-note friend-sheet-empty">No loans yet. Lend or borrow to start.</p>):(spent.length?spent.slice(0,30).map(t=><div className="friend-sheet-row" key={t.id}><span className="friend-dir" aria-hidden="true">•</span><span className="friend-main"><b>{t.description||t.category}</b><small>{shortDate(t.transaction_date)} · {t.category}</small></span><b>{fmt(t.amount)}</b></div>):<p className="lent-note friend-sheet-empty">Pick “With a friend” on a transaction to see it here.</p>)}</div>
-  
+  <header className="fs-head">
+   <span className="fs-avatar">{(f.name||'?').charAt(0).toUpperCase()}</span>
+   <div className="fs-id"><h2 id="friend-sheet-title">{f.name}</h2><small>@{f.username}</small></div>
+   <div className="friend-menu-wrap"><button type="button" className="fs-icon" aria-label="More options" aria-expanded={menu} aria-haspopup="menu" onClick={()=>setMenu(v=>!v)}><MoreHorizontal size={18}/></button>{menu&&<div className="friend-menu" role="menu"><button type="button" role="menuitem" onClick={()=>{setMenu(false);onRemove()}}><UserMinus size={16}/> Remove friend</button><button type="button" role="menuitem" className="is-danger" onClick={()=>{setMenu(false);onBlock()}}><Block size={16}/> Block</button></div>}</div>
+   <button type="button" className="fs-icon" onClick={onClose} aria-label="Close">×</button>
+  </header>
+  <div className={`fs-balance ${n>0?'is-in':n<0?'is-out':''}`}><span>{n>0?'Owes you':n<0?'You owe':'Balance'}</span><b>{n===0?netText:fmt(Math.abs(n))}</b></div>
+  <section className="fs-section"><h3>Loans</h3>{rows.length?rows.map(r=><div className="friend-sheet-row" key={r.id}><span className={`friend-dir ${r.dir==='in'?'is-in':'is-out'}`} aria-hidden="true">{r.dir==='in'?'↑':'↓'}</span><span className="friend-main"><b>{r.title}</b><small>{shortDate(r.date)} · {r.sub}</small></span><b>{fmt(r.amount)}</b></div>):<p className="lent-note">No loans with {f.name} yet.</p>}</section>
+  {spent.length>0&&<section className="fs-section"><h3>Spent together</h3>{spent.slice(0,20).map(t=><div className="friend-sheet-row" key={t.id}><span className="friend-dir" aria-hidden="true">•</span><span className="friend-main"><b>{t.description||t.category}</b><small>{shortDate(t.transaction_date)} · {t.category}</small></span><b>{fmt(t.amount)}</b></div>)}</section>}
  </section></div>;
 }

@@ -1104,6 +1104,7 @@ function App(){
       if(cloudReady && session?.user){
         const {data,error}=await supabase.auth.updateUser({data:{...session.user.user_metadata,full_name:name,gender:form.gender||session.user.user_metadata?.gender||'prefer_not_to_say',currency:form.currency,timezone:form.timezone,avatar:form.avatar||profileAvatar}});
         if(error) throw error;
+        if(form.username){const u=await supabase.rpc('update_my_username',{p_username:form.username});if(u.error)throw u.error;if(u.data!=='ok')throw new Error(u.data==='taken'?'This username is already taken':'Username: 3–32 letters, numbers, dot, underscore or hyphen');setProfile(o=>o?{...o,username:form.username}:o);}
         const {error:profileError}=await supabase.from('profiles').update({full_name:name,updated_at:new Date().toISOString()}).eq('id',session.user.id);
         if(profileError) throw profileError;
         if(data?.user)setSession(old=>old?{...old,user:data.user}:old);
@@ -1394,7 +1395,7 @@ function App(){
     {modal==='recurring'&&<RecurringModal currency={currency} accounts={accounts} initial={editing} onClose={()=>{setModal(null);setEditing(null)}} onSave={addRecurring}/>}
     {modal==='budget'&&<BudgetModal currency={currency} initial={editing} month={month} onClose={()=>{setModal(null);setEditing(null)}} onSave={addBudget}/>}
      {modal==='app-settings'&&<SettingsModal {...{onClose:()=>setModal(null),design,setDesign,sidebarSize,setSidebarSize,isAdmin,backupForUsers,setBackupVisibility,exportCSV,exportBackup,handleImport,restoreBackup,session,supabase,onOpenProfile:()=>setModal('profile')}}/>}
-    {modal==='profile'&&<AccountProfileModal {...{sendEmailVerification,addAccountEmail,onClose:()=>setModal(null),openAvatarPicker:gender=>{setAvatarPickerGender(gender||session?.user?.user_metadata?.gender||'prefer_not_to_say');setModal('avatar-picker')},session,saveProfile,profileSaving,profileName:session?.user?.user_metadata?.full_name||profileName,gender:session?.user?.user_metadata?.gender||'prefer_not_to_say',currency,timezone,profileAvatar}}/>}
+    {modal==='profile'&&<AccountProfileModal {...{username:profile?.username||'',sendEmailVerification,addAccountEmail,onClose:()=>setModal(null),openAvatarPicker:gender=>{setAvatarPickerGender(gender||session?.user?.user_metadata?.gender||'prefer_not_to_say');setModal('avatar-picker')},session,saveProfile,profileSaving,profileName:session?.user?.user_metadata?.full_name||profileName,gender:session?.user?.user_metadata?.gender||'prefer_not_to_say',currency,timezone,profileAvatar}}/>}
     {modal==='avatar-picker'&&<AvatarPickerModal current={profileAvatar} gender={avatarPickerGender} onClose={()=>setModal('profile')} onChoose={avatar=>{setProfileAvatar(avatar);setModal('profile')}} />}
     {tourOpen&&!wizardOpen&&<AppTour onClose={closeTour}/>}
     {wizardOpen&&<WelcomeWizard name={displayName.split(' ')[0]} currency={currency} canAccount={allowedFeatures.includes('accounts')} steps={wizardSteps} onClose={closeWizard} onCreateAccount={createSetupAccount}/>}

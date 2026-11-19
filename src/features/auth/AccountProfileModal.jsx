@@ -2,18 +2,21 @@ import { Check, LoaderCircle, LockKeyhole, Mail, SlidersHorizontal, UserRound } 
 import { useState } from 'react';
 import { ModalShell } from '../../components/modals/ModalShell.jsx';
 import { Field } from '../../components/ui/Field.jsx';
+import { UsernameStatus } from '../../components/ui/UsernameStatus.jsx';
 import { ProfileAvatar } from '../../components/ui/ProfileAvatar.jsx';
 import { zones } from '../../lib/format.js';
 
 export function AccountProfileModal(p){
- const {onClose,sendEmailVerification,addAccountEmail,openAvatarPicker,session,saveProfile,profileSaving,profileName,gender='prefer_not_to_say',currency,timezone,profileAvatar}=p;
+ const {onClose,sendEmailVerification,addAccountEmail,openAvatarPicker,session,saveProfile,profileSaving,profileName,gender='prefer_not_to_say',currency,timezone,profileAvatar,username:curUser=''}=p;
+ const [uname,setUname]=useState(curUser||'');const [unSt,setUnSt]=useState('idle');const unChanged=uname.trim().toLowerCase()===String(curUser||'').toLowerCase();
  const [name,setName]=useState(profileName||'');const [userGender,setUserGender]=useState(['female','male','prefer_not_to_say'].includes(String(gender).toLowerCase())?String(gender).toLowerCase():'prefer_not_to_say');const [curr,setCurr]=useState(currency);const [zone,setZone]=useState(timezone);
  const accEmail=session?.user?.email||'';const hasEmail=Boolean(accEmail)&&!accEmail.endsWith('@users.pocket.local');const verified=hasEmail&&Boolean(session?.user?.email_confirmed_at);
  const [newEmail,setNewEmail]=useState('');const [mailBusy,setMailBusy]=useState(false);
  const genderOptions=[{value:'female',label:'Female',detail:'Personalized suggestions'},{value:'male',label:'Male',detail:'Personalized suggestions'},{value:'prefer_not_to_say',label:'Prefer not to say',detail:'Keep suggestions general'}];
- return <ModalShell title="Account & profile" subtitle="Manage your identity and regional preferences in one place." onClose={onClose} wide><form className="auth-form profile-settings-form" onSubmit={e=>{e.preventDefault();saveProfile({full_name:name,gender:userGender,currency:curr,timezone:zone,avatar:profileAvatar})}}>
+ return <ModalShell title="Account & profile" subtitle="Manage your identity and regional preferences in one place." onClose={onClose} wide><form className="auth-form profile-settings-form" onSubmit={e=>{e.preventDefault();if(!unChanged&&unSt!=='ok')return;saveProfile({full_name:name,username:unChanged?null:uname.trim(),gender:userGender,currency:curr,timezone:zone,avatar:profileAvatar})}}>
    <section className="profile-settings-card profile-personal-card"><div className="profile-section-heading"><span className="profile-section-icon"><UserRound size={17}/></span><div><h3>Personal details</h3><p>How you appear across Pocket.</p></div></div>
     <div className="profile-identity-strip"><span className="profile-avatar-preview"><ProfileAvatar value={profileAvatar}/></span><div className="profile-avatar-current-copy"><b>{name.trim()||'Your profile'}</b><small>{session?.user?.email||'Your personal Pocket workspace'}</small><span className="profile-avatar-caption">Profile picture</span></div><button type="button" className="btn btn-secondary btn-sm" onClick={()=>openAvatarPicker(userGender)}>Change picture</button></div>
+    <div className="profile-fields-row"><Field label="Username" hint={unChanged?'Friends find you with this.':undefined}><input value={uname} onChange={e=>setUname(e.target.value.replace(/\s/g,''))} maxLength={32} autoCapitalize="none" autoCorrect="off" autoComplete="username" placeholder="username"/>{!unChanged&&<UsernameStatus value={uname} onStatus={setUnSt}/>}</Field></div>
     <div className="profile-fields-row"><Field label="Display name"><input required maxLength={80} value={name} onChange={e=>setName(e.target.value)} placeholder="Your name" autoComplete="name"/></Field><div className="field profile-gender-field"><span>Gender</span><div className="profile-gender-options" role="group" aria-label="Gender">{genderOptions.map(option=><button key={option.value} type="button" className={`profile-gender-option ${userGender===option.value?'selected':''}`} aria-pressed={userGender===option.value} onClick={()=>setUserGender(option.value)}><span className="profile-gender-check">{userGender===option.value?<Check size={13}/>:null}</span><b>{option.label}</b></button>)}</div></div></div>
     <p className="small-muted profile-gender-note">Gender is used to personalize suggested expense categories. You can still choose any category.</p>
    </section>
