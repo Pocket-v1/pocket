@@ -932,3 +932,16 @@
 .friends-find input{flex:1;min-width:0;height:40px;border:0;outline:none;background:transparent;font:600 14px var(--ds-font-ui);color:var(--ds-text)}
 :root[data-theme="dark"] .friends-hero{border:1px solid rgba(255,255,255,.08)}
 @media (prefers-reduced-motion:reduce){.friends-hero,.friends-orbit,.friends-orbit span,.friends-pop,.friends-rise{animation:none}}
+
+/* Split: friend picker that scales to many friends */
+.split-pick{display:flex;flex-direction:column;gap:8px}
+.split-pick-head{display:flex;justify-content:space-between;align-items:center;font:700 12px var(--ds-font-ui);color:var(--ds-text-muted)}.split-pick-head b{color:var(--ds-brand)}
+.split-search{display:flex;align-items:center;gap:8px;padding:0 12px;border-radius:12px;border:1px solid var(--ds-border);background:var(--ds-surface)}.split-search svg{color:var(--ds-text-muted)}.split-search input{flex:1;min-width:0;height:42px;border:0;outline:none;background:transparent;font:600 14px var(--ds-font-ui);color:var(--ds-text)}
+.split-list{display:flex;flex-direction:column;max-height:228px;overflow:auto;border:1px solid var(--ds-border);border-radius:14px;background:var(--ds-surface)}
+.split-row{display:flex;align-items:center;gap:10px;min-height:52px;padding:0 12px;border-bottom:1px solid var(--ds-border);cursor:pointer}.split-row:last-child{border-bottom:0}
+.split-row input{width:18px;height:18px;accent-color:var(--ds-brand);flex:none}
+.split-row.is-on{background:var(--ds-brand-soft)}
+.split-av{flex:none;width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:var(--ds-surface-soft,var(--ds-soft));color:var(--ds-text-muted);font:800 12px var(--ds-font-display)}
+.split-row.is-on .split-av,.split-row.is-me .split-av{background:var(--ds-brand-soft);color:var(--ds-brand)}
+.split-name{flex:1;min-width:0;display:flex;flex-direction:column;font:700 14px var(--ds-font-ui);color:var(--ds-text)}.split-name small{font-weight:500;font-size:12px;color:var(--ds-text-muted)}
+.split-list .lent-note{padding:12px;text-align:center}

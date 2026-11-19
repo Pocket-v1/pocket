@@ -9,10 +9,11 @@ import { LoanModal, loanStatus } from '../debts/OwedToMe.jsx';
 
 function SplitModal({friends,accounts,categories,currency,onClose,onSubmit}){
  const usable=accounts.filter(a=>!isGoalsAccount(a));
- const [title,setTitle]=useState('');const [total,setTotal]=useState('');const [date,setDate]=useState(localISODate());const [accountId,setAccountId]=useState(usable[0]?.id||'');const [category,setCategory]=useState(categories.find(c=>/food|dining/i.test(c))||categories[0]||'Other');const [picked,setPicked]=useState([]);const [me,setMe]=useState(true);const [busy,setBusy]=useState(false);
+ const [title,setTitle]=useState('');const [total,setTotal]=useState('');const [date,setDate]=useState(localISODate());const [accountId,setAccountId]=useState(usable[0]?.id||'');const [category,setCategory]=useState(categories.find(c=>/food|dining/i.test(c))||categories[0]||'Other');const [picked,setPicked]=useState([]);const [me,setMe]=useState(true);const [busy,setBusy]=useState(false);const [q,setQ]=useState('');
  const fmt=n=>new Intl.NumberFormat('en-EG',{style:'currency',currency,maximumFractionDigits:2}).format(Number(n)||0);
  const people=friends.filter(f=>picked.includes(f.friend_id));const parts=people.length+(me?1:0);const t=Number(total||0);const share=parts?Math.round(t/parts*100)/100:0;
  const ok=title.trim()&&t>0&&accountId&&people.length>0;
+ const shown=friends.filter(f=>!q.trim()||`${f.name} ${f.username}`.toLowerCase().includes(q.trim().toLowerCase())).sort((a,b)=>Number(picked.includes(b.friend_id))-Number(picked.includes(a.friend_id)));
  const toggle=id=>setPicked(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id]);
  async function submit(){if(!ok)return;setBusy(true);try{await onSubmit({title:title.trim(),total:t,date,accountId,category,people,share,myShare:me?Math.round((t-share*people.length)*100)/100:0})}finally{setBusy(false)}}
  return <div className="modal-backdrop" onMouseDown={e=>e.target===e.currentTarget&&onClose()}><section className="modal debt-pay" role="dialog" aria-modal="true" aria-labelledby="split-title">
@@ -21,7 +22,15 @@ function SplitModal({friends,accounts,categories,currency,onClose,onSubmit}){
    <label className="debt-pay-field"><span>What was it?</span><input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Dinner" autoFocus/></label>
    <div className="debt-pay-row"><label className="debt-pay-field"><span>Total paid</span><input type="number" inputMode="decimal" min="0.01" step="0.01" value={total} onChange={e=>setTotal(e.target.value)}/></label><label className="debt-pay-field"><span>Date</span><input type="date" value={date} onChange={e=>setDate(e.target.value)}/></label></div>
    <div className="debt-pay-row"><label className="debt-pay-field"><span>Paid from</span><select value={accountId} onChange={e=>setAccountId(e.target.value)}>{usable.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select></label><label className="debt-pay-field"><span>Category of your share</span><select value={category} onChange={e=>setCategory(e.target.value)}>{categories.map(c=><option key={c} value={c}>{c}</option>)}</select></label></div>
-   <fieldset className="split-people"><legend>Split with</legend>{friends.map(f=><label key={f.friend_id} className={`split-chip ${picked.includes(f.friend_id)?'is-on':''}`}><input type="checkbox" checked={picked.includes(f.friend_id)} onChange={()=>toggle(f.friend_id)}/>{f.name}</label>)}<label className={`split-chip ${me?'is-on':''}`}><input type="checkbox" checked={me} onChange={e=>setMe(e.target.checked)}/>Me too</label></fieldset>
+   <div className="split-pick">
+    <div className="split-pick-head"><span>Split with</span>{people.length>0&&<b>{people.length} selected</b>}</div>
+    {friends.length>5&&<label className="split-search"><Search size={15}/><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search friends" aria-label="Search friends"/></label>}
+    <div className="split-list" role="group" aria-label="Friends to split with">
+     <label className="split-row is-me"><input type="checkbox" checked={me} onChange={e=>setMe(e.target.checked)}/><span className="split-av">Me</span><span className="split-name">Me too</span></label>
+     {shown.map(f=><label key={f.friend_id} className={`split-row ${picked.includes(f.friend_id)?'is-on':''}`}><input type="checkbox" checked={picked.includes(f.friend_id)} onChange={()=>toggle(f.friend_id)}/><span className="split-av">{(f.name||'?').charAt(0).toUpperCase()}</span><span className="split-name">{f.name}<small>@{f.username}</small></span></label>)}
+     {!shown.length&&<p className="lent-note">No friend matches “{q}”.</p>}
+    </div>
+   </div>
    <div className="debt-pay-summary"><div><span>Each share</span><b>{fmt(share)}</b></div><p>{people.length?`${people.map(p=>p.name).join(', ')} ${people.length===1?'owes':'each owe'} you ${fmt(share)}.${me?` Your share ${fmt(Math.max(0,t-share*people.length))} is saved as spending now.`:''}`:'Pick at least one friend.'}</p></div>
   </div>
   <div className="debt-pay-actions"><button className="btn btn-secondary" type="button" onClick={onClose}>Cancel</button><button className="btn btn-primary" type="button" disabled={busy||!ok} onClick={submit}>{busy?'Sending…':'Split and send'}</button></div>
