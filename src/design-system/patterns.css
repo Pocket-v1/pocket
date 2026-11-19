@@ -869,3 +869,5 @@
 .lent-avatar.is-owe{background:var(--ds-surface-soft,var(--ds-soft));color:var(--ds-text-muted)}
 
 .lent-quick{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+
+.friend-loans{margin-bottom:16px}
