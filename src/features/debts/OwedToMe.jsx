@@ -41,7 +41,7 @@ export function OwedToMe({loans=[],accounts=[],transactions=[],currency='EGP',on
  const owed=open.reduce((s,r)=>s+r.st.left,0);
  const acc=id=>accounts.find(a=>String(a.id)===String(id))?.name||'Account';
  return <>
-  <div className="cc-section-head"><div><h2>Owed to me</h2><p>{open.length?`${fmt(owed)} from ${open.length} ${open.length===1?'person':'people'} · not in your income or spending`:'Money you lent. Not counted as spending, and not income when it comes back.'}</p></div><button className="btn btn-primary btn-sm" onClick={()=>setModal({mode:'lend'})}><Plus size={14}/> Lend money</button></div>
+  <div className="cc-section-head"><div><h2>Owed to me</h2><p>{open.length?`${fmt(owed)} from ${open.length} ${open.length===1?'person':'people'} · not in your income or spending`:'Money you lent. Not counted as spending, and not income when it comes back.'}</p></div>{rows.length>0&&<button className="btn btn-primary btn-sm" onClick={()=>setModal({mode:'lend'})}><Plus size={14}/> Lend money</button>}</div>
   {open.length?<div className="lent-list">{open.map(r=><section className="panel lent-card" key={r.id}>
    <div className="lent-top"><span className="lent-avatar">{(r.person||'?').trim().charAt(0).toUpperCase()}</span><div className="lent-title"><h3>{r.person}</h3><p>{r.st.back>0?`${fmt(r.st.amount)} lent · ${fmt(r.st.back)} back`:`Lent ${shortDate(r.lent_on)} from ${acc(r.account_id)}`}</p></div><b className="lent-left">{fmt(r.st.left)}</b></div>
    {r.st.back>0&&<div className="progress-track"><span style={{width:`${r.st.progress}%`,background:'var(--ds-ok,#187d55)'}}/></div>}
