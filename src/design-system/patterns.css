@@ -882,3 +882,7 @@
 .split-people{border:0;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:8px}.split-people legend{font:700 12px var(--ds-font-ui);color:var(--ds-text-muted);margin-bottom:6px;padding:0}
 .split-chip{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 12px;border-radius:99px;border:1px solid var(--ds-border);background:var(--ds-surface);font:700 13px var(--ds-font-ui);cursor:pointer}
 .split-chip.is-on{border-color:var(--ds-brand);background:var(--ds-brand-soft);color:var(--ds-brand)}.split-chip input{accent-color:var(--ds-brand)}
+
+.lent-pending.is-bad{background:color-mix(in srgb,var(--ds-danger,#d6304a) 10%,transparent)}
+.lent-pending .select-lite{align-self:flex-start}
+.lent-confirm input{flex:1;min-width:110px}

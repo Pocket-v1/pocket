@@ -10,6 +10,9 @@ export function loanStatus(loan,transactions=[]){
  const amount=Number(loan.amount||0);const left=Math.max(0,amount-back);
  return {back,left,amount,done:!!loan.closed_at||left<=0,progress:amount>0?Math.min(100,back/amount*100):0};
 }
+const DKEY='pocket-loan-dismissed';
+export function dismissed(){try{return new Set(JSON.parse(localStorage.getItem(DKEY)||'[]'))}catch{return new Set()}}
+export function dismiss(id){try{const d=dismissed();d.add(String(id));localStorage.setItem(DKEY,JSON.stringify([...d]))}catch{}}
 const dayDiff=d=>Math.round((new Date(`${d}T00:00:00`)-new Date(`${localISODate()}T00:00:00`))/864e5);
 export function dueLabel(due){if(!due)return null;const n=dayDiff(due);return n<0?{text:`${-n} day${n===-1?'':'s'} late`,late:true}:n===0?{text:'Due today',late:true}:{text:`Due in ${n} day${n===1?'':'s'}`,late:n<=3};}
 
@@ -52,7 +55,14 @@ function AccountConfirm({accounts,defaultId,label,onYes,onNo,noLabel='Not right'
  return <div className="lent-confirm"><select aria-label={label} value={id} onChange={e=>setId(e.target.value)}>{usable.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select><button className="btn btn-secondary btn-sm" disabled={busy} onClick={()=>run(onNo)}>{noLabel}</button><button className="btn btn-primary btn-sm" disabled={busy||!id} onClick={()=>run(()=>onYes(id))}><Check size={14}/> Confirm</button></div>;
 }
 
-export function OwedToMe({loans=[],accounts=[],transactions=[],currency='EGP',onLend,onBack,onReopen,onDelete,requestConfirm,lendOpen=false,setLendOpen=()=>{},friends=[],payments=[],owe=[],presetFriend=null,onPaymentRespond,onOweRespond,onOwePay,onInvite,onRequestRespond}){
+function ResendRow({loan,currency,onResend}){
+ const [amount,setAmount]=useState(String(loan.amount));const [busy,setBusy]=useState(false);
+ return <div className="lent-confirm"><input type="number" inputMode="decimal" min="0.01" step="0.01" aria-label="Correct amount" value={amount} onChange={e=>setAmount(e.target.value)}/><button className="btn btn-primary btn-sm" disabled={busy||!(Number(amount)>0)} onClick={async()=>{setBusy(true);try{await onResend(loan,Number(amount))}finally{setBusy(false)}}}>Edit &amp; resend</button></div>;
+}
+
+export function OwedToMe({loans=[],accounts=[],transactions=[],currency='EGP',onLend,onBack,onReopen,onDelete,requestConfirm,lendOpen=false,setLendOpen=()=>{},friends=[],payments=[],owe=[],presetFriend=null,onPaymentRespond,onOweRespond,onOwePay,onInvite,onRequestRespond,onResend,onCloseLoan}){
+ const [,force]=useState(0);const gone=dismissed();
+ const shot=r=>payments.filter(p=>String(p.loan_id)===String(r.id)&&p.status==='rejected'&&p.lender_account_id&&!gone.has(String(p.id)));
  const [modal,setModalRaw]=useState(null);const [openId,setOpenId]=useState(null);
  const shown=lendOpen?{mode:'lend'}:modal;
  const pend=r=>payments.filter(p=>String(p.loan_id)===String(r.id)&&p.status==='pending_lender');
@@ -77,7 +87,9 @@ export function OwedToMe({loans=[],accounts=[],transactions=[],currency='EGP',on
    {r.share_status==='requested'&&<div className="lent-pending"><span>{r.person} says you lent them <b>{fmt(r.amount)}</b> on {shortDate(r.lent_on)}. Which account did it come from?</span><AccountConfirm accounts={accounts} label="Account it came from" onYes={id=>onRequestRespond(r,true,id)} onNo={()=>{const why=window.prompt('What is not right?','');if(why!==null)onRequestRespond(r,false,null,why.trim());}}/></div>}
    {waiting(r).map(p=><p className="lent-share" key={p.id}>Waiting for {r.person} to confirm {fmt(p.amount)} back</p>)}
    {pend(r).map(p=><div className="lent-pending" key={p.id}><span>{r.person} says they sent you <b>{fmt(p.amount)}</b> on {shortDate(p.paid_on)}. Which account did it go into?</span><AccountConfirm accounts={accounts} defaultId={r.account_id} label="Account it went into" onYes={id=>onPaymentRespond(p,r,true,id)} onNo={()=>onPaymentRespond(p,r,false)} noLabel="Didn't get it"/></div>)}
-   <div className="lent-actions">{canAct(r)&&<><button className="btn btn-secondary" onClick={()=>setModal({mode:'back',loan:r})}>Part back</button><button className="btn btn-primary" onClick={()=>onBack(r,{amount:r.st.left,accountId:r.account_id,date:localISODate()})}><Check size={15}/> Got it all back</button></>}<button className="icon-btn danger-hover" title="Delete" aria-label={`Delete loan to ${r.person}`} onClick={()=>requestConfirm('Delete this loan?',`Delete the loan to ${r.person} and its money-back entries? Your account balances go back to before it.`,()=>onDelete(r),'Delete')}><Trash2 size={15}/></button></div>
+   {r.friend_id&&r.share_status==='rejected'&&!r.requested_by&&<ResendRow loan={r} currency={currency} onResend={onResend}/>}
+   {shot(r).map(p=><div className="lent-pending is-bad" key={p.id}><span>{r.person} says they did not pay <b>{fmt(p.amount)}</b> on {shortDate(p.paid_on)}. Nothing was recorded.</span><button className="select-lite" onClick={()=>{dismiss(p.id);force(x=>x+1)}}>OK</button></div>)}
+   <div className="lent-actions">{canAct(r)&&<><button className="btn btn-secondary" onClick={()=>setModal({mode:'back',loan:r})}>Part back</button><button className="btn btn-primary" onClick={()=>onBack(r,{amount:r.st.left,accountId:r.account_id,date:localISODate()})}><Check size={15}/> Got it all back</button></>}{r.friend_id&&r.share_status==='confirmed'?<button className="btn btn-secondary" onClick={()=>requestConfirm('Close this loan?',`Close the loan to ${r.person}? The ${fmt(r.st.left)} left is forgiven for both of you. Nothing already recorded changes.`,()=>onCloseLoan(r),'Close loan')}>Close</button>:<button className="icon-btn danger-hover" title="Delete" aria-label={`Delete loan to ${r.person}`} onClick={()=>requestConfirm('Delete this loan?',`Delete the loan to ${r.person} and its money-back entries? Your account balances go back to before it.`,()=>onDelete(r),'Delete')}><Trash2 size={15}/></button>}</div>
    <div className="lent-foot"><button type="button" className="lent-history-toggle" aria-expanded={openId===r.id} onClick={()=>setOpenId(openId===r.id?null:r.id)}>History <ChevronDown size={14}/></button>{!r.friend_id&&onInvite&&<button type="button" className="lent-history-toggle" onClick={()=>onInvite(r)}>Invite {r.person} to Pocket</button>}</div>
    {openId===r.id&&<ul className="lent-history">{history(r).map(t=><li key={t.id}><span>{t.type==='Expense'?'Lent':'Back'} · {shortDate(t.transaction_date)} · {acc(t.account_id)}</span><b className={t.type==='Income'?'is-in':''}>{t.type==='Income'?'+':'−'}{fmt(t.amount)}</b></li>)}</ul>}
   </section>)}</div>:(!done.length&&<EmptyState panel icon={HandCoins} title="Nobody owes you money" text="Lent money to a friend? Add it with Lend money. Your account goes down now, and back up as they pay you, without touching your income or spending."/>)}
@@ -86,16 +98,17 @@ export function OwedToMe({loans=[],accounts=[],transactions=[],currency='EGP',on
  </>;
 }
 
-export function openOwe(owe=[]){return owe.filter(l=>!l.closed_at&&l.share_status!=='rejected'&&(['pending','requested'].includes(l.share_status)||Number(l.amount)-Number(l.back||0)>0.001));}
-export function FriendLoanCards({owe=[],payments=[],accounts=[],transactions=[],currency='EGP',onOweRespond,onPaymentRespond,onOwePay}){
+export function openOwe(owe=[],uid=null){const gone=dismissed();return owe.filter(l=>l.share_status==='rejected'?(uid&&String(l.requested_by)===String(uid)&&!gone.has(String(l.id))):!l.closed_at&&(['pending','requested'].includes(l.share_status)||Number(l.amount)-Number(l.back||0)>0.001));}
+export function FriendLoanCards({owe=[],payments=[],accounts=[],transactions=[],currency='EGP',onOweRespond,onPaymentRespond,onOwePay,uid=null}){
+ const [,force]=useState(0);
  const [modal,setModal]=useState(null);
  const fmt=n=>new Intl.NumberFormat('en-EG',{style:'currency',currency,maximumFractionDigits:0}).format(Number(n)||0);
  const ask=(title,fn)=>{const why=window.prompt(title,'');if(why!==null)fn(why.trim());};
- const oweOpen=openOwe(owe);if(!oweOpen.length)return null;
+ const oweOpen=openOwe(owe,uid);if(!oweOpen.length)return null;
  return <><div className="lent-list friend-loans">{oweOpen.map(l=>{const left=Math.max(0,Number(l.amount)-Number(l.back||0));const mine=payments.filter(p=>String(p.loan_id)===String(l.id));return <section className="panel lent-card" key={l.id}>
    <div className="lent-top"><span className="lent-avatar is-owe">{(l.lender_name||'?').charAt(0).toUpperCase()}</span><div className="lent-title"><h3>{l.lender_name}</h3><p>{Number(l.back)>0?`${fmt(l.amount)} borrowed · ${fmt(l.back)} paid`:`Lent you ${fmt(l.amount)} on ${shortDate(l.lent_on)}`}</p></div><div className="lent-amount"><b className="lent-left">{fmt(left)}</b>{dueLabel(l.due_on)&&<span className={`status-tag ${dueLabel(l.due_on).late?'status-pending':''}`}>{dueLabel(l.due_on).text}</span>}</div></div>
    {l.note&&<p className="lent-note">{l.note}</p>}
-   {l.share_status==='requested'?<p className="lent-share">Waiting for {l.lender_name} to confirm</p>:l.share_status==='pending'?<div className="lent-pending"><span>{l.lender_name} says they lent you <b>{fmt(l.amount)}</b>. Which account did it go into?</span><AccountConfirm accounts={accounts} label="Account it went into" onYes={id=>onOweRespond(l,true,id)} onNo={()=>ask('What is not right?',why=>onOweRespond(l,false,null,why))}/></div>:<>
+   {l.share_status==='rejected'?<div className="lent-pending is-bad"><span>{l.lender_name} says this is not right{l.share_note?`: “${l.share_note}”`:''}. Nothing was recorded.</span><button className="select-lite" onClick={()=>{dismiss(l.id);force(x=>x+1)}}>OK</button></div>:l.share_status==='requested'?<p className="lent-share">Waiting for {l.lender_name} to confirm</p>:l.share_status==='pending'&&l.split_id?<div className="lent-pending"><span>{l.lender_name} paid for {l.note?l.note.replace(/^Split: /,''):'something'} and your share is <b>{fmt(l.amount)}</b>. Nothing moves from your accounts now. It counts as your spending when you pay it back.</span><div className="lent-confirm"><button className="btn btn-secondary btn-sm" onClick={()=>ask('What is not right?',why=>onOweRespond(l,false,null,why))}>Not right</button><button className="btn btn-primary btn-sm" onClick={()=>onOweRespond(l,true,null)}><Check size={14}/> Confirm</button></div></div>:l.share_status==='pending'?<div className="lent-pending"><span>{l.lender_name} says they lent you <b>{fmt(l.amount)}</b>. Which account did it go into?</span><AccountConfirm accounts={accounts} label="Account it went into" onYes={id=>onOweRespond(l,true,id)} onNo={()=>ask('What is not right?',why=>onOweRespond(l,false,null,why))}/></div>:<>
     {mine.filter(p=>p.status==='pending_payer').map(p=><div className="lent-pending" key={p.id}><span>{l.lender_name} recorded that you paid <b>{fmt(p.amount)}</b> on {shortDate(p.paid_on)}. Which account did it come from?</span><AccountConfirm accounts={accounts} defaultId={l.borrower_account_id} label="Account it came from" onYes={id=>onPaymentRespond(p,l,true,id)} onNo={()=>onPaymentRespond(p,l,false,null)}/></div>)}
     {mine.filter(p=>p.status==='pending_lender').map(p=><p className="lent-share" key={p.id}>Waiting for {l.lender_name} to confirm {fmt(p.amount)}</p>)}
     {mine.filter(p=>p.status==='rejected'&&!p.lender_account_id).slice(0,1).map(p=><p className="lent-share is-bad" key={p.id}>{l.lender_name} did not get {fmt(p.amount)}. Check with them, then pay again.</p>)}
