@@ -154,6 +154,19 @@ function one(raw, ctx) {
   const hasNum = /\d/.test(t);
   const pages = ctx.pages || Object.keys(PAGE_ALIASES);
 
+  // Lend money: "salaft Ahmed 500" / "سلفت احمد 500" / "lent Sara 300"
+  if (hasNum && /(^|\s)(salaft|sallaft|salaftu|lent|lend|سلفت|سلفتها|سلفته)(\s|$)/.test(t)) {
+    const m = t.match(/(\d[\d,.]*)\s*(k|alf|الف|ألف)?/);
+    const amount = m ? Number(m[1].replace(/,/g, '')) * (m[2] ? 1000 : 1) : 0;
+    const rest = t.replace(/(salaft|sallaft|salaftu|lent|lend|سلفت|سلفتها|سلفته)/g, ' ').replace(m ? m[0] : '', ' ').replace(/(^|\s)(l|le|li|to|ل)(\s|$)/g, ' ').replace(/\s+/g, ' ').trim();
+    const friends = ctx.friends || [];
+    const f = friends.find(x => rest && String(x.name || '').toLowerCase().split(/\s+/).some(w => w && rest.includes(w)));
+    const person = f ? f.name : rest ? rest.charAt(0).toUpperCase() + rest.slice(1) : '';
+    const usable = (ctx.accounts || []).filter(a => !a.is_system);
+    const acc = usable.find(a => String(a.id) === String(ctx.defaultAccountId)) || usable[0];
+    if (amount > 0) return { draft: { kind: 'lend', amount, person, friendId: f?.friend_id || '', accountId: acc?.id || '', date: new Date().toISOString().slice(0, 10), rawText: raw } };
+  }
+
   // Open a page
   if (NAV_W.test(t) && !hasNum) { const p = navTarget(t, pages); if (p) return { navigate: p }; }
 

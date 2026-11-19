@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { CarFront, CreditCard, Landmark, Receipt, Repeat2, Search, Target, Wallet, X } from '../../lib/icons.jsx';
+import  { Users, CarFront, CreditCard, Landmark, Receipt, Repeat2, Search, Target, Wallet, X } from '../../lib/icons.jsx';
 import { fmt, shortDate } from '../../lib/format.js';
 
-const KINDS={transaction:{label:'Transactions',icon:Receipt},account:{label:'Accounts',icon:Wallet},debt:{label:'Debts & installments',icon:Landmark},recurring:{label:'Subscriptions & bills',icon:Repeat2},goal:{label:'Savings goals',icon:Target},vehicle:{label:'Vehicles',icon:CarFront}};
+const KINDS={friend:{label:'Friends',icon:Users},transaction:{label:'Transactions',icon:Receipt},account:{label:'Accounts',icon:Wallet},debt:{label:'Debts & installments',icon:Landmark},recurring:{label:'Subscriptions & bills',icon:Repeat2},goal:{label:'Savings goals',icon:Target},vehicle:{label:'Vehicles',icon:CarFront}};
 const has=(q,...vals)=>vals.some(v=>String(v??'').toLowerCase().includes(q));
 
-export function GlobalSearch({open,onClose,transactions=[],accounts=[],debts=[],recurring=[],goals=[],loadVehicles,onPick,currency}){
+export function GlobalSearch({open,onClose,transactions=[],accounts=[],debts=[],recurring=[],goals=[],loadVehicles,onPick,currency,friends=[]}){
  const [q,setQ]=useState(''),[vehicles,setVehicles]=useState([]),[active,setActive]=useState(0);const input=useRef(null);
  useEffect(()=>{if(!open)return;setQ('');setActive(0);setTimeout(()=>input.current?.focus(),30);if(loadVehicles)loadVehicles().then(v=>setVehicles(v||[])).catch(()=>{})},[open]);
  const results=useMemo(()=>{const s=q.trim().toLowerCase();if(s.length<2)return [];const out=[];
+  friends.filter(f=>has(s,f.name,f.username)).slice(0,4).forEach(f=>out.push({kind:'friend',id:f.friend_id,title:f.name,sub:`@${f.username||''}`}));
   accounts.filter(a=>has(s,a.name,a.type)).slice(0,4).forEach(a=>out.push({kind:'account',id:a.id,title:a.name,sub:a.type||'Account'}));
   debts.filter(d=>has(s,d.name,d.lender,d.notes)).slice(0,4).forEach(d=>out.push({kind:'debt',id:d.id,title:d.name,sub:`Remaining ${fmt(d.remaining_amount||0,currency)}`}));
   recurring.filter(r=>has(s,r.name,r.category)).slice(0,4).forEach(r=>out.push({kind:'recurring',id:r.id,title:r.name,sub:`${fmt(r.amount||0,currency)} · ${r.frequency||''}`}));

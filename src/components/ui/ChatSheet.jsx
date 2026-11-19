@@ -9,7 +9,7 @@ const money = (n, c) => { try { return new Intl.NumberFormat('en-EG', { style: '
 const SR = typeof window !== 'undefined' ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
 const FUEL_TYPES = ['80 Octane', '92 Octane', '95 Octane', '98 Octane', 'Diesel', 'Electric charging', 'Gas'];
 const SERVICE_TYPES = ['Oil change', 'Routine maintenance', 'Tires', 'Brakes', 'Battery', 'Repair', 'Other'];
-const TITLES = { expense: 'Expense', income: 'Income', transfer: 'Transfer', debt: 'Debt payment', bill: 'Bill payment', goal: 'Goal deposit', fuel: 'Fuel', service: 'Car service', budget: 'Budget', newbill: 'New monthly bill' };
+const TITLES = { expense: 'Expense', income: 'Income', transfer: 'Transfer', debt: 'Debt payment', bill: 'Bill payment', goal: 'Goal deposit', fuel: 'Fuel', service: 'Car service', budget: 'Budget', newbill: 'New monthly bill', lend: 'Money lent' };
 
 function Draft({ m, ctx, onChange, onSave, onCancel }) {
   const d = m.draft;
@@ -32,6 +32,7 @@ function Draft({ m, ctx, onChange, onSave, onCancel }) {
     <div className="chat-amount">{money(d.amount, currency)}{d.kind === 'budget' && <small> / month</small>}</div>
     {d.receiptUrl && <img className="chat-receipt-thumb" src={d.receiptUrl} alt="Receipt" />}
     {d.kind === 'debt' && <p className="chat-note">{d.debtName}</p>}
+    {d.kind === 'lend' && <p className="chat-note">{d.friendId ? 'Sent to your friend to confirm. Nothing is recorded until they do.' : 'Not counted as spending. It goes to Owed to me.'}</p>}
     {d.kind === 'bill' && <p className="chat-note">{d.billName}</p>}
     {notes.map((n, i) => <p key={i} className={`chat-note ${n.tone === 'bad' ? 'chat-note-bad' : 'chat-note-warn'}`}>{n.text}</p>)}
     {!saved && <div className="chat-fields">
@@ -40,6 +41,8 @@ function Draft({ m, ctx, onChange, onSave, onCancel }) {
       {(isTx || d.kind === 'budget' || d.kind === 'newbill') && <label className="field"><span>Category</span><select value={d.category} onChange={e => set({ category: e.target.value })}>{[...new Set([...(d.type === 'Income' ? incomeCats : expenseCats), d.category].filter(Boolean))].map(c => <option key={c}>{c}</option>)}</select></label>}
       {isTx && txt('description', 'Note', '')}
       {d.kind === 'newbill' && txt('name', 'Name', 'Internet')}
+      {d.kind === 'lend' && (ctx.friends || []).length > 0 && <label className="field"><span>Pocket friend</span><select value={d.friendId || ''} onChange={e => { const f = ctx.friends.find(x => String(x.friend_id) === e.target.value); set({ friendId: e.target.value, person: f ? f.name : d.person }); }}><option value="">Not a Pocket friend</option>{ctx.friends.map(f => <option key={f.friend_id} value={f.friend_id}>{f.name}</option>)}</select></label>}
+      {d.kind === 'lend' && txt('person', 'Lent to', 'Name')}
       {d.kind === 'newbill' && <label className="field"><span>Next due</span><input type="date" value={d.nextDue} onChange={e => set({ nextDue: e.target.value })} /></label>}
       {d.kind === 'budget' && <label className="field"><span>Month</span><input type="month" value={d.month} onChange={e => set({ month: e.target.value })} /></label>}
       {car && <label className="field"><span>Vehicle</span><select value={d.vehicleId || ''} onChange={e => set({ vehicleId: e.target.value })}>{!d.vehicleId && <option value="">Choose…</option>}{vehicles.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}</select></label>}
@@ -62,7 +65,7 @@ function Draft({ m, ctx, onChange, onSave, onCancel }) {
   </div>;
 }
 
-export function ChatSheet({ open: openProp, onOpenChange, accounts, debts, recurring, goals, expenseCats, incomeCats, currency, defaultAccountId, onSave, transactions = [], budgets = [], page, pages, onNavigate, vehicles = [], vehicleSpend, lastFuelType, startWith }) {
+export function ChatSheet({ open: openProp, onOpenChange, accounts, debts, recurring, goals, expenseCats, incomeCats, currency, defaultAccountId, onSave, transactions = [], budgets = [], page, pages, onNavigate, vehicles = [], vehicleSpend, lastFuelType, startWith, friends = [] }) {
   const [openLocal, setOpenLocal] = useState(false);
   const controlled = openProp !== undefined;
   const open = controlled ? openProp : openLocal;
@@ -73,7 +76,7 @@ export function ChatSheet({ open: openProp, onOpenChange, accounts, debts, recur
   const [lang, setLang] = useState(() => { try { return localStorage.getItem('pocket-voice-lang') || 'ar-EG'; } catch { return 'ar-EG'; } });
   const recRef = useRef(null); const fileRef = useRef(null);
   const bodyRef = useRef(null); const inputRef = useRef(null);
-  const ctx = useMemo(() => ({ accounts, debts, recurring, goals, expenseCats, incomeCats, currency, defaultAccountId, transactions, budgets, page, pages, vehicles, vehicleSpend, lastFuelType }), [accounts, debts, recurring, goals, expenseCats, incomeCats, currency, defaultAccountId, transactions, budgets, page, pages, vehicles, vehicleSpend, lastFuelType]);
+  const ctx = useMemo(() => ({ friends, accounts, debts, recurring, goals, expenseCats, incomeCats, currency, defaultAccountId, transactions, budgets, page, pages, vehicles, vehicleSpend, lastFuelType }), [accounts, debts, recurring, goals, expenseCats, incomeCats, currency, defaultAccountId, transactions, budgets, page, pages, vehicles, vehicleSpend, lastFuelType]);
   const examples = PAGE_EXAMPLES[page] || PAGE_EXAMPLES.default;
   useEffect(() => { if (open && !startWith) { setTimeout(() => inputRef.current?.focus(), 50); } }, [open]);
   useEffect(() => { if (!open || !startWith) return; if (startWith === 'voice') setTimeout(startVoice, 150); if (startWith === 'photo') setTimeout(() => fileRef.current?.click(), 50); }, [open, startWith]);
