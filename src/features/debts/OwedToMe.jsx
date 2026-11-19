@@ -33,21 +33,23 @@ function LoanModal({mode,loan,accounts,currency,onClose,onSubmit}){
  </section></div>;
 }
 
-export function OwedToMe({loans=[],accounts=[],transactions=[],currency='EGP',onLend,onBack,onClose,onReopen,onDelete,requestConfirm}){
- const [modal,setModal]=useState(null);
+export function OwedToMe({loans=[],accounts=[],transactions=[],currency='EGP',onLend,onBack,onClose,onReopen,onDelete,requestConfirm,lendOpen=false,setLendOpen=()=>{}}){
+ const [modal,setModalRaw]=useState(null);
+ const shown=lendOpen?{mode:'lend'}:modal;
+ const setModal=m=>{if(m?.mode==='lend'){setLendOpen(true);return;}setLendOpen(false);setModalRaw(m);};
  const fmt=n=>new Intl.NumberFormat('en-EG',{style:'currency',currency,maximumFractionDigits:0}).format(Number(n)||0);
  const rows=loans.map(l=>({...l,_tx:transactions,st:loanStatus(l,transactions)}));
  const open=rows.filter(r=>!r.st.done),done=rows.filter(r=>r.st.done);
  const owed=open.reduce((s,r)=>s+r.st.left,0);
  const acc=id=>accounts.find(a=>String(a.id)===String(id))?.name||'Account';
  return <>
-  <div className="cc-section-head"><div><h2>Owed to me</h2><p>{open.length?`${fmt(owed)} from ${open.length} ${open.length===1?'person':'people'} · not in your income or spending`:'Money you lent. Not counted as spending, and not income when it comes back.'}</p></div>{rows.length>0&&<button className="btn btn-primary btn-sm" onClick={()=>setModal({mode:'lend'})}><Plus size={14}/> Lend money</button>}</div>
+  <div className="cc-section-head"><div><h2>Owed to me</h2><p>{open.length?`${fmt(owed)} from ${open.length} ${open.length===1?'person':'people'} · not in your income or spending`:'Money you lent. Not counted as spending, and not income when it comes back.'}</p></div></div>
   {open.length?<div className="lent-list">{open.map(r=><section className="panel lent-card" key={r.id}>
    <div className="lent-top"><span className="lent-avatar">{(r.person||'?').trim().charAt(0).toUpperCase()}</span><div className="lent-title"><h3>{r.person}</h3><p>{r.st.back>0?`${fmt(r.st.amount)} lent · ${fmt(r.st.back)} back`:`Lent ${shortDate(r.lent_on)} from ${acc(r.account_id)}`}</p></div><b className="lent-left">{fmt(r.st.left)}</b></div>
    {r.st.back>0&&<div className="progress-track"><span style={{width:`${r.st.progress}%`,background:'var(--ds-ok,#187d55)'}}/></div>}
    <div className="lent-actions"><button className="btn btn-secondary" onClick={()=>setModal({mode:'back',loan:r})}>Part back</button><button className="btn btn-primary" onClick={()=>onBack(r,{amount:r.st.left,accountId:r.account_id,date:localISODate()})}><Check size={15}/> Got it all back</button><button className="icon-btn danger-hover" title="Delete" aria-label={`Delete loan to ${r.person}`} onClick={()=>requestConfirm('Delete this loan?',`Delete the loan to ${r.person} and its money-back entries? Your account balances go back to before it.`,()=>onDelete(r),'Delete')}><Trash2 size={15}/></button></div>
-  </section>)}</div>:(!done.length&&<EmptyState panel icon={HandCoins} title="Nobody owes you money" text="Lent money to a friend? Add it here. Your account goes down now, and back up as they pay you, without touching your income or spending."><button className="btn btn-primary" onClick={()=>setModal({mode:'lend'})}><Plus size={16}/> Lend money</button></EmptyState>)}
+  </section>)}</div>:(!done.length&&<EmptyState panel icon={HandCoins} title="Nobody owes you money" text="Lent money to a friend? Add it here. Your account goes down now, and back up as they pay you, without touching your income or spending."></EmptyState>)}
   {done.length>0&&<details className="debt-done"><summary><Check size={15}/> Paid back ({done.length})</summary><div className="debt-done-list">{done.map(r=><div className="debt-done-row" key={r.id}><div><b>{r.person}</b><small>{fmt(r.st.amount)} lent · {fmt(r.st.back)} back</small></div><div className="row-actions">{r.closed_at&&r.st.left>0&&<button className="select-lite" onClick={()=>onReopen(r)}>Reopen</button>}<button className="icon-btn danger-hover" title="Delete" aria-label={`Delete loan to ${r.person}`} onClick={()=>requestConfirm('Delete this loan?',`Delete the loan to ${r.person} and its money-back entries?`,()=>onDelete(r),'Delete')}><Trash2 size={15}/></button></div></div>)}</div></details>}
-  {modal&&<LoanModal mode={modal.mode} loan={modal.loan} accounts={accounts} currency={currency} onClose={()=>setModal(null)} onSubmit={async v=>{const ok=modal.mode==='lend'?await onLend(v):await onBack(modal.loan,v);if(ok)setModal(null);}}/>}
+  {shown&&<LoanModal mode={shown.mode} loan={shown.loan} accounts={accounts} currency={currency} onClose={()=>setModal(null)} onSubmit={async v=>{const ok=shown.mode==='lend'?await onLend(v):await onBack(shown.loan,v);if(ok)setModal(null);}}/>}
  </>;
 }
