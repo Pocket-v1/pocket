@@ -830,3 +830,12 @@
 .quick-add-row:hover,.quick-add-icon:hover{background:var(--ds-surface-soft,var(--ds-soft))}
 .quick-add-icon{flex:none;width:40px;height:40px;border:0;border-radius:12px;display:grid;place-items:center;background:var(--ds-brand-soft);color:var(--ds-brand);cursor:pointer}
 .quick-add-badge{min-width:20px;height:20px;padding:0 6px;border-radius:99px;background:var(--ds-danger,#d6304a);color:#fff;font:800 11px var(--ds-font-ui);display:grid;place-items:center}
+
+/* Owed to me (money lent) */
+.lent-list{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+.lent-card{display:flex;flex-direction:column;gap:12px;padding:16px}
+.lent-top{display:flex;align-items:center;gap:12px}
+.lent-avatar{flex:none;width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--ds-brand-soft);color:var(--ds-brand);font:800 15px var(--ds-font-display)}
+.lent-title{flex:1;min-width:0}.lent-title h3{margin:0;font-size:15px}.lent-title p{margin:2px 0 0;font-size:12.5px;color:var(--ds-text-muted)}
+.lent-left{font:800 17px var(--ds-font-display);color:var(--ds-text)}
+.lent-actions{display:flex;gap:8px;align-items:center}.lent-actions .btn{flex:1}

@@ -135,6 +135,7 @@ function App(){
   const accounts = useMemo(()=>{const manual=goals.reduce((sum,g)=>sum+Number(g.saved_amount||0),0);const outside=goals.reduce((sum,g)=>sum+Math.max(0,Math.min(Number(g.saved_amount||0),goalSaved(g,transactions,rawAccounts))),0);return rawAccounts.map(a=>isGoalsAccount(a)?{...a,opening_balance:Number(a.opening_balance||0)+manual,_manualGoalMoney:manual,_outsideMoney:outside}:a)},[rawAccounts,goals,transactions]);
   const [defaultAccountId,setDefaultAccountId] = useState(()=>{try{return null||''}catch{return ''}});
   const [debts,setDebts] = useState([]);
+  const [loansGiven,setLoansGiven] = useState([]);
   const [month,setMonth] = useState(monthNow);
   const [search,setSearch] = useState('');
   const [typeFilter,setTypeFilter] = useState('All types');
@@ -379,6 +380,7 @@ function App(){
         if(!r.error)setRecurring(r.data||[]);
         if(!a.error)setAccounts(a.data||[]);
         if(!d.error)setDebts(d.data||[]);
+        supabase.from('loans_given').select('*').order('lent_on',{ascending:false}).then(r=>{if(!r.error&&alive)setLoansGiven(r.data||[])});
         supabase.from('sms_inbox').select('id',{count:'exact',head:true}).eq('status','pending').then(r=>{if(!r.error&&alive)setPendingSms(r.count||0)});
         if(errors.length)setDataLoadError(`Some data could not be loaded: ${[...new Set(errors)].join(' · ')}`);
       } catch(error) {
@@ -752,6 +754,31 @@ function App(){
   const [chatVehicles,setChatVehicles]=useState({vehicles:[],fuel:[],services:[],lastFuelType:''});
   useEffect(()=>{if(!chatOpen||!supabase||!session?.user?.id||!allowedFeatures.includes('vehicle_management'))return;let alive=true;(async()=>{const uid=session.user.id;const [v,f,sv,st]=await Promise.all([supabase.from('vehicles').select('*').eq('user_id',uid),supabase.from('vehicle_fuel_logs').select('fill_date,cost,vehicle_id,fuel_type').eq('user_id',uid),supabase.from('vehicle_service_records').select('service_date,cost,vehicle_id').eq('user_id',uid),supabase.from('user_settings').select('settings').eq('user_id',uid).maybeSingle()]);if(!alive)return;setChatVehicles({vehicles:v.data||[],fuel:f.data||[],services:sv.data||[],lastFuelType:st.data?.settings?.lastFuelType||''});})();return()=>{alive=false}},[chatOpen,session?.user?.id]);
   const vehicleSpend=useCallback((from,to)=>{const inR=d=>d&&d>=from&&d<=to;const fuel=chatVehicles.fuel.filter(x=>inR(x.fill_date)).reduce((s,x)=>s+Number(x.cost||0),0);const service=chatVehicles.services.filter(x=>inR(x.service_date)).reduce((s,x)=>s+Number(x.cost||0),0);return {fuel,service,total:fuel+service};},[chatVehicles]);
+  async function lendMoney(v){
+    const acc=accounts.find(a=>String(a.id)===String(v.accountId));if(!acc){setToast('Choose the account you lent from.');return false;}
+    const loan=await saveRecord('loans_given',{person:v.person,amount:v.amount,account_id:acc.id,lent_on:v.date,note:v.note||null});if(!loan)return false;
+    const tx=await saveRecord('transactions',{transaction_date:v.date,type:'Expense',category:'Savings & Debt',subcategory:'Money lent',description:`Lent to ${v.person}`,amount:v.amount,need_want:'Need',fixed_variable:'Variable',payment_method:acc.name,account_id:acc.id,to_account_id:null,goal_id:null,debt_id:null,recurring:false,notes:v.note||'',exclude_from_totals:true,loan_given_id:loan.id});
+    if(!tx){await supabase.from('loans_given').delete().eq('id',loan.id);return false;}
+    setLoansGiven(o=>[loan,...o]);setTransactions(o=>[tx,...o]);setToast(`Saved · ${v.person} owes you ${fmt(v.amount)}`);return true;
+  }
+  async function loanMoneyBack(loan,v){
+    const acc=accounts.find(a=>String(a.id)===String(v.accountId))||accounts.find(a=>String(a.id)===String(loan.account_id));if(!acc){setToast('Choose the account the money came into.');return false;}
+    const tx=await saveRecord('transactions',{transaction_date:v.date,type:'Income',category:'Other',subcategory:'Money back',description:`Money back from ${loan.person}`,amount:v.amount,need_want:'Need',fixed_variable:'Variable',payment_method:acc.name,account_id:acc.id,to_account_id:null,goal_id:null,debt_id:null,recurring:false,notes:'',exclude_from_totals:true,loan_given_id:loan.id});
+    if(!tx)return false;setTransactions(o=>[tx,...o]);
+    const back=transactions.filter(t=>String(t.loan_given_id)===String(loan.id)&&t.type==='Income').reduce((s,t)=>s+Number(t.amount||0),0)+Number(v.amount);
+    if(back>=Number(loan.amount)-0.001){const c=await saveRecord('loans_given',{person:loan.person,amount:loan.amount,account_id:loan.account_id,lent_on:loan.lent_on,note:loan.note,closed_at:new Date().toISOString()},loan.id);if(c)setLoansGiven(o=>o.map(x=>x.id===c.id?c:x));setToast(`${loan.person} paid you back in full`);}
+    else setToast(`${fmt(v.amount)} back from ${loan.person} · ${fmt(Number(loan.amount)-back)} left`);
+    return true;
+  }
+  async function setLoanClosed(loan,closed){
+    const c=await saveRecord('loans_given',{person:loan.person,amount:loan.amount,account_id:loan.account_id,lent_on:loan.lent_on,note:loan.note,closed_at:closed?new Date().toISOString():null},loan.id);if(c)setLoansGiven(o=>o.map(x=>x.id===c.id?c:x));
+  }
+  async function deleteLoan(loan){
+    const uid=session?.user?.id;if(!uid)return;
+    const r1=await supabase.from('transactions').delete().eq('loan_given_id',loan.id).eq('user_id',uid);if(r1.error){setToast(r1.error.message);return;}
+    const r2=await supabase.from('loans_given').delete().eq('id',loan.id).eq('user_id',uid);if(r2.error){setToast(r2.error.message);return;}
+    setTransactions(o=>o.filter(t=>String(t.loan_given_id)!==String(loan.id)));setLoansGiven(o=>o.filter(x=>x.id!==loan.id));setToast('Loan deleted');
+  }
   async function chatSaveVehicle(d){
     const uid=session?.user?.id;if(!uid)return false;
     const v=chatVehicles.vehicles.find(x=>String(x.id)===String(d.vehicleId));if(!v){setToast('Choose the vehicle first.');return false;}
@@ -1232,7 +1259,7 @@ function App(){
         {canSeeCurrentPage&&page==='Accounts'&&<AccountsPage {...{can:hasFeature,openGoals:()=>setPage('Savings goals'),goals,debts,creditActions,accountsView,setAccountsView,accounts,transactions,setModal,setEditing,removeRecord,setAccounts,currency,requestConfirm,defaultAccountId,setDefaultAccountId,pendingSms}} openSms={allowedFeatures.includes('bank_sms')?(from,id)=>{if(id)setSmsFocusAccount(id);setPage('Bank SMS')}:null}/>}
         {canSeeCurrentPage&&page==='Bank SMS'&&<div><SmsPage focusAccount={smsFocusAccount} onFocusDone={()=>setSmsFocusAccount(null)} debts={debts} recurring={recurring} onPayDebt={recordDebtInstallment} onPayBill={markRecurringPaid} accounts={accounts} transactions={transactions} session={session} supabase={supabase} currency={currency} gender={session?.user?.user_metadata?.gender||''} setToast={setToast} onPendingChange={setPendingSms} onUndoTx={async ids=>{for(const id of ids)await removeRecord('transactions',id,setTransactions,transactions);}} onApprove={async payload=>{const saved=await saveRecord('transactions',payload);if(saved)setTransactions(o=>[saved,...o]);return saved}}/></div>}
         {canSeeCurrentPage&&page==='Cash flow calendar'&&<CashFlowCalendar {...{transactions:reportTx.filter(t=>t.type==='Income'||t.type==='Expense'),recurring:activeRecurring,accounts,debts,month,setMonth,currency}}/>}
-        {canSeeCurrentPage&&page==='Debts & installments'&&<DebtsPage {...{debts,accounts,transactions,debtFocus,setDebtFocus,credit:creditActions,setAccounts,setModal,setEditing,removeRecord,setDebts,currency,requestConfirm,recordDebtInstallment,closeDebt,reopenDebt,setDebtPaymentTarget,setToast}}/>}
+        {canSeeCurrentPage&&page==='Debts & installments'&&<DebtsPage {...{debts,accounts,transactions,debtFocus,setDebtFocus,credit:creditActions,setAccounts,setModal,setEditing,removeRecord,setDebts,currency,requestConfirm,recordDebtInstallment,closeDebt,reopenDebt,setDebtPaymentTarget,setToast,lent:{loans:loansGiven,onLend:lendMoney,onBack:loanMoneyBack,onReopen:l=>setLoanClosed(l,false),onDelete:deleteLoan}}}/>}
         {canSeeCurrentPage&&(page==='Insights & reports'||page==='Insights & forecast'||page==='Reports')&&<InsightsReportsPage {...{transactions:reportTx,month,setMonth,budgets,recurring:activeRecurring,goals,debts,currency,setPage,accounts:rawAccounts,showVehicles:allowedFeatures.includes('vehicle_management')}}/>}
         {canSeeCurrentPage&&page==='Budgets'&&<BudgetsPage {...{budgets,transactions:reportTx,month,setMonth,setModal,setEditing,setToast,removeRecord,setBudgets,requestConfirm}}/>}
         {canSeeCurrentPage&&page==='Savings goals'&&<GoalsPage {...{onSpend:(g,saved)=>setSpendGoal({goal:g,saved}),onAddMoney:g=>setAddMoneyGoal(g),onCompleteGoal:(g,saved)=>setCompleteGoalTarget({goal:g,saved}),onReopenGoal:reopenGoal,goals,transactions,accounts,setModal,setEditing,setToast,removeRecord,setGoals,totalSaved,goalTarget,requestConfirm}}/>}
