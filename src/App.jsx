@@ -480,7 +480,7 @@ function App(){
   const notificationPayments=activeRecurring.filter(r=>!r.paid_this_cycle&&r.next_due_date&&r.next_due_date<=notificationDueLimit).sort((a,b)=>(a.next_due_date||'').localeCompare(b.next_due_date||''));
   const notificationItems=[...budgetAlerts,...debtAlerts,...cardAlerts,...notificationPayments.map(r=>({id:`recurring-${r.id}`,kind:'recurring',name:r.name,detail:r.next_due_date?`${r.next_due_date<todayISO?'Overdue':r.next_due_date===todayISO?'Due today':'Due soon'} · ${new Date(r.next_due_date+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})} · ${r.frequency||'Recurring'}`:'Upcoming payment',target:'Subscriptions & bills',amount:Math.max(0,Number(r.amount||0)-Number(r.paid_amount||0))}))];
   useEffect(()=>{try{const t=new URLSearchParams(window.location.search).get('invite');if(t){localStorage.setItem('pocket-invite',t);const u=new URL(window.location.href);u.searchParams.delete('invite');window.history.replaceState(null,'',u.toString());}}catch{}},[]);
-  useEffect(()=>{if(!cloudReady||!session?.user?.id)return;let t=null;try{t=localStorage.getItem('pocket-invite')}catch{}if(!t)return;supabase.rpc('friend_invite_accept',{p_token:t}).then(r=>{try{localStorage.removeItem('pocket-invite')}catch{}if(!r.error&&r.data==='ok'){setToast('You are now friends. Check Owed to me for shared loans.');fr.refresh();}});},[cloudReady,session?.user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(()=>{if(!cloudReady||!session?.user?.id)return;let t=null;try{t=localStorage.getItem('pocket-invite')}catch{}if(!t)return;supabase.rpc('friend_invite_accept',{p_token:t}).then(r=>{try{localStorage.removeItem('pocket-invite')}catch{}if(!r.error&&r.data==='ok'){setToast('You have a friend request. Open Friends to accept it.');fr.refresh();}});},[cloudReady,session?.user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const fr=useFriends({supabase,userId:session?.user?.id,enabled:Boolean(cloudReady&&session?.user?.id)});
   useEffect(()=>{if(fr.myLoans)setLoansGiven(fr.myLoans);},[fr.myLoans]);
   const syncBusy=useRef(new Set());
@@ -858,9 +858,12 @@ function App(){
     setToast(`Split sent to ${v.people.length} friend${v.people.length===1?'':'s'}. Each share is recorded once they confirm.`);return true;
   }
   async function makeInvite(loan){
-    const r=await supabase.from('friend_invites').insert({loan_id:loan?.id||null}).select('token').single();if(r.error){setToast(r.error.message);return null;}
-    if(loan)await supabase.from('loans_given').update({invite_token:r.data.token}).eq('id',loan.id);
-    const link=`${window.location.origin}/?invite=${r.data.token}`;
+    const base='https://pocket-egypt.vercel.app';
+    let token=null;
+    if(!loan){const ex=await supabase.from('friend_invites').select('token').is('loan_id',null).order('created_at',{ascending:false}).limit(1);token=ex.data?.[0]?.token||null;}
+    if(!token){const r=await supabase.from('friend_invites').insert({loan_id:loan?.id||null}).select('token').single();if(r.error){setToast(r.error.message);return null;}token=r.data.token;}
+    if(loan)await supabase.from('loans_given').update({invite_token:token}).eq('id',loan.id);
+    const link=`${base}/?invite=${token}`;
     if(loan){try{await navigator.clipboard.writeText(link);setToast(`Invite link copied. Send it to ${loan.person}.`);}catch{window.prompt('Copy this invite link',link);}}
     return link;
   }

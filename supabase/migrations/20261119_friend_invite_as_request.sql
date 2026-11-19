@@ -1,0 +1,1 @@
+-- friend_invite_accept now creates a pending friend request from the inviter (applied as "friend_invite_as_request"). Additive.
