@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowDownLeft, ArrowLeftRight, Fuel, MessageCircle, MessageSquare, Plus, Receipt, Wrench, X , Mic, Camera} from '../../lib/icons.jsx';
+import { ArrowDownLeft, ArrowLeftRight, Fuel, MessageCircle, MessageSquare, Plus, Receipt, Wrench, X , Mic, Camera, HandCoins} from '../../lib/icons.jsx';
 
-export function QuickAdd({onPlus=null,canTransact=true,onTransaction,onType,onVoice,onPhoto,onSms,smsPending=0,onFuel,onService,showVehicles}){
+export function QuickAdd({onPlus=null,canTransact=true,onTransaction,onType,onVoice,onPhoto,onSms,smsPending=0,onFuel,onService,showVehicles,onLend}){
  const [open,setOpen]=useState(false);const ref=useRef(null);
  useEffect(()=>{if(!open)return;const k=e=>{if(e.key==='Escape')setOpen(false)};window.addEventListener('keydown',k);return()=>window.removeEventListener('keydown',k)},[open]);
  const run=fn=>()=>{setOpen(false);fn()};
  const hasVoice=onVoice&&typeof window!=='undefined'&&(window.SpeechRecognition||window.webkitSpeechRecognition);
  const fast=onType||hasVoice||onPhoto;
- const items=[...(canTransact?[{label:'Form',icon:Receipt,fn:onTransaction}]:[]),...(onSms?[{label:'SMS',icon:MessageSquare,fn:onSms,badge:smsPending}]:[]),...(showVehicles?[{label:'Fuel',icon:Fuel,fn:onFuel},{label:'Service',icon:Wrench,fn:onService}]:[])];
+ const items=[...(canTransact?[{label:'Form',icon:Receipt,fn:onTransaction}]:[]),...(onLend?[{label:'Lend',icon:HandCoins,fn:onLend}]:[]),...(onSms?[{label:'SMS',icon:MessageSquare,fn:onSms,badge:smsPending}]:[]),...(showVehicles?[{label:'Fuel',icon:Fuel,fn:onFuel},{label:'Service',icon:Wrench,fn:onService}]:[])];
  if(!items.length&&!fast&&!onPlus)return null;
  return <div className="quick-add" ref={ref}>
   {open&&<button type="button" className="quick-add-scrim" aria-label="Close quick add" onClick={()=>setOpen(false)}/>}

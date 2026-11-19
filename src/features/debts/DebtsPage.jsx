@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Check, CreditCard, Download, FileSpreadsheet, FileText, Pencil, Plus, Trash2 } from '../../lib/icons.jsx';
 import { DebtReportMenu } from './DebtReportMenu.jsx';
 import { MenuButton } from '../../components/ui/MenuButton.jsx';
@@ -13,8 +13,9 @@ import { ProviderDetail } from '../credit/ProviderDetail.jsx';
 import { Tabs } from '../../components/ui/Tabs.jsx';
 import { OwedToMe, loanStatus } from './OwedToMe.jsx';
 
-export function DebtsPage({debts,accounts=[],transactions=[],setModal,setEditing,removeRecord,setDebts,setAccounts,currency,requestConfirm,recordDebtInstallment,closeDebt=()=>{},reopenDebt=()=>{},setDebtPaymentTarget,setToast,debtFocus,setDebtFocus,credit={},lent=null}){
+export function DebtsPage({debts,accounts=[],transactions=[],setModal,setEditing,removeRecord,setDebts,setAccounts,currency,requestConfirm,recordDebtInstallment,closeDebt=()=>{},reopenDebt=()=>{},setDebtPaymentTarget,setToast,debtFocus,setDebtFocus,credit={},lent=null,lendRequest=0,clearLendRequest=()=>{}}){
  const [lendOpen,setLendOpen]=useState(false);
+ useEffect(()=>{if(lendRequest&&lent){setTab('lent');setLendOpen(true);clearLendRequest();}},[lendRequest]);
  const [tab,setTab]=useState(()=>{const acc=accounts||[];const hasLoans=(debts||[]).some(d=>!d.provider_account_id&&Number(d.remaining_amount||0)>0);return hasLoans||!acc.some(a=>isCard(a)||isProvider(a))?'loans':acc.some(isCard)?'cards':'apps';});
  const exportDebts=format=>exportTable(format,'debts','Debts',debts.map(d=>({Name:d.name,Lender:d.lender||'',Account:accounts.find(a=>String(a.id)===String(d.provider_account_id))?.name||'',[`Total (${currency})`]:Number(d.total_amount||0),[`Remaining (${currency})`]:Number(d.remaining_amount||0),[`Monthly payment (${currency})`]:Number(d.monthly_payment||0),'Next due':d.due_date||'','Interest %':d.interest_rate??''})));
  const renderReport=d=><DebtReportMenu debt={d} accounts={accounts} transactions={transactions} currency={currency} setToast={setToast}/>;
