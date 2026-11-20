@@ -1,0 +1,2 @@
+-- friend_request now accepts a username or an email. Same signature; additive.
+-- (See the applied version in Supabase; matches 20261119_friends.sql plus an email branch.)

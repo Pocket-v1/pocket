@@ -7,6 +7,15 @@ const corsHeaders = {
 };
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
+// ---- Rate limiting (fixed window, stored in public.rate_limits via check_rate_limit) ----
+const clientIp = (req: Request) => (req.headers.get('cf-connecting-ip') || (req.headers.get('x-forwarded-for') || '').split(',')[0] || 'unknown').trim();
+async function allow(service: any, key: string, max: number, windowSeconds: number, failOpen = true) {
+  const { data, error } = await service.rpc('check_rate_limit', { p_key: key, p_max: max, p_window_seconds: windowSeconds });
+  if (error) { console.error('rate limit check failed', error.message); return failOpen; }
+  return data === true;
+}
+const TOO_MANY = 'Too many attempts. Please wait a little and try again.';
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
@@ -25,6 +34,8 @@ Deno.serve(async (req) => {
   const { data: actorProfile, error: actorProfileError } = await service.from('profiles').select('role').eq('id', actor.id).maybeSingle();
   if (actorProfileError || !actorProfile || !['owner', 'super_admin'].includes(actorProfile.role)) return json({ error: 'Owner or Super Admin access is required.' }, 403);
 
+  if (!(await allow(service, `admincreate:${actor.id}`, 30, 3600))) return json({ error: TOO_MANY }, 429);
+
   let body: { username?: unknown; email?: unknown; password?: unknown; role?: unknown; first_name?: unknown; last_name?: unknown; full_name?: unknown; gender?: unknown; enabled_features?: unknown };
   try { body = await req.json(); } catch { return json({ error: 'Invalid request body.' }, 400); }
   const username = String(body.username || '').trim();
@@ -36,7 +47,7 @@ Deno.serve(async (req) => {
   const lastName = titleCase(body.last_name);
   const fullName = `${firstName} ${lastName}`.trim();
   const gender = String(body.gender || 'prefer_not_to_say');
-  const allowedFeatures = ['overview','transactions','accounts','calendar','budgets','goals','subscriptions','debts','insights'];
+  const allowedFeatures = ['overview','transactions','accounts','calendar','budgets','goals','subscriptions','debts','insights','reports','expense_categories','vehicle_management','bank_sms'];
   const enabledFeatures = Array.isArray(body.enabled_features) ? body.enabled_features.map(String).filter((feature: string) => allowedFeatures.includes(feature)) : [];
   if (!firstName || !lastName) return json({ error: 'First name and last name are required.' }, 400);
   if (!['male','female','prefer_not_to_say'].includes(gender)) return json({ error: 'Choose a valid gender option.' }, 400);

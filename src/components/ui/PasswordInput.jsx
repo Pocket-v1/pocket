@@ -1,4 +1,4 @@
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff } from '../../lib/icons.jsx';
 import { useState } from 'react';
 
 export function PasswordInput({ className = '', ...props }) {

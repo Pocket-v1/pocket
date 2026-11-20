@@ -1,0 +1,1 @@
+-- update_my_username(p_username) returns ok|taken|invalid (applied as "update_my_username"). Additive.

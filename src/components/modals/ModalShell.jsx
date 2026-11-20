@@ -1,4 +1,4 @@
-import { X } from 'lucide-react';
+import { X } from '../../lib/icons.jsx';
 import { useState } from 'react';
 
 export function ModalShell({title,subtitle,onClose,children,wide=false}){

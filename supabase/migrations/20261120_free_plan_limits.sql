@@ -1,0 +1,3 @@
+-- Free plan: 2 accounts (not counting system ones), 2 budgets, 2 open goals, 2 active bills.
+-- Applied as "free_plan_limits". pocket_has_plus(user) is true for Plus/trial and for owners/admins.
+-- A before-insert trigger on each table raises FREE_LIMIT:<what>:<max>; existing rows are never touched.

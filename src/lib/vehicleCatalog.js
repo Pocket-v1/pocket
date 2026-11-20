@@ -98,3 +98,89 @@ export const VEHICLE_CATALOG = {
 "Blue Bird":["Vision","All American","Micro Bird","Electric Vision"],
 "Other":["Other / not listed"],
 };
+
+// Extra makes & models common in Egypt and the region (cars, motorcycles, scooters). Merged into the catalog above.
+const EXTRA_CATALOG = {
+  "Seat":["Ibiza","Leon","Toledo","Cordoba","Arona","Ateca","Tarraco","Alhambra","Altea","Exeo","Mii"],
+  "Cupra":["Formentor","Leon","Born","Ateca","Tavascan"],
+  "Daewoo":["Lanos","Nubira","Leganza","Matiz","Espero","Cielo","Racer","Tico","Lacetti","Kalos"],
+  "Lada":["Niva","Granta","Vesta","Samara","2107","2105","Priora","Kalina","XRAY","Largus"],
+  "SsangYong":["Tivoli","Korando","Rexton","Musso","Actyon","Kyron","Torres"],
+  "DS":["DS 3","DS 4","DS 7","DS 9"],
+  "Dacia":["Logan","Sandero","Duster","Jogger","Spring","Bigster","Lodgy","Dokker"],
+  "Smart":["ForTwo","ForFour","#1","#3"],
+  "Lynk & Co":["01","02","03","05","06","08","09"],
+  "Tank":["300","400","500","700"],
+  "Ora":["Good Cat","Funky Cat","Lightning Cat","Ballet Cat"],
+  "Exeed":["LX","TXL","VX","RX","TX"],
+  "Omoda":["C5","E5","O5"],
+  "Jaecoo":["J7","J8"],
+  "Soueast":["DX3","DX5","DX7","S06"],
+  "Kaiyi":["X3","E5","Kaiyi X7"],
+  "Bestune":["T77","T99","B70","T55"],
+  "Speranza":["A113","A516","M11"],
+  "Yamaha":["YZF-R1","YZF-R6","YZF-R3","YZF-R15","MT-03","MT-07","MT-09","MT-10","XSR700","XSR900","Tenere 700","Tracer 9","FZ","FZS","Fazer","NMAX","XMAX","TMAX","Aerox","Fino","Mio","Jog","Crypton","YBR125"],
+  "Kawasaki":["Ninja 250","Ninja 300","Ninja 400","Ninja 650","Ninja ZX-6R","Ninja ZX-10R","Z400","Z650","Z900","Z1000","Versys 650","Versys 1000","Vulcan S","KLX","W800","ER-6n"],
+  "Vespa":["Primavera","Sprint","GTS","GTV","LX","Liberty","Elettrica"],
+  "Piaggio":["Liberty","Medley","Beverly","Zip","MP3","Fly","Typhoon","Ape"],
+  "Bajaj":["Pulsar 125","Pulsar 150","Pulsar 180","Pulsar 220","Pulsar NS200","Pulsar N250","Dominar 400","Platina","Discover","Avenger","CT100","Boxer","RE Tuk Tuk","Qute"],
+  "TVS":["Apache RTR 160","Apache RTR 200","Apache RR310","Jupiter","Ntorq","Raider","Star City","Sport","HLX","Victor"],
+  "Royal Enfield":["Classic 350","Bullet 350","Meteor 350","Hunter 350","Himalayan","Scram 411","Interceptor 650","Continental GT 650","Super Meteor 650","Thunderbird"],
+  "KTM":["Duke 125","Duke 200","Duke 250","Duke 390","Duke 790","Duke 890","RC 200","RC 390","390 Adventure","790 Adventure","890 Adventure","1290 Super Duke","EXC","Freeride"],
+  "Ducati":["Monster","Panigale V2","Panigale V4","Multistrada","Scrambler","Streetfighter","Diavel","Hypermotard","DesertX","SuperSport"],
+  "Harley-Davidson":["Sportster","Iron 883","Forty-Eight","Street Glide","Road King","Fat Boy","Fat Bob","Low Rider","Softail","Pan America","Nightster","Breakout","Heritage Classic"],
+  "Triumph":["Street Triple","Speed Triple","Trident 660","Tiger 660","Tiger 900","Tiger 1200","Bonneville T100","Bonneville T120","Speed Twin","Scrambler 900","Thruxton","Rocket 3","Daytona 765"],
+  "SYM":["Symphony","Jet 14","Jet X","Joyride","Fiddle","Cruisym","Maxsym","Husky","Wolf","Orbit","VF3i"],
+  "Benelli":["TNT 135","TNT 150","TNT 300","TNT 600","Leoncino 500","Leoncino 250","TRK 502","TRK 702","502C","Imperiale 400","BN 302","Zafferano"],
+  "CFMoto":["250NK","300NK","450NK","650NK","650MT","700CL-X","800MT","450SR","Papio","Terralander","CForce"],
+  "Hero":["Splendor","HF Deluxe","Passion","Glamour","Xtreme 160R","Xpulse 200","Maestro","Pleasure","Destini","Karizma"],
+  "Keeway":["RK 150","RKS 125","K-Light 250","Benda","Superlight 200","Vieste 125","Cruiser"],
+  "Zontes":["310R","310T","350D","350T","125 U"],
+  "Voge":["300R","300 Rally","500DS","525R","650DS","900DSX"],
+  "Aprilia":["RS 125","RS 660","RSV4","Tuono 660","Tuono V4","Tuareg 660","SR GT","SR 50","Scarabeo","Sportcity"],
+  "Husqvarna":["Svartpilen 401","Vitpilen 401","Svartpilen 701","Norden 901","FE 350","TE 300","701 Enduro"],
+  "Moto Guzzi":["V7","V85 TT","V9","V100 Mandello","California"],
+  "MV Agusta":["Brutale","F3","Dragster","Turismo Veloce","Superveloce"],
+  "Suzuki Motorcycles":["GSX-R600","GSX-R750","GSX-R1000","GSX-S750","GSX-S1000","Hayabusa","V-Strom 650","V-Strom 1050","Burgman 125","Burgman 400","Address","GN125","Gixxer 150","Gixxer 250","SV650","DR-Z400","Katana"],
+  "Honda Motorcycles":["CB125R","CB300R","CB500F","CB500X","CB650R","CB1000R","CBR500R","CBR600RR","CBR650R","CBR1000RR","Africa Twin","Transalp","NC750X","PCX","SH125","SH150","SH350","Forza 300","Forza 350","ADV 350","X-ADV","Rebel 300","Rebel 500","Rebel 1100","Gold Wing","Shadow","Wave","Dream","CG125","XR150L","CRF300L","Super Cub","Activa","Shine","Unicorn"]
+};
+const EXTRA_MODELS = {
+  "Peugeot":["205","Landtrek"],
+  "Renault":["Taliant","Twingo"],
+  "Fiat":["Uno","Egea","Palio","Siena","Albea","Shahin","128","131","124","Bravo"],
+  "Chevrolet":["Sail","Cobalt","Epica","Matiz","Onix","Monza"],
+  "Opel":["Kadett"],
+  "Chery":["Envy","Eastar","Jaecoo 7"],
+  "MG":["ZS","MG5","MG6","RX5","HS","MG3","RX8","MG4","Marvel R","One","Cyberster","350","550","GT","MG7","ZS EV"],
+  "Hyundai":["Excel","Lantra","Atos"],
+  "Nissan":["Almera","Bluebird","Primera","Pickup"],
+  "BMW":["116i","118i","120i","316i","318i","320i","325i","328i","520i","523i","528i","530i","535i","730i","740i","iX3"],
+  "Mercedes-Benz":["C180","C200","C250","E200","E250","E300","S350","S500","CLA 200","A180","A200","GLA 200","190E","200","230","300","Viano"],
+  "Volkswagen":["Up!"],
+  "Kia":["Pride","Spectra","Shuma","Credos"],
+  "Toyota":["Starlet","Cressida","Celica","Supra"]
+};
+(function mergeExtra(){
+  const add=(make,models)=>{const cur=VEHICLE_CATALOG[make]||(VEHICLE_CATALOG[make]=[]);const lower=new Set(cur.map(x=>x.toLowerCase()));models.forEach(m=>{if(!lower.has(m.toLowerCase())){cur.push(m);lower.add(m.toLowerCase())}});};
+  Object.entries(EXTRA_CATALOG).forEach(([k,v])=>add(k,v));
+  Object.entries(EXTRA_MODELS).forEach(([k,v])=>add(k,v));
+  // keep "Other" last
+  if(VEHICLE_CATALOG["Other"]){const o=VEHICLE_CATALOG["Other"];delete VEHICLE_CATALOG["Other"];VEHICLE_CATALOG["Other"]=o}
+})();
+
+export const VEHICLE_TYPES = ['Car','Motorcycle / Scooter','Truck','Bus'];
+const MOTO_MAKES = new Set(['Yamaha','Kawasaki','Vespa','Piaggio','Bajaj','TVS','Royal Enfield','KTM','Ducati','Harley-Davidson','Triumph','SYM','Benelli','CFMoto','Hero','Keeway','Zontes','Voge','Aprilia','Husqvarna','Moto Guzzi','MV Agusta','Suzuki Motorcycles','Honda Motorcycles']);
+const TRUCK_ONLY = new Set(['Hino Trucks','Mitsubishi Fuso','UD Trucks','Volvo Trucks','Scania Trucks','MAN Truck & Bus','Mercedes-Benz Trucks & Buses','DAF Trucks','Iveco','Ashok Leyland','Eicher','Tata Commercial Vehicles']);
+const TRUCK_ALSO = new Set(['Isuzu','Foton','FAW','JAC','Dongfeng','Mahindra','Tata','Mitsubishi','Hyundai','Toyota','Ford','Nissan','Mercedes-Benz','Renault','Peugeot','Fiat','Citroën','Volkswagen','Chevrolet','GMC','RAM','Changan','Forthing','BAIC','Great Wall','Suzuki']);
+const BUS_ONLY = new Set(['Yutong','King Long','Zhongtong','Golden Dragon','Temsa','Setra','Irizar','Alexander Dennis','Blue Bird']);
+const BUS_ALSO = new Set(['Mercedes-Benz Trucks & Buses','MAN Truck & Bus','Scania Trucks','Volvo Trucks','Iveco','Hyundai','Toyota','Isuzu','Foton','Mitsubishi Fuso']);
+export const vehicleTypeOfMake = make => MOTO_MAKES.has(make) ? 'Motorcycle / Scooter' : BUS_ONLY.has(make) ? 'Bus' : TRUCK_ONLY.has(make) ? 'Truck' : 'Car';
+// Does a make belong in the list for this vehicle type? Unknown (custom) makes and "Other" show for every type.
+export const makeMatchesType = (make, type) => {
+  if (make === 'Other' || !(make in VEHICLE_CATALOG)) return true;
+  if (type === 'Motorcycle / Scooter') return MOTO_MAKES.has(make);
+  if (MOTO_MAKES.has(make)) return false;
+  if (type === 'Truck') return TRUCK_ONLY.has(make) || TRUCK_ALSO.has(make);
+  if (type === 'Bus') return BUS_ONLY.has(make) || BUS_ALSO.has(make);
+  return !TRUCK_ONLY.has(make) && !BUS_ONLY.has(make);
+};

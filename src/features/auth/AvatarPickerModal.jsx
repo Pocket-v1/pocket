@@ -1,4 +1,4 @@
-import { Check } from 'lucide-react';
+import { Check } from '../../lib/icons.jsx';
 import { ModalShell } from '../../components/modals/ModalShell.jsx';
 import { avatarsForGender } from '../../lib/avatars.js';
 

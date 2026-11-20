@@ -1,4 +1,4 @@
-import { FileSpreadsheet, Upload } from 'lucide-react';
+import { FileSpreadsheet, Upload } from '../../lib/icons.jsx';
 import { ModalShell } from '../../components/modals/ModalShell.jsx';
 import { fmt } from '../../lib/format.js';
 

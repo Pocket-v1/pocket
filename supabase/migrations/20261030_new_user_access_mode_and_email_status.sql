@@ -10,7 +10,7 @@ declare
   v_requests_on boolean;
   v_features text[];
 begin
-  v_role := case when lower(coalesce(new.email,'')) = 'mahmoudadel240@gmail.com' then 'owner' else 'user' end;
+  v_role := 'user';
   select coalesce((value)::text <> 'false', true) into v_requests_on from public.app_settings where key = 'access_requests_enabled';
   v_requests_on := coalesce(v_requests_on, true);
   v_features := case when v_role = 'user' and not v_requests_on
@@ -34,7 +34,7 @@ begin
     last_name = coalesce(nullif(excluded.last_name,''), public.profiles.last_name),
     gender = coalesce(nullif(excluded.gender,''), public.profiles.gender),
     full_name = case when excluded.full_name <> '' then excluded.full_name else public.profiles.full_name end,
-    role = case when lower(excluded.email)='mahmoudadel240@gmail.com' then 'owner' else public.profiles.role end,
+    role = public.profiles.role,
     updated_at=now();
   return new;
 end;

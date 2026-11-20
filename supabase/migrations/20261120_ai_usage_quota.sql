@@ -1,0 +1,3 @@
+-- Pocket AI daily usage (applied as "ai_usage_quota"). Additive.
+-- Table ai_usage(user_id, day, count) with RLS (read own); consume_ai_quota(user, limit) used only by the pocket-ai edge function.
+-- GEMINI_API_KEY lives in private_secrets, never in code.

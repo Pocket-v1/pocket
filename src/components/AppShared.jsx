@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff } from '../lib/icons.jsx';
 
 export function WorkspaceSkeleton(){
   return <section className="workspace-skeleton" aria-label="Loading workspace" aria-busy="true">
