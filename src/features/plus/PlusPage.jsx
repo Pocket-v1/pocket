@@ -160,8 +160,9 @@ function PlusPitch({ plus, s, canPay, money, status, busy, onTrial, payOpen, set
   const [period, setPeriod] = useState(y > 0 ? 'yearly' : m > 0 ? 'monthly' : 'daily');
   const save = m > 0 && y > 0 && m * 12 > y ? Math.round((m * 12 - y) / m) : 0;
   const days = Number(s.trial_days) || 14;
-  const rows = [['Accounts, budgets, goals, bills', '2 each', 'Unlimited'], ['Reports and calendar', true], ['Bank SMS, auto-approve', false], ['Voice and receipt photos', false], ['Vehicles', false]];
-  const payBtn = canPay ? <button type="button" className="btn btn-primary plus-pitch-cta" onClick={() => setPayOpen(true)}>Subscribe now</button> : null;
+  const fam = Number(s.family_price) || 0;
+  const rows = [['Accounts', '2', '∞', '∞'], ['Budgets & goals', '2', '∞', '∞'], ['Bills', '2', '∞', '∞'], ['Reports', '3 mo', 'All', 'All'], ['AI a day', '10', '100', '100 each'], ['Bank SMS', '—', '✓', '✓'], ['Voice & receipts', '—', '✓', '✓'], ['Vehicles', '—', '✓', '✓'], ['People', '1', '1', '5'], ['Shared budgets', '—', '—', '✓']];
+  const payBtn = period === 'family' ? <button type="button" className="btn btn-primary plus-pitch-cta" disabled>Family is coming soon</button> : canPay ? <button type="button" className="btn btn-primary plus-pitch-cta" onClick={() => setPayOpen(true)}>Subscribe now</button> : null;
   const trialBtn = !plus.trialUsed ? <button type="button" className={`btn ${canPay ? 'btn-secondary' : 'btn-primary'} plus-pitch-cta`} disabled={busy} onClick={onTrial}>{busy ? 'Starting…' : `Try free for ${days} days`}</button> : null;
   const cta = plus.pending ? null : <>{payBtn}{trialBtn}</>;
   return <div className="plus-pitch">
@@ -184,9 +185,9 @@ function PlusPitch({ plus, s, canPay, money, status, busy, onTrial, payOpen, set
     <div className="plus-pitch-body">
       <div className="plus-pitch-main">
       <div className="plus-feature-grid">{PITCH_PERKS.map(([Icon, title, text], i) => <div className={`plus-feature tone-${i}`} key={title}><span className="plus-feature-ic"><Icon size={18} /></span><b>{title}</b><small>{text}</small></div>)}</div>
-      <section className="panel plus-compare" aria-label="Free and Plus compared">
-        <div className="plus-compare-row head"><span>What you get</span><span>Free</span><span>Plus</span></div>
-        {rows.map(([t, free, plusVal]) => <div className="plus-compare-row" key={t}><span>{t}</span><span className={free ? 'yes' : 'no'}>{typeof free === 'string' ? free : free ? '✓' : '—'}</span><span className="yes">{plusVal || '✓'}</span></div>)}
+      <section className="panel plus-compare three" aria-label="Free, Plus and Family compared">
+        <div className="plus-compare-row head"><span>What you get</span><span>Free</span><span>Plus</span><span>Family</span></div>
+        {rows.map(([t, ...vals]) => <div className="plus-compare-row" key={t}><span>{t}</span>{vals.map((v, i) => <span key={i} className={v === '—' ? 'no' : 'yes'}>{v}</span>)}</div>)}
       </section>
       </div>
       <aside className="panel plus-checkout" aria-label="Choose your plan">
@@ -195,6 +196,7 @@ function PlusPitch({ plus, s, canPay, money, status, busy, onTrial, payOpen, set
         {y > 0 && <button type="button" role="radio" aria-checked={period === 'yearly'} className={`plus-price ${period === 'yearly' ? 'on' : ''}`} onClick={() => setPeriod('yearly')}>{save > 0 && <span className="plus-price-tag">Best value · {save} month{save === 1 ? '' : 's'} free</span>}<span className="plus-price-t"><b>Yearly</b><small>{money(y)} a year · about {money(y / 365)} a day</small></span><b className="plus-price-n">{money(y)}</b></button>}
         {m > 0 && <button type="button" role="radio" aria-checked={period === 'monthly'} className={`plus-price ${period === 'monthly' ? 'on' : ''}`} onClick={() => setPeriod('monthly')}><span className="plus-price-t"><b>Monthly</b><small>Cancel any time</small></span><b className="plus-price-n">{money(m)}</b></button>}
         {dd > 0 && <button type="button" role="radio" aria-checked={period === 'daily'} className={`plus-price ${period === 'daily' ? 'on' : ''}`} onClick={() => setPeriod('daily')}><span className="plus-price-t"><b>1 day</b><small>Try Plus for 24 hours · no renewal</small></span><b className="plus-price-n">{money(dd)}</b></button>}
+        {fam > 0 && <button type="button" role="radio" aria-checked={period === 'family'} className={`plus-price ${period === 'family' ? 'on' : ''}`} onClick={() => setPeriod('family')}><span className="plus-price-t"><b>Family</b><small>Plus for up to 5 people · about {money(fam / 5)} each</small></span><b className="plus-price-n">{money(fam)}<small className="plus-price-per">/mo</small></b></button>}
       </div>}
       <div className="plus-pitch-foot">
         {cta}
