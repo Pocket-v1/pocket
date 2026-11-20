@@ -160,7 +160,7 @@ function PlusPitch({ plus, s, canPay, money, status, busy, onTrial, payOpen, set
   const [period, setPeriod] = useState(y > 0 ? 'yearly' : m > 0 ? 'monthly' : 'daily');
   const save = m > 0 && y > 0 && m * 12 > y ? Math.round((m * 12 - y) / m) : 0;
   const days = Number(s.trial_days) || 14;
-  const rows = [['Accounts, budgets, goals, bills', true], ['Reports and calendar', true], ['Bank SMS, auto-approve', false], ['Voice and receipt photos', false], ['Vehicles', false]];
+  const rows = [['Accounts, budgets, goals, bills', '2 each', 'Unlimited'], ['Reports and calendar', true], ['Bank SMS, auto-approve', false], ['Voice and receipt photos', false], ['Vehicles', false]];
   const payBtn = canPay ? <button type="button" className="btn btn-primary plus-pitch-cta" onClick={() => setPayOpen(true)}>Subscribe now</button> : null;
   const trialBtn = !plus.trialUsed ? <button type="button" className={`btn ${canPay ? 'btn-secondary' : 'btn-primary'} plus-pitch-cta`} disabled={busy} onClick={onTrial}>{busy ? 'Starting…' : `Try free for ${days} days`}</button> : null;
   const cta = plus.pending ? null : <>{payBtn}{trialBtn}</>;
@@ -186,7 +186,7 @@ function PlusPitch({ plus, s, canPay, money, status, busy, onTrial, payOpen, set
       <div className="plus-feature-grid">{PITCH_PERKS.map(([Icon, title, text], i) => <div className={`plus-feature tone-${i}`} key={title}><span className="plus-feature-ic"><Icon size={18} /></span><b>{title}</b><small>{text}</small></div>)}</div>
       <section className="panel plus-compare" aria-label="Free and Plus compared">
         <div className="plus-compare-row head"><span>What you get</span><span>Free</span><span>Plus</span></div>
-        {rows.map(([t, free]) => <div className="plus-compare-row" key={t}><span>{t}</span><span className={free ? 'yes' : 'no'}>{free ? '✓' : '—'}</span><span className="yes">✓</span></div>)}
+        {rows.map(([t, free, plusVal]) => <div className="plus-compare-row" key={t}><span>{t}</span><span className={free ? 'yes' : 'no'}>{typeof free === 'string' ? free : free ? '✓' : '—'}</span><span className="yes">{plusVal || '✓'}</span></div>)}
       </section>
       </div>
       <aside className="panel plus-checkout" aria-label="Choose your plan">

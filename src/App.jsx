@@ -145,6 +145,7 @@ function App(){
   const [lendFriend,setLendFriend] = useState(null);
   const [debtTabRequest,setDebtTabRequest] = useState(null);
   const [borrowOpen,setBorrowOpen] = useState(false);
+  const [freeLimitHit,setFreeLimitHit] = useState(null);
   const [friendFocus,setFriendFocus] = useState(null);
   const [month,setMonth] = useState(monthNow);
   const [search,setSearch] = useState('');
@@ -522,11 +523,18 @@ function App(){
   const greeting=getGreeting(session?.user?.user_metadata?.timezone||timezone);
   void clock; void currency;
 
+  const FREE_LIMITS={
+    financial_accounts:{max:2,label:'accounts',count:()=>accounts.filter(a=>!a.is_system).length},
+    budgets:{max:2,label:'budgets',count:()=>budgets.length},
+    savings_goals:{max:2,label:'goals',count:()=>goals.filter(g=>!g.completed_at).length},
+    recurring_payments:{max:2,label:'bills',count:()=>recurring.filter(r=>r.is_active!==false).length},
+  };
   async function saveRecord(table,record,existingId){
     if(!cloudReady || !session?.user){setToast('Connect to Supabase and sign in before saving data.');return null;}
     const payload={...record,user_id:session.user.id};delete payload.id;
+    if(!existingId&&!plus.active&&!isAdmin){const lim=FREE_LIMITS[table];if(lim){const n=lim.count();if(n>=lim.max){setFreeLimitHit({what:lim.label,max:lim.max});return null;}}}
     const res=existingId?await supabase.from(table).update(payload).eq('id',existingId).select().single():await supabase.from(table).insert(payload).select().single();
-    if(res.error){setToast(res.error.message);return null;}return res.data;
+    if(res.error){const m=/FREE_LIMIT:(\w+):(\d+)/.exec(res.error.message||'');if(m){setFreeLimitHit({what:m[1],max:Number(m[2])});return null;}setToast(res.error.message);return null;}return res.data;
   }
   async function removeRecord(table,id,setter,list){
     if(!cloudReady || !session?.user){setToast('Connect to Supabase and sign in before changing data.');return;}
@@ -1418,6 +1426,7 @@ function App(){
     {wizardOpen&&<WelcomeWizard name={displayName.split(' ')[0]} currency={currency} canAccount={allowedFeatures.includes('accounts')} steps={wizardSteps} onClose={closeWizard} onCreateAccount={createSetupAccount}/>}
     {modal==='account'&&<AccountModal initial={editing} onClose={()=>{setModal(null);setEditing(null)}} onSave={saveAccount}/> }
     {modal==='account-from-transaction'&&<AccountModal initial={null} onClose={()=>setModal('transaction')} onSave={async form=>{const payload={name:form.name.trim(),type:form.type,opening_balance:Number(form.opening_balance||0),opening_balance_date:form.opening_balance_date||localISODate(),color:form.color||'#6c7cf5'};const saved=await saveRecord('financial_accounts',payload);if(!saved)return;setAccounts(old=>[saved,...old]);setModal('transaction');setToast('Account added. Select it for your transaction.')}}/>}
+    {freeLimitHit&&<div className="modal-backdrop" onMouseDown={e=>e.target===e.currentTarget&&setFreeLimitHit(null)}><section className="modal free-limit" role="dialog" aria-modal="true" aria-labelledby="free-limit-title"><span className="free-limit-ic"><Star size={22}/></span><h2 id="free-limit-title">You've used your {freeLimitHit.max} free {freeLimitHit.what}</h2><p>The free plan includes {freeLimitHit.max} accounts, budgets, goals and bills. Pocket Plus has no limits.</p><div className="free-limit-actions"><button className="btn btn-secondary" onClick={()=>setFreeLimitHit(null)}>Not now</button><button className="btn btn-primary" onClick={()=>{setFreeLimitHit(null);setModal(null);setPage('Pocket Plus')}}>See Pocket Plus</button></div></section></div>}
     {borrowOpen&&<LoanModal mode="borrow" loans={loansGiven} friends={fr.accepted} presetFriend={typeof borrowOpen==='object'?borrowOpen:null} accounts={accounts} transactions={transactions} currency={currency} onClose={()=>setBorrowOpen(false)} onSubmit={async v=>{if(await borrowFromFriend(v))setBorrowOpen(false);}}/>}
     {modal==='debt'&&<DebtModal onBorrowFromFriend={fr.accepted.length?()=>{setModal(null);setBorrowOpen(true)}:null} currency={currency} accounts={accounts} debts={debts} transactions={transactions} convertTx={convertTx} providerAccounts={convertTx&&convertTx.type!=='Income'?accounts.filter(a=>String(a.id)===String(convertTx.account_id)):accounts.filter(isProvider)} presetProviderId={debtPresetProvider} onChooseAccountKind={kind=>{setEditing(null);setDebtPresetProvider('');setCreditKind(kind);setModal('credit-account')}} initial={editing} onClose={()=>{setModal(null);setEditing(null);setDebtPresetProvider('');setConvertTx(null)}} onSave={saveDebt}/> }
     {modal==='credit-account'&&<CreditAccountModal kind={creditKind} currency={currency} accounts={accounts} initial={editing} onClose={()=>{setModal(null);setEditing(null)}} onSave={saveCreditAccount}/>}
