@@ -1,0 +1,5 @@
+-- Applied as "ai_limits_and_learning". Additive.
+-- ai_limits(user_id, daily_limit) + admin_set_ai_limit(user, limit) for owners/admins (null = back to plan limit).
+-- parser_learned(user_id, phrase, kind, category): words the typing parser learned from saved AI answers (RLS: own rows).
+-- ai_messages_log: messages that needed AI, readable by owners only, to see what to teach the parser next.
+-- Owners have no AI limit (checked in the pocket-ai edge function).

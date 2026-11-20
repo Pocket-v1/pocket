@@ -44,14 +44,16 @@ Deno.serve(async (req) => {
     const context = body.context && typeof body.context === "object" ? body.context : {};
     const ctxText = JSON.stringify(context).slice(0, 12000);
 
+    const { data: prof } = await admin.from("profiles").select("role").eq("id", uid).maybeSingle();
+    const owner = prof?.role === "owner";
     const { data: subs } = await admin.from("subscriptions").select("status,current_period_end,trial_ends_at").eq("user_id", uid).in("status", ["active", "trialing", "trial"]);
     const now = Date.now();
     const plus = (subs ?? []).some((s: any) => !s.current_period_end || new Date(s.current_period_end).getTime() > now || (s.trial_ends_at && new Date(s.trial_ends_at).getTime() > now));
-    const limit = plus ? PLUS_LIMIT : FREE_LIMIT;
+    const { data: custom } = await admin.from("ai_limits").select("daily_limit").eq("user_id", uid).maybeSingle();
+    const limit = owner ? 100000 : (custom?.daily_limit ?? (plus ? PLUS_LIMIT : FREE_LIMIT));
     const { data: left, error: qe } = await admin.rpc("consume_ai_quota", { p_user: uid, p_limit: limit });
     if (qe) throw qe;
-    if (left === -1) return json({ error: plus ? "You used today's AI messages. They reset tomorrow." : `You used today's ${FREE_LIMIT} AI messages. Pocket Plus gives you ${PLUS_LIMIT} a day.`, limit_reached: true, plus }, 429);
-
+    if (left === -1) return json({ error: plus || custom ? "You used today's AI messages. They reset tomorrow." : `You used today's ${limit} AI messages. Pocket Plus gives you ${PLUS_LIMIT} a day.`, limit_reached: true, plus }, 429);
     const { data: sec } = await admin.from("private_secrets").select("value").eq("name", "GEMINI_API_KEY").maybeSingle();
     const key = Deno.env.get("GEMINI_API_KEY") ?? sec?.value;
     if (!key) return json({ error: "AI is not set up yet." }, 503);
@@ -76,7 +78,8 @@ Deno.serve(async (req) => {
     let parsed: any = {};
     try { parsed = JSON.parse(text.replace(/^```json\s*|```$/g, "")); } catch { parsed = { reply: text, drafts: [] }; }
     const drafts = Array.isArray(parsed.drafts) ? parsed.drafts.filter((d: any) => d && Number(d.amount) > 0).slice(0, 8) : [];
-    return json({ reply: String(parsed.reply ?? "").slice(0, 1500), drafts, remaining: left, plus });
+    await admin.from("ai_messages_log").insert({ user_id: uid, message: message.slice(0, 500), kind: drafts.length ? "record" : "question", drafts: drafts.length });
+    return json({ reply: String(parsed.reply ?? "").slice(0, 1500), drafts, remaining: owner ? null : left, plus });
   } catch (e) {
     console.error(e);
     return json({ error: "Something went wrong. Try again." }, 500);

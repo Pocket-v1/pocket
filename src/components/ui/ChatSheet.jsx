@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MessageCircle, Send, X, Mic, Camera, ArrowUpRight } from '../../lib/icons.jsx';
 import { Tabs } from './Tabs.jsx';
-import { rememberCategory } from '../../lib/chatParser.js';
+import { rememberCategory, learnedWord } from '../../lib/chatParser.js';
 import { parseMessage, draftNotes, PAGE_EXAMPLES } from '../../lib/chatIntents.js';
 
 const todayISO = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10); };
@@ -65,7 +65,7 @@ function Draft({ m, ctx, onChange, onSave, onCancel }) {
   </div>;
 }
 
-export function ChatSheet({ open: openProp, onOpenChange, accounts, debts, recurring, goals, expenseCats, incomeCats, currency, defaultAccountId, onSave, transactions = [], budgets = [], page, pages, onNavigate, vehicles = [], vehicleSpend, lastFuelType, startWith, friends = [], askAI = null }) {
+export function ChatSheet({ open: openProp, onOpenChange, accounts, debts, recurring, goals, expenseCats, incomeCats, currency, defaultAccountId, onSave, transactions = [], budgets = [], page, pages, onNavigate, vehicles = [], vehicleSpend, lastFuelType, startWith, friends = [], askAI = null, onLearn = null }) {
   const [openLocal, setOpenLocal] = useState(false);
   const controlled = openProp !== undefined;
   const open = controlled ? openProp : openLocal;
@@ -124,7 +124,7 @@ export function ChatSheet({ open: openProp, onOpenChange, accounts, debts, recur
     const findAcc = name => { const n = String(name || '').trim().toLowerCase(); if (!n) return ''; const a = usable.find(x => x.name.toLowerCase() === n) || usable.find(x => x.name.toLowerCase().includes(n) || n.includes(x.name.toLowerCase())); return a?.id || ''; };
     const defAcc = usable.find(a => String(a.id) === String(defaultAccountId))?.id || usable[0]?.id || '';
     const drafts = (res.drafts || []).map(d => {
-      const base = { date: /^\d{4}-\d{2}-\d{2}$/.test(d.date || '') ? d.date : todayISO(), rawText: raw, amount: Number(d.amount), accountId: findAcc(d.account) || defAcc };
+      const base = { fromAI: true, date: /^\d{4}-\d{2}-\d{2}$/.test(d.date || '') ? d.date : todayISO(), rawText: raw, amount: Number(d.amount), accountId: findAcc(d.account) || defAcc };
       if (d.kind === 'transfer') return { ...base, kind: 'transfer', toAccountId: findAcc(d.toAccount), description: d.description || 'Transfer', goalId: '' };
       if (d.kind === 'lend') { const f = (friends || []).find(x => String(x.name || '').toLowerCase().includes(String(d.person || '').toLowerCase()) && d.person); return { ...base, kind: 'lend', person: f ? f.name : (d.person || ''), friendId: f?.friend_id || '' }; }
       const income = d.kind === 'income'; const cats = income ? incomeCats : expenseCats;
@@ -174,7 +174,7 @@ export function ChatSheet({ open: openProp, onOpenChange, accounts, debts, recur
     patch(m.id, { status: 'saving' });
     let ok = false;
     try { ok = await onSave({ ...d, amount: Number(d.amount) }); } catch { ok = false; }
-    if (ok && d.catChanged && d.category && (d.kind === 'expense' || d.kind === 'income')) rememberCategory(d.description || d.rawText, d.category, d.type);
+    if (ok && (d.catChanged || d.fromAI) && d.category && (d.kind === 'expense' || d.kind === 'income')) { rememberCategory(d.description || d.rawText, d.category, d.type); const w = learnedWord(d.description || d.rawText); if (w) onLearn?.({ phrase: w, kind: d.kind, category: d.category }); }
     patch(m.id, { status: ok ? 'saved' : 'failed' });
   }
   const pending = msgs.filter(m => m.draft && (m.status === 'draft' || m.status === 'failed'));

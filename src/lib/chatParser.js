@@ -41,6 +41,11 @@ const INCOME_CATS = [
 
 const MEM_KEY = 'pocket-chat-category-memory';
 export function readMemory() { try { return JSON.parse(localStorage.getItem(MEM_KEY) || '{}') || {}; } catch { return {}; } }
+// Words the parser learned (from AI answers the user saved, or their own corrections).
+export function learnedWord(description) { return norm(description || '').split(' ').filter(x => x.length > 2 && !/^\d/.test(x))[0] || ''; }
+export function seedMemory(rows = []) {
+  try { const m = readMemory(); rows.forEach(r => { if (r.phrase && r.category) m[`${r.kind === 'income' ? 'Income' : 'Expense'}:${r.phrase}`] = r.category; }); localStorage.setItem(MEM_KEY, JSON.stringify(m)); } catch { /* storage may be blocked */ }
+}
 export function rememberCategory(description, category, type) {
   try {
     const w = norm(description).split(' ').filter(x => x.length > 2 && !/^\d/.test(x))[0];
