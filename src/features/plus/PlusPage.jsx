@@ -160,11 +160,14 @@ function PlusPitch({ plus, s, canPay, money, status, busy, onTrial, payOpen, set
   const [period, setPeriod] = useState(y > 0 ? 'yearly' : m > 0 ? 'monthly' : 'daily');
   const save = m > 0 && y > 0 && m * 12 > y ? Math.round((m * 12 - y) / m) : 0;
   const days = Number(s.trial_days) || 14;
-  const fam = Number(s.family_price) || 0;
+  const fam = Number(s.family_price) || 0, fy = Number(s.family_yearly_price) || 0;
+  const famSave = fam > 0 && fy > 0 && fam * 12 > fy ? Math.round((fam * 12 - fy) / fam) : 0;
+  const [who, setWho] = useState('me');
+  const [famPeriod, setFamPeriod] = useState(fy > 0 ? 'yearly' : 'monthly');
   const rows = [['Accounts', '2', '∞', '∞'], ['Budgets & goals', '2', '∞', '∞'], ['Bills', '2', '∞', '∞'], ['Reports', '3 mo', 'All', 'All'], ['AI a day', '10', '100', '100 each'], ['Bank SMS', '—', '✓', '✓'], ['Voice & receipts', '—', '✓', '✓'], ['Vehicles', '—', '✓', '✓'], ['People', '1', '1', '5'], ['Shared budgets', '—', '—', '✓']];
-  const payBtn = period === 'family' ? <button type="button" className="btn btn-primary plus-pitch-cta" disabled>Family is coming soon</button> : canPay ? <button type="button" className="btn btn-primary plus-pitch-cta" onClick={() => setPayOpen(true)}>Subscribe now</button> : null;
+  const payBtn = who === 'family' ? <button type="button" className="btn btn-primary plus-pitch-cta" disabled>Family is coming soon</button> : canPay ? <button type="button" className="btn btn-primary plus-pitch-cta" onClick={() => setPayOpen(true)}>Subscribe now</button> : null;
   const trialBtn = !plus.trialUsed ? <button type="button" className={`btn ${canPay ? 'btn-secondary' : 'btn-primary'} plus-pitch-cta`} disabled={busy} onClick={onTrial}>{busy ? 'Starting…' : `Try free for ${days} days`}</button> : null;
-  const cta = plus.pending ? null : <>{payBtn}{trialBtn}</>;
+  const cta = plus.pending ? null : <>{payBtn}{who === 'me' && trialBtn}</>;
   return <div className="plus-pitch">
     <section className="plus-hero">
       <div className="plus-hero-copy">
@@ -192,11 +195,18 @@ function PlusPitch({ plus, s, canPay, money, status, busy, onTrial, payOpen, set
       </div>
       <aside className="panel plus-checkout" aria-label="Choose your plan">
       <div className="plus-checkout-head"><b>Choose your plan</b><small>Subscribe now, or try it free first.</small></div>
-      {(m > 0 || y > 0 || dd > 0) && <div className="plus-prices" role="radiogroup" aria-label="Billing period">
+      <div className="seg-tabs plus-who" role="tablist" aria-label="Who is it for">
+        <button type="button" role="tab" aria-selected={who === 'me'} className={who === 'me' ? 'on' : ''} onClick={() => setWho('me')}>Just me</button>
+        <button type="button" role="tab" aria-selected={who === 'family'} className={who === 'family' ? 'on' : ''} onClick={() => setWho('family')}>Family <span>· up to 5</span></button>
+      </div>
+      {who === 'me' ? (m > 0 || y > 0 || dd > 0) && <div className="plus-prices" role="radiogroup" aria-label="Billing period">
         {y > 0 && <button type="button" role="radio" aria-checked={period === 'yearly'} className={`plus-price ${period === 'yearly' ? 'on' : ''}`} onClick={() => setPeriod('yearly')}>{save > 0 && <span className="plus-price-tag">Best value · {save} month{save === 1 ? '' : 's'} free</span>}<span className="plus-price-t"><b>Yearly</b><small>{money(y)} a year · about {money(y / 365)} a day</small></span><b className="plus-price-n">{money(y)}</b></button>}
         {m > 0 && <button type="button" role="radio" aria-checked={period === 'monthly'} className={`plus-price ${period === 'monthly' ? 'on' : ''}`} onClick={() => setPeriod('monthly')}><span className="plus-price-t"><b>Monthly</b><small>Cancel any time</small></span><b className="plus-price-n">{money(m)}</b></button>}
         {dd > 0 && <button type="button" role="radio" aria-checked={period === 'daily'} className={`plus-price ${period === 'daily' ? 'on' : ''}`} onClick={() => setPeriod('daily')}><span className="plus-price-t"><b>1 day</b><small>Try Plus for 24 hours · no renewal</small></span><b className="plus-price-n">{money(dd)}</b></button>}
-        {fam > 0 && <button type="button" role="radio" aria-checked={period === 'family'} className={`plus-price ${period === 'family' ? 'on' : ''}`} onClick={() => setPeriod('family')}><span className="plus-price-t"><b>Family</b><small>Plus for up to 5 people · about {money(fam / 5)} each</small></span><b className="plus-price-n">{money(fam)}<small className="plus-price-per">/mo</small></b></button>}
+      </div>
+      : <div className="plus-prices" role="radiogroup" aria-label="Family billing period">
+        {fy > 0 && <button type="button" role="radio" aria-checked={famPeriod === 'yearly'} className={`plus-price ${famPeriod === 'yearly' ? 'on' : ''}`} onClick={() => setFamPeriod('yearly')}>{famSave > 0 && <span className="plus-price-tag">Best value · {famSave} month{famSave === 1 ? '' : 's'} free</span>}<span className="plus-price-t"><b>Yearly</b><small>{money(fy)} a year · about {money(fy / 5 / 12)} a person a month</small></span><b className="plus-price-n">{money(fy)}</b></button>}
+        {fam > 0 && <button type="button" role="radio" aria-checked={famPeriod === 'monthly'} className={`plus-price ${famPeriod === 'monthly' ? 'on' : ''}`} onClick={() => setFamPeriod('monthly')}><span className="plus-price-t"><b>Monthly</b><small>About {money(fam / 5)} a person · cancel any time</small></span><b className="plus-price-n">{money(fam)}</b></button>}
       </div>}
       <div className="plus-pitch-foot">
         {cta}
