@@ -65,7 +65,7 @@ function Draft({ m, ctx, onChange, onSave, onCancel }) {
   </div>;
 }
 
-export function ChatSheet({ open: openProp, onOpenChange, accounts, debts, recurring, goals, expenseCats, incomeCats, currency, defaultAccountId, onSave, transactions = [], budgets = [], page, pages, onNavigate, vehicles = [], vehicleSpend, lastFuelType, startWith, friends = [] }) {
+export function ChatSheet({ open: openProp, onOpenChange, accounts, debts, recurring, goals, expenseCats, incomeCats, currency, defaultAccountId, onSave, transactions = [], budgets = [], page, pages, onNavigate, vehicles = [], vehicleSpend, lastFuelType, startWith, friends = [], askAI = null }) {
   const [openLocal, setOpenLocal] = useState(false);
   const controlled = openProp !== undefined;
   const open = controlled ? openProp : openLocal;
@@ -102,12 +102,37 @@ export function ChatSheet({ open: openProp, onOpenChange, accounts, debts, recur
     push({ from: 'me', text: raw });
     if (!accounts.some(a => !a.is_system)) { push({ from: 'bot', text: 'Add an account or wallet first (Accounts → Add account), then I can add things for you.' }); return; }
     const results = parseMessage(raw, { ...ctx, today: todayISO() });
+    const nums = (raw.match(/\d[\d,.]*/g) || []).length;
+    const drafts = results.filter(r => r.draft).length;
+    const isQuestion = /[?؟]|(^|\s)(kam|ka2m|how much|how many|what|why|ezay|ezzay|leh|a2dar|ad2ar|كام|ليه|ازاي|إزاي|اقدر|أقدر|هل|ايه|إيه)(\s|$)/i.test(raw);
+    const handled = results.some(r => r.navigate || r.answer);
+    const needsAI = askAI && !handled && (results.every(r => r.error) || nums > Math.max(1, drafts) || (isQuestion && !drafts));
+    if (needsAI) { runAI(raw); return; }
     for (const r of results) {
       if (r.navigate) { push({ from: 'bot', text: `Opening ${r.navigate}.` }); setTimeout(() => { onNavigate?.(r.navigate); setOpen(false); }, 350); continue; }
       if (r.answer) { push({ from: 'bot', text: r.answer, page: r.page }); continue; }
       if (r.error) { push({ from: 'bot', text: r.error === 'amount' ? `I could not find an amount. Try: ${examples[0]}` : 'Type what you spent or received, or ask a question.' }); continue; }
       push({ from: 'bot', draft: r.draft, status: 'draft' });
     }
+  }
+
+  async function runAI(raw) {
+    const id = push({ from: 'bot', text: 'Thinking…', thinking: true });
+    const res = await askAI(raw);
+    if (res?.error) { patch(id, { text: res.error, thinking: false }); return; }
+    const usable = accounts.filter(a => !a.is_system);
+    const findAcc = name => { const n = String(name || '').trim().toLowerCase(); if (!n) return ''; const a = usable.find(x => x.name.toLowerCase() === n) || usable.find(x => x.name.toLowerCase().includes(n) || n.includes(x.name.toLowerCase())); return a?.id || ''; };
+    const defAcc = usable.find(a => String(a.id) === String(defaultAccountId))?.id || usable[0]?.id || '';
+    const drafts = (res.drafts || []).map(d => {
+      const base = { date: /^\d{4}-\d{2}-\d{2}$/.test(d.date || '') ? d.date : todayISO(), rawText: raw, amount: Number(d.amount), accountId: findAcc(d.account) || defAcc };
+      if (d.kind === 'transfer') return { ...base, kind: 'transfer', toAccountId: findAcc(d.toAccount), description: d.description || 'Transfer', goalId: '' };
+      if (d.kind === 'lend') { const f = (friends || []).find(x => String(x.name || '').toLowerCase().includes(String(d.person || '').toLowerCase()) && d.person); return { ...base, kind: 'lend', person: f ? f.name : (d.person || ''), friendId: f?.friend_id || '' }; }
+      const income = d.kind === 'income'; const cats = income ? incomeCats : expenseCats;
+      return { ...base, kind: income ? 'income' : 'expense', type: income ? 'Income' : 'Expense', category: cats.includes(d.category) ? d.category : (income ? cats[0] : 'Other'), description: d.description || '' };
+    });
+    const note = res.remaining != null && res.remaining <= 3 ? ` (${res.remaining} AI messages left today)` : '';
+    patch(id, { text: (res.reply || (drafts.length ? 'Here is what I understood:' : 'I could not work that out.')) + note, thinking: false });
+    drafts.forEach(d => push({ from: 'bot', draft: d, status: 'draft' }));
   }
 
   function startVoice() {
