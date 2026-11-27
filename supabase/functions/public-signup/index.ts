@@ -2,7 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 // Sign-up WITHOUT an email: the account signs in with a username. (Sign-up with an email uses normal Supabase auth.)
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') || '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
@@ -44,7 +44,9 @@ Deno.serve(async (req) => {
   if (!(await allow(service, `signup:ip:${clientIp(req)}`, 5, 3600, false)) || !(await allow(service, 'signup:all', 200, 3600, false))) {
     return new Response(JSON.stringify({ error: TOO_MANY }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': '900' } });
   }
-  const { data: taken, error: lookupError } = await service.from('profiles').select('id').ilike('username', username).limit(1);
+  // ilike treats _ and % as wildcards; escape them so "a_b" only matches "a_b" (case-insensitive).
+  const usernamePattern = username.replace(/[\\%_]/g, (c) => `\\${c}`);
+  const { data: taken, error: lookupError } = await service.from('profiles').select('id').ilike('username', usernamePattern).limit(1);
   if (lookupError) return json({ error: 'Could not check the username. Try again.' }, 500);
   if (taken?.length) return json({ error: 'That username is already taken.' }, 409);
 

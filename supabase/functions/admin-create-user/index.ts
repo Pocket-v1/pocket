@@ -1,7 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') || '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
@@ -15,6 +15,9 @@ async function allow(service: any, key: string, max: number, windowSeconds: numb
   return data === true;
 }
 const TOO_MANY = 'Too many attempts. Please wait a little and try again.';
+
+// ilike treats _ and % as wildcards; escape them for an exact, case-insensitive match.
+const likeExact = (v: string) => v.replace(/[\\%_]/g, (c) => `\\${c}`);
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -57,11 +60,11 @@ Deno.serve(async (req) => {
   if (!['user', 'super_admin'].includes(requestedRole)) return json({ error: 'Invalid role.' }, 400);
   if (requestedRole === 'super_admin' && actorProfile.role !== 'owner') return json({ error: 'Only the Owner can create a Super Admin.' }, 403);
 
-  const { data: existing, error: usernameError } = await service.from('profiles').select('id').ilike('username', username).limit(1);
+  const { data: existing, error: usernameError } = await service.from('profiles').select('id').ilike('username', likeExact(username)).limit(1);
   if (usernameError) return json({ error: 'Username support is not installed. Run the latest SQL migration first.' }, 500);
   if (existing?.length) return json({ error: 'That username is already in use.' }, 409);
   if (email) {
-    const { data: found } = await service.from('profiles').select('id').ilike('email', email).limit(1);
+    const { data: found } = await service.from('profiles').select('id').ilike('email', likeExact(email)).limit(1);
     if (found?.length) return json({ error: 'An account with that email already exists.' }, 409);
   }
 
