@@ -644,7 +644,8 @@ function App(){
     // Transfers between accounts in different currencies store what arrived in the destination's currency.
     const crossCurrency=form.type==='Transfer'&&destination&&accountCurrency(source)!==accountCurrency(destination);
     if(crossCurrency&&!(Number(form.to_amount)>0)){setToast(`Enter how much arrived in ${destination.name} (${accountCurrency(destination)}).`);return;}
-    payload.to_amount=crossCurrency?Number(form.to_amount):null;
+    // Only send to_amount when needed, so saving still works before the multi-currency migration is applied.
+    if(crossCurrency)payload.to_amount=Number(form.to_amount);else if(editing?.to_amount!=null)payload.to_amount=null;
     const saved=await saveRecord('transactions',payload,editing?.id);if(!saved)return;
     setTransactions(old=>editing?old.map(x=>x.id===editing.id?saved:x):[saved,...old]);
     if(form.type==='Income'&&form.loan_mode==='new'){setEditing(null);setTxPresetAccount('');setConvertTx(saved);setDebtPresetProvider('');setModal('debt');setToast(editing?'Income saved · now add the debt details':'Income added · now add the debt details');return true;}
@@ -677,10 +678,17 @@ function App(){
     const saved=await saveRecord('recurring_payments',p,editing?.id);if(!saved)return;
     setRecurring(old=>editing?old.map(x=>x.id===editing.id?saved:x):[saved,...old]);setModal(null);setEditing(null);setToast('Payment saved');
   }
+  // Currency columns are sent only for foreign-currency accounts (or ones that already had them),
+  // so saving accounts still works before the multi-currency migration is applied.
+  function accountCurrencyFields(form,prev){
+    const main=String(currency).toUpperCase(),c=String(form.currency||main).toUpperCase();
+    if(c!==main)return {currency:c,fx_rate:Number(form.fx_rate)||null};
+    return prev?.currency||prev?.fx_rate?{currency:null,fx_rate:null}:{};
+  }
   async function copyBudgets(fromMonth,toMonth){
     if(!cloudReady||!session?.user){setToast('Connect to Supabase and sign in before saving data.');return;}
     const existing=new Set(budgets.filter(b=>(b.month||'').slice(0,7)===toMonth).map(b=>b.category));
-    const rows=budgets.filter(b=>(b.month||'').slice(0,7)===fromMonth&&Number(b.amount)>0&&!existing.has(b.category)).map(b=>({user_id:session.user.id,category:b.category,month:monthStart(toMonth),amount:Number(b.amount),rollover:Boolean(b.rollover)}));
+    const rows=budgets.filter(b=>(b.month||'').slice(0,7)===fromMonth&&Number(b.amount)>0&&!existing.has(b.category)).map(b=>({user_id:session.user.id,category:b.category,month:monthStart(toMonth),amount:Number(b.amount),...(b.rollover?{rollover:true}:{})}));
     if(!rows.length){setToast('Nothing to copy.');return;}
     const {error}=await supabase.from('budgets').insert(rows);
     if(error){setToast(error.message);return;}
@@ -689,7 +697,7 @@ function App(){
     setToast(`Copied ${rows.length} budget${rows.length===1?'':'s'}`);
   }
   async function addBudget(form){
-    const p={category:form.category,month:monthStart(form.month),amount:Number(form.amount),rollover:Boolean(form.rollover)};
+    const p={category:form.category,month:monthStart(form.month),amount:Number(form.amount),...(form.rollover||editing?.rollover?{rollover:Boolean(form.rollover)}:{})};
     const saved=await saveRecord('budgets',p,editing?.id);if(!saved)return;
     // Immediately replace by id OR category/month so the card always uses the latest saved amount.
     // This also handles older rows whose ID changed during a migration/import.
@@ -714,7 +722,7 @@ function App(){
     setAccounts(old=>editing?old.map(x=>x.id===editing.id?saved:x):[saved,...old]);setModal(null);setEditing(null);setToast('Account saved');
   }
   async function createSetupAccount(form){
-    const payload={name:form.name.trim(),type:form.type,opening_balance:Number(form.opening_balance||0),opening_balance_date:form.opening_balance_date||localISODate(),color:form.color||'#6c7cf5',currency:(form.currency||currency).toUpperCase(),fx_rate:form.currency&&form.currency.toUpperCase()!==String(currency).toUpperCase()?Number(form.fx_rate)||null:null};
+    const payload={name:form.name.trim(),type:form.type,opening_balance:Number(form.opening_balance||0),opening_balance_date:form.opening_balance_date||localISODate(),color:form.color||'#6c7cf5',...accountCurrencyFields(form,editing)};
     const saved=await saveRecord('financial_accounts',payload);if(!saved)return false;
     setAccounts(old=>[saved,...old]);setToast('Your account is ready. You can start using Pocket now.');return true;
   }
@@ -1464,7 +1472,7 @@ function App(){
     {tourOpen&&!wizardOpen&&<AppTour onClose={closeTour}/>}
     {wizardOpen&&<WelcomeWizard name={displayName.split(' ')[0]} currency={currency} canAccount={allowedFeatures.includes('accounts')} steps={wizardSteps} onClose={closeWizard} onCreateAccount={createSetupAccount}/>}
     {modal==='account'&&<AccountModal initial={editing} onClose={()=>{setModal(null);setEditing(null)}} onSave={saveAccount}/> }
-    {modal==='account-from-transaction'&&<AccountModal initial={null} onClose={()=>setModal('transaction')} onSave={async form=>{const payload={name:form.name.trim(),type:form.type,opening_balance:Number(form.opening_balance||0),opening_balance_date:form.opening_balance_date||localISODate(),color:form.color||'#6c7cf5',currency:(form.currency||currency).toUpperCase(),fx_rate:form.currency&&form.currency.toUpperCase()!==String(currency).toUpperCase()?Number(form.fx_rate)||null:null};const saved=await saveRecord('financial_accounts',payload);if(!saved)return;setAccounts(old=>[saved,...old]);setModal('transaction');setToast('Account added. Select it for your transaction.')}}/>}
+    {modal==='account-from-transaction'&&<AccountModal initial={null} onClose={()=>setModal('transaction')} onSave={async form=>{const payload={name:form.name.trim(),type:form.type,opening_balance:Number(form.opening_balance||0),opening_balance_date:form.opening_balance_date||localISODate(),color:form.color||'#6c7cf5',...accountCurrencyFields(form,null)};const saved=await saveRecord('financial_accounts',payload);if(!saved)return;setAccounts(old=>[saved,...old]);setModal('transaction');setToast('Account added. Select it for your transaction.')}}/>}
     {freeLimitHit&&<div className="modal-backdrop" onMouseDown={e=>e.target===e.currentTarget&&setFreeLimitHit(null)}><section className="modal free-limit" role="dialog" aria-modal="true" aria-labelledby="free-limit-title"><span className="free-limit-ic"><Star size={22}/></span><h2 id="free-limit-title">You've used your {freeLimitHit.max} free {freeLimitHit.what}</h2><p>The free plan includes {freeLimitHit.max} accounts, budgets, goals and bills. Pocket Plus has no limits.</p><div className="free-limit-actions"><button className="btn btn-secondary" onClick={()=>setFreeLimitHit(null)}>Not now</button><button className="btn btn-primary" onClick={()=>{setFreeLimitHit(null);setModal(null);setPage('Pocket Plus')}}>See Pocket Plus</button></div></section></div>}
     {borrowOpen&&<LoanModal mode="borrow" loans={loansGiven} friends={fr.accepted} presetFriend={typeof borrowOpen==='object'?borrowOpen:null} accounts={accounts} transactions={transactions} currency={currency} onClose={()=>setBorrowOpen(false)} onSubmit={async v=>{if(await borrowFromFriend(v))setBorrowOpen(false);}}/>}
     {modal==='debt'&&<DebtModal onBorrowFromFriend={fr.accepted.length?()=>{setModal(null);setBorrowOpen(true)}:null} currency={currency} accounts={accounts} debts={debts} transactions={transactions} convertTx={convertTx} providerAccounts={convertTx&&convertTx.type!=='Income'?accounts.filter(a=>String(a.id)===String(convertTx.account_id)):accounts.filter(isProvider)} presetProviderId={debtPresetProvider} onChooseAccountKind={kind=>{setEditing(null);setDebtPresetProvider('');setCreditKind(kind);setModal('credit-account')}} initial={editing} onClose={()=>{setModal(null);setEditing(null);setDebtPresetProvider('');setConvertTx(null)}} onSave={saveDebt}/> }
