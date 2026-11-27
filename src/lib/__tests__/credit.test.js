@@ -72,3 +72,24 @@ describe('providerSummary', () => {
     expect(s.next).toMatchObject({ due: '2026-05-01', days: 11 });
   });
 });
+
+describe('multi-currency', async () => {
+  const { reportView, fxRate, toBase } = await import('../credit.js');
+  const { setDisplayCurrency } = await import('../format.js');
+  setDisplayCurrency('EGP');
+  const egp = { id: 'e', type: 'Bank account', currency: 'EGP' };
+  const usd = { id: 'u', type: 'Bank account', currency: 'USD', fx_rate: 50 };
+  it('main-currency accounts have rate 1, others use fx_rate', () => {
+    expect(fxRate(egp)).toBe(1); expect(fxRate({ id: 'x' })).toBe(1); expect(fxRate(usd)).toBe(50); expect(toBase(10, usd)).toBe(500);
+  });
+  it('reports convert foreign-currency spending to the main currency', () => {
+    const out = reportView([{ id: 1, type: 'Expense', account_id: 'u', amount: 10 }, { id: 2, type: 'Expense', account_id: 'e', amount: 10 }], [egp, usd]);
+    expect(out.map(t => t.amount)).toEqual([500, 10]);
+    expect(out[0]).toMatchObject({ original_amount: 10, original_currency: 'USD' });
+  });
+  it('a transfer between currencies credits to_amount to the destination', () => {
+    const tx = [{ type: 'Transfer', account_id: 'e', to_account_id: 'u', amount: 5000, to_amount: 100 }];
+    expect(accountFlows(egp, tx).balance).toBe(-5000);
+    expect(accountFlows(usd, tx).balance).toBe(100);
+  });
+});

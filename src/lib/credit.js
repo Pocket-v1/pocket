@@ -1,5 +1,5 @@
 import { isGoalsAccount } from './features.js';
-import { localISODate } from './format.js';
+import { getDisplayCurrency, localISODate } from './format.js';
 
 export const CARD_TYPE = 'Credit card';
 export const PROVIDER_TYPE = 'Installment app';
@@ -18,6 +18,11 @@ const DAY = 864e5;
 const num = v => Number(v || 0);
 // A plan uses limit for the money financed (the price), not for interest/fees. Shrinks as it is repaid.
 export const planLimitUse = d => { const total = num(d.total_repayment) || num(d.original_amount); return total > 0 ? num(d.original_amount) * Math.min(1, num(d.remaining_amount) / total) : num(d.remaining_amount); };
+// Multi-currency: an account may hold another currency. fx_rate = how much 1 unit is worth in the main currency.
+export const accountCurrency = a => String(a?.currency || getDisplayCurrency()).toUpperCase();
+export const fxRate = (a, base = getDisplayCurrency()) => accountCurrency(a) === String(base).toUpperCase() ? 1 : (num(a?.fx_rate) > 0 ? num(a.fx_rate) : 1);
+export const toBase = (amount, a, base) => num(amount) * fxRate(a, base);
+
 const iso = ms => new Date(ms).toISOString().slice(0, 10);
 const utc = s => { const [y, m, d] = String(s).slice(0, 10).split('-').map(Number); return Date.UTC(y, m - 1, d); };
 
@@ -26,7 +31,9 @@ export function accountFlows(account, transactions = []) {
   let inflow = 0, outflow = 0;
   for (const t of transactions) {
     const from = String(t.account_id) === id, to = String(t.to_account_id) === id;
-    if ((t.type === 'Income' && from) || (t.type === 'Transfer' && to)) inflow += num(t.amount);
+    if (t.type === 'Income' && from) inflow += num(t.amount);
+    // A transfer between currencies records what arrived in to_amount.
+    if (t.type === 'Transfer' && to) inflow += t.to_amount != null && t.to_amount !== '' ? num(t.to_amount) : num(t.amount);
     if (((t.type === 'Expense' || t.type === 'Transfer') && from)) outflow += num(t.amount);
   }
   return { inflow, outflow, balance: num(account.opening_balance) + inflow - outflow };
@@ -138,8 +145,11 @@ export const providerOwner = (debt, accounts = []) => accounts.find(a => String(
 export function reportView(transactions = [], accounts = []) {
   const byId = new Map(accounts.map(a => [String(a.id), a]));
   const out = [];
-  for (const t of transactions) {
-    const from = byId.get(String(t.account_id)), to = byId.get(String(t.to_account_id));
+  for (const raw of transactions) {
+    const from = byId.get(String(raw.account_id)), to = byId.get(String(raw.to_account_id));
+    // Reports add everything up in the main currency.
+    const rate = fxRate(from);
+    const t = rate === 1 ? raw : { ...raw, amount: num(raw.amount) * rate, original_amount: num(raw.amount), original_currency: accountCurrency(from) };
     if (t.type === 'Expense' && isLiability(from)) continue;
     if (t.type === 'Income' && isLiability(from)) continue;
     if (t.type === 'Transfer' && isLiability(to) && !isLiability(from) && !isGoalsAccount(from)) {

@@ -20,12 +20,15 @@ import { TransactionModal } from './features/transactions/TransactionModal.jsx';
 import { PROFILE_AVATARS, defaultAvatarForGender } from './lib/avatars.js';
 import { customSubcategoriesOverride, expenseCategories, expenseCategoriesOverride, getExpenseCategories, setCustomSubcategoriesOverride, setExpenseCategoriesOverride } from './lib/categories.js';
 import { FEATURE_OPTIONS, PAGE_FEATURE, isGoalsAccount } from './lib/features.js';
+import { setDisplayCurrency } from './lib/format.js';
 import { addFrequency, fmt, getGreeting, localISODate, monthNow, monthStart, titleCaseName, uid } from './lib/format.js';
 import { authRedirectUrl, cloudReady, supabase } from './lib/supabase.js';
+import { setMonitoringUser } from './lib/monitoring.js';
+import { notifyDailySummary, notifyItem } from './lib/deviceNotify.js';
 import { CardPayModal } from './features/credit/CardPayModal.jsx';
 import { CreditAccountModal } from './features/credit/CreditAccountModal.jsx';
 import { ProviderPayModal } from './features/credit/ProviderPayModal.jsx';
-import { CARD_TYPE, PROVIDER_TYPE, accountFlows, cardSummary, isCard, isLiability, isMoneyAccount, isProvider, providerSummary, reportView, limitLeft, planLimitUse } from './lib/credit.js';
+import { CARD_TYPE, PROVIDER_TYPE, accountCurrency, accountFlows, cardSummary, isCard, isLiability, isMoneyAccount, isProvider, providerSummary, reportView, limitLeft, planLimitUse } from './lib/credit.js';
 
 // Pages load on demand so the first screen downloads less code.
 const AccountsPage = lazy(() => import('./features/accounts/AccountsPage.jsx').then(m => ({ default: m.AccountsPage })));
@@ -36,6 +39,7 @@ const DebtsPage = lazy(() => import('./features/debts/DebtsPage.jsx').then(m => 
 const GoalsPage = lazy(() => import('./features/goals/GoalsPage.jsx').then(m => ({ default: m.GoalsPage })));
 const InsightsReportsPage = lazy(() => import('./features/insights/InsightsReportsPage.jsx').then(m => ({ default: m.InsightsReportsPage })));
 const CashFlowCalendar = lazy(() => import('./features/overview/CashFlowCalendar.jsx').then(m => ({ default: m.CashFlowCalendar })));
+const AuditLogPage = lazy(() => import('./features/admin/AuditLogPage.jsx').then(m => ({ default: m.AuditLogPage })));
 const Overview = lazy(() => import('./features/overview/Overview.jsx').then(m => ({ default: m.Overview })));
 const RecurringPage = lazy(() => import('./features/recurring/RecurringPage.jsx').then(m => ({ default: m.RecurringPage })));
 const ExpenseCategoriesPage = lazy(() => import('./features/settings/ExpenseCategoriesPage.jsx').then(m => ({ default: m.ExpenseCategoriesPage })));
@@ -130,6 +134,7 @@ function App(){
   const [notificationToast,setNotificationToast] = useState(null);
   const seenNotificationIds = useRef(null);
   const [session,setSession] = useState(null);
+  useEffect(()=>{setMonitoringUser(session?.user?.id||null);},[session?.user?.id]);
   useEffect(()=>{if(!cloudReady||!session?.user?.id)return;let alive=true;(async()=>{const {data,error}=await supabase.from('expense_categories').select('name,is_enabled').eq('user_id',session.user.id).order('name');if(!alive)return;if(!error&&Array.isArray(data)&&data.length){setExpenseCategoriesOverride(data.filter(x=>x.is_enabled!==false).map(x=>x.name));}})();return()=>{alive=false}},[session?.user?.id]);
   const [profile,setProfile] = useState(()=>{try{return !cloudReady ? JSON.parse('null') : null}catch{return null}});
   const [profileLoaded,setProfileLoaded] = useState(false);
@@ -178,6 +183,7 @@ function App(){
   const [year,setYear] = useState(String(new Date().getFullYear()));
   const [clock,setClock] = useState(Date.now());
   const [currency,setCurrency] = useState('EGP');
+  setDisplayCurrency(currency);
   const [timezone,setTimezone] = useState(()=>{try{return Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC'}catch{return 'UTC'}});
   const [profileName,setProfileName] = useState('');
   const [profileSaving,setProfileSaving] = useState(false);
@@ -221,8 +227,6 @@ function App(){
   useEffect(()=>{
     void 0;
     void 0;
-    document.documentElement.lang='en';
-    document.documentElement.dir='ltr';
     void 0;
     void 0;
     void 0;
@@ -421,8 +425,10 @@ function App(){
     if(seenNotificationIds.current===null){seenNotificationIds.current=currentIds;return;}
     const added=notificationItems.find(item=>!seenNotificationIds.current.has(String(item.id)));
     seenNotificationIds.current=currentIds;
-    if(added){setNotificationToast(added);}
+    if(added){setNotificationToast(added);notifyItem(added);}
   },[notificationItems.map(item=>item.id).join('|')]);
+  // Device notification: one summary a day once the workspace has loaded (no-op unless enabled on this device).
+  useEffect(()=>{if(accountsLoaded&&notificationItems.length)notifyDailySummary(notificationItems,todayISO);},[accountsLoaded,notificationItems.length,todayISO]);
   useEffect(()=>{if(!notificationToast)return;const timer=setTimeout(()=>setNotificationToast(null),4800);return()=>clearTimeout(timer)},[notificationToast]);
   const displayName=titleCaseName(session ? (session.user.user_metadata?.full_name||session.user.email?.split('@')[0]||'there') : (profileName||'there'));
   const greeting=getGreeting(session?.user?.user_metadata?.timezone||timezone);
@@ -507,14 +513,18 @@ function App(){
       const goalBalance=Number(selectedGoal?.saved_amount||0)+transactions.filter(t=>t.type==='Transfer'&&String(t.goal_id)===String(form.goal_id)&&String(t.id)!==String(editing?.id)).reduce((sum,t)=>{const from=accounts.find(a=>String(a.id)===String(t.account_id)),to=accounts.find(a=>String(a.id)===String(t.to_account_id));if(isGoalsAccount(from))return sum-Number(t.amount||0);if(isGoalsAccount(to))return sum+Number(t.amount||0);return sum+Number(t.amount||0)},0);
       if(Number(form.amount)>goalBalance){setToast(`This goal only has ${new Intl.NumberFormat('en-EG',{style:'currency',currency,maximumFractionDigits:2}).format(Math.max(0,goalBalance))} available to withdraw.`);return;}
     }
-    const sourceIn=transactions.filter(t=>(t.type==='Income'&&String(t.account_id)===String(source?.id))||(t.type==='Transfer'&&String(t.to_account_id)===String(source?.id))).reduce((sum,t)=>sum+Number(t.amount||0),0);
+    const sourceIn=transactions.filter(t=>(t.type==='Income'&&String(t.account_id)===String(source?.id))||(t.type==='Transfer'&&String(t.to_account_id)===String(source?.id))).reduce((sum,t)=>sum+Number((t.type==='Transfer'&&t.to_amount!=null&&t.to_amount!=='')?t.to_amount:(t.amount||0)),0);
     const sourceOut=transactions.filter(t=>((t.type==='Expense'||t.type==='Transfer')&&String(t.account_id)===String(source?.id))).reduce((sum,t)=>sum+Number(t.amount||0),0);
     let available=Number(source?.opening_balance||0)+sourceIn-sourceOut+((isCard(source)||isProvider(source))?(Number(source.credit_limit)>0?Number(source.credit_limit):1e12):0);
     if(isProvider(source)&&Number(source.credit_limit)>0){const planOwed=providerSummary(source,debts,undefined,transactions).used;available=Number(source.credit_limit)-planOwed;}
     if(isCard(source)&&Number(source.credit_limit)>0){available=Number(source.credit_limit)-cardSummary(source,transactions,undefined,debts).owed;}
     if(editing && String(editing.account_id)===String(source?.id) && (editing.type==='Expense'||editing.type==='Transfer')) available+=Number(editing.amount||0);
-    if((form.type==='Expense'||form.type==='Transfer') && Number(form.amount)>available){const shown=new Intl.NumberFormat('en-EG',{style:'currency',currency,maximumFractionDigits:2}).format(Math.max(0,available));setToast((isCard(source)||isProvider(source))?`Could not add: this is over the limit on ${source.name}. Available credit: ${shown}.`:`Insufficient balance in ${source?.name||'this account'}. Available: ${shown}.`);return;}
+    if((form.type==='Expense'||form.type==='Transfer') && Number(form.amount)>available){const shown=new Intl.NumberFormat('en-EG',{style:'currency',currency:accountCurrency(source),maximumFractionDigits:2}).format(Math.max(0,available));setToast((isCard(source)||isProvider(source))?`Could not add: this is over the limit on ${source.name}. Available credit: ${shown}.`:`Insufficient balance in ${source?.name||'this account'}. Available: ${shown}.`);return;}
     const payload={transaction_date:form.transaction_date,type:form.type,category:form.type==='Transfer'?'Transfer':form.category,subcategory:form.type==='Transfer'?(form.goal_id?(goals.find(g=>String(g.id)===String(form.goal_id))?.name||'Transfer'):'Transfer'):(form.subcategory||null),description:form.description,amount:Number(form.amount),need_want:form.type==='Expense'?form.need_want:null,fixed_variable:form.fixed_variable,payment_method:accounts.find(a=>String(a.id)===String(form.account_id))?.name||'Unassigned',account_id:form.account_id||null,to_account_id:form.type==='Transfer'?form.to_account_id||null:null,goal_id:form.type==='Transfer'?(form.goal_id||null):null,debt_id:form.debt_id||null,recurring:form.type==='Transfer'?false:form.recurring,notes:form.notes};
+    // Transfers between accounts in different currencies store what arrived in the destination's currency.
+    const crossCurrency=form.type==='Transfer'&&destination&&accountCurrency(source)!==accountCurrency(destination);
+    if(crossCurrency&&!(Number(form.to_amount)>0)){setToast(`Enter how much arrived in ${destination.name} (${accountCurrency(destination)}).`);return;}
+    payload.to_amount=crossCurrency?Number(form.to_amount):null;
     const saved=await saveRecord('transactions',payload,editing?.id);if(!saved)return;
     setTransactions(old=>editing?old.map(x=>x.id===editing.id?saved:x):[saved,...old]);
     setModal(null);setEditing(null);setTxPresetAccount('');setToast(editing?'Transaction updated':'Transaction added');
@@ -529,8 +539,20 @@ function App(){
     const saved=await saveRecord('recurring_payments',p,editing?.id);if(!saved)return;
     setRecurring(old=>editing?old.map(x=>x.id===editing.id?saved:x):[saved,...old]);setModal(null);setEditing(null);setToast('Payment saved');
   }
+  async function copyBudgets(fromMonth,toMonth){
+    if(!cloudReady||!session?.user){setToast('Connect to Supabase and sign in before saving data.');return;}
+    const source=budgets.filter(b=>(b.month||'').slice(0,7)===fromMonth&&Number(b.amount)>0);
+    const existing=new Set(budgets.filter(b=>(b.month||'').slice(0,7)===toMonth).map(b=>b.category));
+    const rows=source.filter(b=>!existing.has(b.category)).map(b=>({user_id:session.user.id,category:b.category,month:monthStart(toMonth),amount:Number(b.amount),rollover:Boolean(b.rollover)}));
+    if(!rows.length){setToast('Nothing to copy.');return;}
+    const {error}=await supabase.from('budgets').insert(rows);
+    if(error){setToast(error.message);return;}
+    const {data}=await supabase.from('budgets').select('*').order('month',{ascending:false});
+    if(Array.isArray(data))setBudgets(data);
+    setToast(`Copied ${rows.length} budget${rows.length===1?'':'s'}`);
+  }
   async function addBudget(form){
-    const p={category:form.category,month:monthStart(form.month),amount:Number(form.amount)};
+    const p={category:form.category,month:monthStart(form.month),amount:Number(form.amount),rollover:Boolean(form.rollover)};
     const saved=await saveRecord('budgets',p,editing?.id);if(!saved)return;
     // Immediately replace by id OR category/month so the card always uses the latest saved amount.
     // This also handles older rows whose ID changed during a migration/import.
@@ -550,12 +572,12 @@ function App(){
   }
   async function saveAccount(form){
     if(isGoalsAccount(editing)){setToast('The system Goals account cannot be edited.');return;}
-    const payload={name:form.name.trim(),type:form.type,opening_balance:Number(form.opening_balance||0),opening_balance_date:form.opening_balance_date||localISODate(),color:form.color||'#6c7cf5'};
+    const payload={name:form.name.trim(),type:form.type,opening_balance:Number(form.opening_balance||0),opening_balance_date:form.opening_balance_date||localISODate(),color:form.color||'#6c7cf5',currency:(form.currency||currency).toUpperCase(),fx_rate:form.currency&&form.currency.toUpperCase()!==String(currency).toUpperCase()?Number(form.fx_rate)||null:null};
     const saved=await saveRecord('financial_accounts',payload,editing?.id);if(!saved)return;
     setAccounts(old=>editing?old.map(x=>x.id===editing.id?saved:x):[saved,...old]);setModal(null);setEditing(null);setToast('Account saved');
   }
   async function createSetupAccount(form){
-    const payload={name:form.name.trim(),type:form.type,opening_balance:Number(form.opening_balance||0),opening_balance_date:form.opening_balance_date||localISODate(),color:form.color||'#6c7cf5'};
+    const payload={name:form.name.trim(),type:form.type,opening_balance:Number(form.opening_balance||0),opening_balance_date:form.opening_balance_date||localISODate(),color:form.color||'#6c7cf5',currency:(form.currency||currency).toUpperCase(),fx_rate:form.currency&&form.currency.toUpperCase()!==String(currency).toUpperCase()?Number(form.fx_rate)||null:null};
     const saved=await saveRecord('financial_accounts',payload);if(!saved)return;
     setAccounts(old=>[saved,...old]);setToast('Your account is ready. You can start using Pocket now.');
   }
@@ -907,7 +929,7 @@ function App(){
   // unless an explicit feature mapping is added to PAGE_FEATURE.
   const getPageFeature=(name)=>PAGE_FEATURE[name]||'overview';
   const visibleNavGroups=[{label:'WORKSPACE',items:[['Overview',LayoutDashboard],['Transactions',ArrowLeftRight],['Accounts',Wallet],['Cash flow calendar',CalendarDays],['Budgets',CreditCard],['Savings goals',Target],['Subscriptions & bills',Repeat2],['Debts & installments',CircleDollarSign]]},{label:'ANALYZE',items:[['Insights & reports',ChartNoAxesCombined]]}].map(g=>({...g,items:g.items.filter(([name])=>allowedFeatures.includes(getPageFeature(name)))})).filter(g=>g.items.length);
-  const canSeeCurrentPage=['Admin access','Access requests','Access management'].includes(page)?isAdmin:page==='Access restricted'?true:allowedFeatures.includes(getPageFeature(page));
+  const canSeeCurrentPage=['Admin access','Access requests','Access management','Audit log'].includes(page)?isAdmin:page==='Access restricted'?true:allowedFeatures.includes(getPageFeature(page));
   const openCredit=id=>{setDebtFocus(id);setPage('Debts & installments')};
   const creditActions={
     open:openCredit,
@@ -934,7 +956,7 @@ function App(){
   </main>;
   if(cloudReady && (!session || authMode==='update-password')) return <AuthScreen {...{authMode,setAuthMode,authName,setAuthName,authGender,setAuthGender,authEmail,setAuthEmail,authUsername,setAuthUsername,authPassword,setAuthPassword,authConfirmPassword,setAuthConfirmPassword,authMsg,setAuthMsg,stayLoggedIn,setStayLoggedIn,busy,signIn,signInWithGoogle,signUp,resetPassword,updatePassword,resendConfirmation}} />;
   if(!cloudReady) return <main className="auth-page pocket-auth-page"><section className="auth-panel pocket-auth-panel"><div className="auth-choice-card pocket-auth-choice-card"><div className="auth-mobile-brand pocket-mobile-brand"><b>Pocket</b></div><h2>Connect Pocket to Supabase</h2><p className="auth-subtitle">Local and browser-based data storage is disabled. Configure <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> in your deployment environment, then redeploy.</p></div></section></main>;
-  return <div className={`app-shell sidebar-${isDesktopNav?sidebarSize:'comfortable'}`} lang="en" dir="ltr">
+  return <div className={`app-shell sidebar-${isDesktopNav?sidebarSize:'comfortable'}`} >
     <aside className={`sidebar ${sidebarOpen?'sidebar-open':''}`} onMouseOver={e=>{if(!(isDesktopNav&&sidebarSize==='compact')){if(navTip)setNavTip(null);return}const el=e.target.closest('[data-label]');if(!el){if(navTip)setNavTip(null);return}const r=el.getBoundingClientRect();setNavTip({label:el.dataset.label,top:r.top+r.height/2,left:r.right+10})}} onMouseLeave={()=>setNavTip(null)}>
       <div className="brand"><button type="button" data-label="Overview" className="brand-home" onClick={()=>{setPage('Overview');setSidebarOpen(false);}} aria-label="Pocket home — Overview"><div className="brand-mark"><img className="brand-logo-mark" src="/brand/pocket-mark.svg" alt="" /></div><span>Pocket</span></button><button type="button" data-label="Expand sidebar" className="icon-btn sidebar-collapse-btn" onClick={()=>setSidebarSize(sidebarSize==='compact'?'comfortable':'compact')} title={sidebarSize==='compact'?'Expand sidebar':'Collapse sidebar'} aria-label={sidebarSize==='compact'?'Expand sidebar':'Collapse sidebar'}>{sidebarSize==='compact'?<PanelLeftOpen size={18}/>:<PanelLeftClose size={18}/>}</button><button className="icon-btn mobile-close" onClick={()=>setSidebarOpen(false)} aria-label="Close navigation"><X size={18}/></button></div>
       <div className="sidebar-scroll">
@@ -944,7 +966,7 @@ function App(){
       <div className="sidebar-section-heading"><span>PLAN</span></div>
       {visibleNavGroups.filter(group=>group.label==='WORKSPACE').map(group=><div className="nav-group sidebar-flat-group" key={'plan-'+group.label}>{group.items.filter(([name])=>['Cash flow calendar','Budgets','Savings goals','Subscriptions & bills','Debts & installments'].includes(name)).map(([name,Icon])=><button key={name} data-label={name} className={`nav-item ${page===name?'active':''}`} onClick={()=>{setDebtFocus(null);setPage(name);setSidebarOpen(false)}}><Icon size={18}/><span>{name}</span></button>)}</div>)}
       {allowedFeatures.includes('vehicle_management')&&<><div className="sidebar-section-heading"><span>VEHICLES</span></div><div className="nav-group sidebar-flat-group">{[['vehicles','My vehicles',CarFront],['maintenance','Maintenance',Wrench],['history','Service history',History],['fuel','Fuel log',Fuel]].map(([key,label,Icon])=><button key={key} data-label={label} className={`nav-item ${page==='Vehicle Management'&&vehicleSidebarTab===key?'active':''}`} onClick={()=>{setVehicleSidebarTab(key);setPage('Vehicle Management');setSidebarOpen(false)}}><Icon size={18}/><span>{label}</span></button>)}</div></>}
-      {(isAdmin||allowedFeatures.includes('expense_categories'))&&<><div className="sidebar-section-heading"><span>ADMIN</span></div><div className="nav-group sidebar-flat-group">{isAdmin&&<><button data-label="Requests" className={`nav-item ${page==='Access requests'?'active':''}`} onClick={()=>{setPage('Access requests');setSidebarOpen(false)}}><Mail size={18}/><span>Requests</span><span className="nav-count">{accessRequestCounts.pending}</span></button><button data-label="Users" className={`nav-item ${page==='Admin access'?'active':''}`} onClick={()=>{setPage('Admin access');setSidebarOpen(false)}}><Users size={18}/><span>Users</span></button></>}{(isAdmin||allowedFeatures.includes('expense_categories'))&&<button data-label="Expense categories" className={`nav-item ${page==='Expense categories'?'active':''}`} onClick={()=>{setPage('Expense categories');setSidebarOpen(false)}}><SlidersHorizontal size={18}/><span>Expense categories</span></button>}</div></>}
+      {(isAdmin||allowedFeatures.includes('expense_categories'))&&<><div className="sidebar-section-heading"><span>ADMIN</span></div><div className="nav-group sidebar-flat-group">{isAdmin&&<><button data-label="Requests" className={`nav-item ${page==='Access requests'?'active':''}`} onClick={()=>{setPage('Access requests');setSidebarOpen(false)}}><Mail size={18}/><span>Requests</span><span className="nav-count">{accessRequestCounts.pending}</span></button><button data-label="Users" className={`nav-item ${page==='Admin access'?'active':''}`} onClick={()=>{setPage('Admin access');setSidebarOpen(false)}}><Users size={18}/><span>Users</span></button><button data-label="Audit log" className={`nav-item ${page==='Audit log'?'active':''}`} onClick={()=>{setPage('Audit log');setSidebarOpen(false)}}><History size={18}/><span>Audit log</span></button></>}{(isAdmin||allowedFeatures.includes('expense_categories'))&&<button data-label="Expense categories" className={`nav-item ${page==='Expense categories'?'active':''}`} onClick={()=>{setPage('Expense categories');setSidebarOpen(false)}}><SlidersHorizontal size={18}/><span>Expense categories</span></button>}</div></>}
       </div>
       <div className="sidebar-bottom"><div className="sidebar-profile"><span data-label="Profile" role="button" tabIndex={0} onClick={()=>setModal('profile')} className="sidebar-profile-avatar avatar-image"><ProfileAvatar value={profileAvatar}/></span><button className="sidebar-profile-copy" onClick={()=>setModal('profile')}><b>{displayName}</b><span>View profile</span></button><button type="button" data-label="Settings" className="icon-btn sidebar-settings-button" onClick={()=>setModal('app-settings')} title="Settings" aria-label="Settings"><Settings size={18}/></button></div></div>
     </aside>
@@ -956,9 +978,10 @@ function App(){
         {profileLoadError&&<div className="workspace-error" role="alert"><div><b>Couldn’t verify your access</b><p>{profileLoadError}</p></div><button className="btn btn-secondary btn-sm" onClick={()=>{setProfileLoaded(false);setProfileLoadError('');setProfileRetry(v=>v+1)}}>Retry</button></div>}
         {dataLoadError&&<div className="workspace-error" role="alert"><div><b>Some workspace data didn’t load</b><p>{dataLoadError}</p></div><button className="btn btn-secondary btn-sm" onClick={()=>setDataLoadAttempt(v=>v+1)}>Retry loading</button></div>}
         {cloudReady&&session&&!accountsLoaded?<WorkspaceSkeleton/>: <Suspense fallback={<WorkspaceSkeleton/>}>
-        {!canSeeCurrentPage&&!(isAdmin&&['Expense categories','Admin access','Access requests','Access management'].includes(page))&&<AccessRestricted profile={profile} onBack={()=>setPage(allowedFeatures[0]?FEATURE_OPTIONS.find(f=>f.key===allowedFeatures[0])?.label:'Overview')} onRequestAccess={requestAccess} requestBusy={accessRequestBusy} requestsOpen={accessRequestsOpen}/> }
+        {!canSeeCurrentPage&&!(isAdmin&&['Expense categories','Admin access','Access requests','Access management','Audit log'].includes(page))&&<AccessRestricted profile={profile} onBack={()=>setPage(allowedFeatures[0]?FEATURE_OPTIONS.find(f=>f.key===allowedFeatures[0])?.label:'Overview')} onRequestAccess={requestAccess} requestBusy={accessRequestBusy} requestsOpen={accessRequestsOpen}/> }
         {page==='Expense categories'&&(isAdmin||allowedFeatures.includes('expense_categories'))&&<ExpenseCategoriesPage session={session} supabase={supabase}/>}
         {canSeeCurrentPage&&page==='Vehicle Management'&&<VehicleManagementPage session={session} supabase={supabase} transactions={transactions} setTransactions={setTransactions} accounts={accounts} currency={currency} onToast={setToast} requestedTab={vehicleSidebarTab}/>}
+        {page==='Audit log'&&isAdmin&&<AuditLogPage supabase={supabase}/>}
         {['Access management','Admin access','Access requests'].includes(page)&&isAdmin&&<AccessManagementPage supabase={supabase} onToast={setToast} users={adminUsers} loading={adminLoading} profile={profile} onUpdate={updateUserAccess} onDelete={deleteManagedUser} onCreate={createManagedUser} onRefresh={refreshAdminUsers} initialTab={page==='Admin access'?'users':'requests'}/>}
         {canSeeCurrentPage&&page==='Overview'&&<Overview {...{debts,creditActions,month,setMonth,transactions,accounts,monthTx,income,expenses,net,savingsRate,monthlySeries,categoryData,needs,wants,monthBudgets,totalBudget,totalSaved,goalTarget,upcoming,goals,setPage,setModal,setEditing,setToast,displayName,greeting,profileAvatar,session,supabase,currency,setVehicleSidebarTab,canViewVehicles:allowedFeatures.includes('vehicle_management')}}/>}
         {canSeeCurrentPage&&page==='Transactions'&&<TransactionsPage {...{transactions,reportTx,accounts,debts,filtered,search,setSearch,typeFilter,setTypeFilter,categoryFilter,setCategoryFilter,amountSort,setAmountSort,setModal,setEditing,setPage,setToast,removeRecord,setTransactions,handleImport,exportCSV,currency,requestConfirm,recordDebtInstallment,activeCategoryOptions:getExpenseCategories(profile?.gender)}}/>}
@@ -966,7 +989,7 @@ function App(){
         {canSeeCurrentPage&&page==='Cash flow calendar'&&<CashFlowCalendar {...{transactions,recurring,accounts,debts,month,setMonth,currency}}/>}
         {canSeeCurrentPage&&page==='Debts & installments'&&<DebtsPage {...{debts,accounts,transactions,debtFocus,setDebtFocus,credit:creditActions,setAccounts,setModal,setEditing,removeRecord,setDebts,currency,requestConfirm,recordDebtInstallment,setDebtPaymentTarget,setToast}}/>}
         {canSeeCurrentPage&&(page==='Insights & reports'||page==='Insights & forecast'||page==='Reports')&&<InsightsReportsPage {...{transactions:reportTx,month,setMonth,budgets,recurring,goals,debts,currency,setPage,accounts}}/>}
-        {canSeeCurrentPage&&page==='Budgets'&&<BudgetsPage {...{budgets,transactions:reportTx,month,setMonth,setModal,setEditing,setToast,removeRecord,setBudgets,requestConfirm}}/>}
+        {canSeeCurrentPage&&page==='Budgets'&&<BudgetsPage {...{budgets,transactions:reportTx,month,setMonth,setModal,setEditing,setToast,removeRecord,setBudgets,requestConfirm,copyBudgets}}/>}
         {canSeeCurrentPage&&page==='Savings goals'&&<GoalsPage {...{goals,transactions,accounts,setModal,setEditing,setToast,removeRecord,setGoals,totalSaved,goalTarget,requestConfirm}}/>}
         {canSeeCurrentPage&&(page==='Recurring payments'||page==='Subscriptions & bills')&&<RecurringPage {...{recurring,setModal,setEditing,setToast,removeRecord,setRecurring,markRecurringPaid,paidBusy,deleteRecurringPayment}}/>}
         </Suspense>}
@@ -981,7 +1004,7 @@ function App(){
     {modal==='profile'&&<AccountProfileModal {...{sendEmailVerification,addAccountEmail,onClose:()=>setModal(null),openAvatarPicker:gender=>{setAvatarPickerGender(gender||session?.user?.user_metadata?.gender||'prefer_not_to_say');setModal('avatar-picker')},session,saveProfile,profileSaving,profileName:session?.user?.user_metadata?.full_name||profileName,gender:session?.user?.user_metadata?.gender||'prefer_not_to_say',currency,timezone,profileAvatar}}/>}
     {modal==='avatar-picker'&&<AvatarPickerModal current={profileAvatar} gender={avatarPickerGender} onClose={()=>setModal('profile')} onChoose={avatar=>{setProfileAvatar(avatar);setModal('profile')}} />}
     {modal==='account'&&<AccountModal initial={editing} onClose={()=>{setModal(null);setEditing(null)}} onSave={saveAccount}/> }
-    {modal==='account-from-transaction'&&<AccountModal initial={null} onClose={()=>setModal('transaction')} onSave={async form=>{const payload={name:form.name.trim(),type:form.type,opening_balance:Number(form.opening_balance||0),opening_balance_date:form.opening_balance_date||localISODate(),color:form.color||'#6c7cf5'};const saved=await saveRecord('financial_accounts',payload);if(!saved)return;setAccounts(old=>[saved,...old]);setModal('transaction');setToast('Account added. Select it for your transaction.')}}/>}
+    {modal==='account-from-transaction'&&<AccountModal initial={null} onClose={()=>setModal('transaction')} onSave={async form=>{const payload={name:form.name.trim(),type:form.type,opening_balance:Number(form.opening_balance||0),opening_balance_date:form.opening_balance_date||localISODate(),color:form.color||'#6c7cf5',currency:(form.currency||currency).toUpperCase(),fx_rate:form.currency&&form.currency.toUpperCase()!==String(currency).toUpperCase()?Number(form.fx_rate)||null:null};const saved=await saveRecord('financial_accounts',payload);if(!saved)return;setAccounts(old=>[saved,...old]);setModal('transaction');setToast('Account added. Select it for your transaction.')}}/>}
     {modal==='debt'&&<DebtModal currency={currency} accounts={accounts} debts={debts} transactions={transactions} convertTx={convertTx} providerAccounts={convertTx?accounts.filter(a=>String(a.id)===String(convertTx.account_id)):accounts.filter(isProvider)} presetProviderId={debtPresetProvider} onChooseAccountKind={kind=>{setEditing(null);setDebtPresetProvider('');setCreditKind(kind);setModal('credit-account')}} initial={editing} onClose={()=>{setModal(null);setEditing(null);setDebtPresetProvider('');setConvertTx(null)}} onSave={saveDebt}/> }
     {modal==='credit-account'&&<CreditAccountModal kind={creditKind} currency={currency} accounts={accounts} initial={editing} onClose={()=>{setModal(null);setEditing(null)}} onSave={saveCreditAccount}/>}
     {cardPay&&<CardPayModal card={accounts.find(a=>String(a.id)===String(cardPay.card.id))||cardPay.card} summary={cardSummary(accounts.find(a=>String(a.id)===String(cardPay.card.id))||cardPay.card,transactions,undefined,debts)} accounts={accounts} transactions={transactions} currency={currency} initialChoice={cardPay.choice} onClose={()=>setCardPay(null)} onSubmit={payCreditCard}/>}

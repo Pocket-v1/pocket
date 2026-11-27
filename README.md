@@ -253,3 +253,30 @@ For an existing Supabase project, run `supabase/migrations/20261020_add_opening_
 - Fixed recurring payments: a monthly item due on the 31st now moves to Feb 28/29 instead of skipping to March 3.
 - Removed unused legacy modules (`FeatureComponents`, `FinancePages`, `FinanceModals`, `AccountAndSettings`, `AccessAndVehicles`).
 - Added `npm run lint` (ESLint), `npm test` (Vitest, tests for balances, card statements, installment limits and due dates) and a GitHub Actions CI workflow.
+
+
+## New features (2026-11-27)
+
+### Install as an app (PWA)
+Pocket can be installed from the browser ("Add to Home screen" / install icon). `public/sw.js` caches only the app's own files so it opens offline; financial data is never cached. Nothing to configure.
+
+### Arabic and right-to-left layout
+Settings → Preferences → Language switches between English and العربية on this device. The layout mirrors right-to-left and uses the Cairo font. Translations live in `src/lib/i18n/ar.js` (key = the English text). Text without an entry stays in English, so add entries there as screens change.
+
+### Multi-currency accounts
+Each account can have its own currency and an exchange rate ("1 USD = 50 EGP"), set in the account form. Balances show in the account's currency, with the main-currency value under it. Reports, budgets and totals convert to the main currency. A transfer between two currencies asks for the amount received. Apply `supabase/migrations/20261127_multi_currency.sql`.
+
+### Budget rollover and month comparison
+A budget can roll over: what is left (or overspent) is added to (or taken off) next month's budget. Budget cards and totals compare spending with last month, and a new month can copy last month's budgets in one step. Apply `supabase/migrations/20261127_budget_rollover.sql`.
+
+### Reminders
+- **On this device:** Settings → Notifications → "Notifications on this device" shows a daily summary of due bills, installments and budget alerts when Pocket opens.
+- **By email:** users turn on "Email reminders" and choose how early. The `send-reminders` Edge Function sends one email a day through Resend. Setup: see the comments in `supabase/migrations/20261127_reminders.sql` (deploy the function with `--no-verify-jwt`, set `REMINDERS_CRON_SECRET`, `RESEND_API_KEY`, `REMINDER_FROM_EMAIL`, `APP_URL`, then schedule it with pg_cron).
+
+### Audit log
+Administration → Audit log lists role changes, feature grants, account creation/deletion, access-request decisions and global setting changes, with who did it and when. Rows are written by database triggers and cannot be edited from the app. Apply `supabase/migrations/20261127_audit_log.sql`.
+
+### Error monitoring (Sentry)
+Set `VITE_SENTRY_DSN` in Vercel to turn it on (off when unset, and Sentry's code is not downloaded). No session replay, cookies, IPs or names are sent; events carry only the user id.
+
+All of the SQL above is also appended to `supabase/schema.sql`.
