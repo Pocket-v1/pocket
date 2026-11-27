@@ -1,4 +1,6 @@
-import * as XLSX from 'xlsx';
+// The Excel library is large, so it is downloaded only when a file is actually exported.
+let XLSX;
+const loadXLSX=async()=>XLSX||(XLSX=await import('xlsx'));
 
 const stamp=()=>new Date().toISOString().slice(0,10);
 const templateHeaders=currency=>['Date','Type','Category','Description',`Amount (${currency})`,'Need / Want','Fixed / Variable','Payment Method','Recurring?','Notes'];
@@ -13,6 +15,7 @@ function saveBlob(blob,name){
 }
 
 export async function exportTransactions(format,transactions,accounts,currency){
+  await loadXLSX();
   const rows=transactionRows(transactions,accounts,currency);
   const base=`pocket-transactions-${stamp()}`;
   if(format==='xlsx'){
@@ -40,7 +43,8 @@ export async function exportTransactions(format,transactions,accounts,currency){
   throw new Error('Unknown export format');
 }
 
-export function downloadTemplate(format,currency){
+export async function downloadTemplate(format,currency){
+  await loadXLSX();
   const headers=templateHeaders(currency);
   if(format==='xlsx'){
     const wb=XLSX.utils.book_new();
@@ -53,7 +57,8 @@ export function downloadTemplate(format,currency){
   saveBlob(new Blob(['﻿'+csv+'\n'],{type:'text/csv;charset=utf-8'}),'pocket-transactions-template.csv');
 }
 
-export function exportTable(format,baseName,sheetName,rows){
+export async function exportTable(format,baseName,sheetName,rows){
+  await loadXLSX();
   const base=`pocket-${baseName}-${stamp()}`;
   if(format==='xlsx'){const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),sheetName);XLSX.writeFile(wb,`${base}.xlsx`);return;}
   const csv=XLSX.utils.sheet_to_csv(XLSX.utils.json_to_sheet(rows));

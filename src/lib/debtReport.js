@@ -1,4 +1,6 @@
-import * as XLSX from 'xlsx';
+// The Excel library is large, so it is downloaded only when a file is actually exported.
+let XLSX;
+const loadXLSX=async()=>XLSX||(XLSX=await import('xlsx'));
 import { cleanPocketDebtNotes } from './debtNotes.js';
 
 const money=n=>Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -36,6 +38,7 @@ export function debtReportData(d,accounts=[],transactions=[],currency='EGP'){
 function saveBlob(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1500);}
 
 export async function downloadDebtReport(format,d,accounts,transactions,currency='EGP'){
+  await loadXLSX();
   const r=debtReportData(d,accounts,transactions,currency);const base=`pocket-debt-${safe(d.name)}-${stamp()}`;
   if(format==='xlsx'){
     const wb=XLSX.utils.book_new();

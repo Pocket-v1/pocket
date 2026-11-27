@@ -2,60 +2,42 @@ import { seedMemory } from './lib/chatParser.js';
 import { defaultNeedWant, rememberNeedWant } from './lib/needWant.js';
 import { Inbox, CircleHelp, Star, Search, PanelLeftClose, PanelLeftOpen, ArrowLeftRight, ArrowUpRight, Bell, CalendarDays, CarFront, ChartNoAxesCombined, Check, ChevronDown, CircleDollarSign, CreditCard, Fuel, History, LayoutDashboard, Lock, LogOut, Mail, Menu, MessageSquare, Moon, Repeat2, Settings, SlidersHorizontal, Sun, Target, UserRound, Users, Wallet, Wrench, X, XCircle } from './lib/icons.jsx';
 import { useSheetManager } from './hooks/useSheetManager.js';
-import * as XLSX from 'xlsx';
 import { exportTransactions, downloadTemplate } from './lib/transferFile.js';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ConfirmActionModal } from './components/modals/ConfirmActionModal.jsx';
 import { ProfileAvatar } from './components/ui/ProfileAvatar.jsx';
 import { storedTheme, saveTheme, bootTheme } from './lib/theme.js';
 import { WorkspaceSkeleton } from './components/ui/WorkspaceSkeleton.jsx';
 import { AccountModal } from './features/accounts/AccountModal.jsx';
-import { AccountsPage } from './features/accounts/AccountsPage.jsx';
-import { SmsPage } from './features/sms/SmsPage.jsx';
-import { AccessManagementPage } from './features/admin/AccessManagementPage.jsx';
 import { EmailStatusBar } from './components/ui/EmailStatusBar.jsx';
 import { WelcomeWizard } from './features/overview/WelcomeWizard.jsx';
 import { AppTour } from './components/ui/AppTour.jsx';
 import { AccessRestricted } from './features/admin/AccessRestricted.jsx';
-import { VehicleManagementPage } from './features/admin/VehicleManagementPage.jsx';
 import { AccountProfileModal } from './features/auth/AccountProfileModal.jsx';
 import { AuthScreen } from './features/auth/AuthScreen.jsx';
 import { AvatarPickerModal } from './features/auth/AvatarPickerModal.jsx';
 import { BudgetModal } from './features/budgets/BudgetModal.jsx';
-import { BudgetsPage } from './features/budgets/BudgetsPage.jsx';
 import { DebtModal } from './features/debts/DebtModal.jsx';
 import { DebtPaymentChoiceModal } from './features/debts/DebtPaymentChoiceModal.jsx';
-import { FriendsPage } from './features/friends/FriendsPage.jsx';
 import { LoanModal, loanStatus } from './features/debts/OwedToMe.jsx';
 import { useFriends } from './features/friends/useFriends.js';
-import { DebtsPage } from './features/debts/DebtsPage.jsx';
 import { GoalModal } from './features/goals/GoalModal.jsx';
-import { GoalsPage } from './features/goals/GoalsPage.jsx';
 import { GoalCompleteModal } from './features/goals/GoalCompleteModal.jsx';
 import { GoalAddMoneyModal } from './features/goals/GoalAddMoneyModal.jsx';
 import { goalSaved, goalSpent, isGoalDone, isFromSavings } from './lib/goals.js';
 import { GoalSpendModal } from './features/goals/GoalSpendModal.jsx';
-import { InsightsReportsPage } from './features/insights/InsightsReportsPage.jsx';
-import { CashFlowCalendar } from './features/overview/CashFlowCalendar.jsx';
-import { Overview } from './features/overview/Overview.jsx';
 import { RecurringModal } from './features/recurring/RecurringModal.jsx';
 import { QuickAdd } from './components/ui/QuickAdd.jsx';
 import { GlobalSearch } from './components/ui/GlobalSearch.jsx';
-import { RecurringPage } from './features/recurring/RecurringPage.jsx';
-import { ExpenseCategoriesPage } from './features/settings/ExpenseCategoriesPage.jsx';
 import { SettingsModal } from './features/settings/SettingsModal.jsx';
 import { ImportModal } from './features/transactions/ImportModal.jsx';
 import { setCategoryIconOverrides } from './lib/categoryIcons.js';
-import { PlusPage } from './features/plus/PlusPage.jsx';
-import { HelpPage } from './features/help/HelpPage.jsx';
 import { InboxPage, threadUnread } from './features/help/InboxPage.jsx';
 import { ReviewModal } from './features/help/supportFiles.jsx';
 import { LockedSmsTeaser, LockedVehiclesTeaser, TypedByHandCard, SmsHintBanner } from './features/plus/PlusTeasers.jsx';
-import { SubscriptionsAdminPage } from './features/plus/SubscriptionsAdminPage.jsx';
 import { plusState, PLUS_FEATURES, PLUS_DEFAULTS } from './lib/plus.js';
 import { ChatSheet } from './components/ui/ChatSheet.jsx';
 import { TransactionModal } from './features/transactions/TransactionModal.jsx';
-import { TransactionsPage } from './features/transactions/TransactionsPage.jsx';
 import { PROFILE_AVATARS, defaultAvatarForGender } from './lib/avatars.js';
 import { customSubcategoriesOverride, incomeCategories, getCategoriesForType, expenseCategories, expenseCategoriesOverride, getExpenseCategories, setCustomSubcategoriesOverride, setExpenseCategoriesOverride } from './lib/categories.js';
 import { FEATURE_OPTIONS, PAGE_FEATURE, MODAL_FEATURE, isGoalsAccount } from './lib/features.js';
@@ -66,6 +48,25 @@ import { CardPayModal } from './features/credit/CardPayModal.jsx';
 import { CreditAccountModal } from './features/credit/CreditAccountModal.jsx';
 import { ProviderPayModal } from './features/credit/ProviderPayModal.jsx';
 import { CARD_TYPE, PROVIDER_TYPE, accountFlows, cardSummary, isCard, isLiability, isMoneyAccount, isProvider, providerSummary, reportView, limitLeft, planLimitUse } from './lib/credit.js';
+
+// Pages load on demand so the first screen downloads less code.
+const AccountsPage = lazy(() => import('./features/accounts/AccountsPage.jsx').then(m => ({ default: m.AccountsPage })));
+const SmsPage = lazy(() => import('./features/sms/SmsPage.jsx').then(m => ({ default: m.SmsPage })));
+const AccessManagementPage = lazy(() => import('./features/admin/AccessManagementPage.jsx').then(m => ({ default: m.AccessManagementPage })));
+const VehicleManagementPage = lazy(() => import('./features/admin/VehicleManagementPage.jsx').then(m => ({ default: m.VehicleManagementPage })));
+const BudgetsPage = lazy(() => import('./features/budgets/BudgetsPage.jsx').then(m => ({ default: m.BudgetsPage })));
+const FriendsPage = lazy(() => import('./features/friends/FriendsPage.jsx').then(m => ({ default: m.FriendsPage })));
+const DebtsPage = lazy(() => import('./features/debts/DebtsPage.jsx').then(m => ({ default: m.DebtsPage })));
+const GoalsPage = lazy(() => import('./features/goals/GoalsPage.jsx').then(m => ({ default: m.GoalsPage })));
+const InsightsReportsPage = lazy(() => import('./features/insights/InsightsReportsPage.jsx').then(m => ({ default: m.InsightsReportsPage })));
+const CashFlowCalendar = lazy(() => import('./features/overview/CashFlowCalendar.jsx').then(m => ({ default: m.CashFlowCalendar })));
+const Overview = lazy(() => import('./features/overview/Overview.jsx').then(m => ({ default: m.Overview })));
+const RecurringPage = lazy(() => import('./features/recurring/RecurringPage.jsx').then(m => ({ default: m.RecurringPage })));
+const ExpenseCategoriesPage = lazy(() => import('./features/settings/ExpenseCategoriesPage.jsx').then(m => ({ default: m.ExpenseCategoriesPage })));
+const PlusPage = lazy(() => import('./features/plus/PlusPage.jsx').then(m => ({ default: m.PlusPage })));
+const HelpPage = lazy(() => import('./features/help/HelpPage.jsx').then(m => ({ default: m.HelpPage })));
+const SubscriptionsAdminPage = lazy(() => import('./features/plus/SubscriptionsAdminPage.jsx').then(m => ({ default: m.SubscriptionsAdminPage })));
+const TransactionsPage = lazy(() => import('./features/transactions/TransactionsPage.jsx').then(m => ({ default: m.TransactionsPage })));
 
 // A refresh stays on the same page (kept for this tab only); a new visit opens Overview.
 function readPocketStartupPage(){ try { return sessionStorage.getItem('pocket-current-page') || 'Overview'; } catch { return 'Overview'; } }
@@ -1116,7 +1117,8 @@ function App(){
     catch(err){setToast('Could not export: '+(err?.message||err));}
   }
   function downloadTemplateAs(format){downloadTemplate(format,currency);setToast(`Template downloaded (${format==='xlsx'?'Excel':'CSV'}). Fill it in, then use Import.`);}
-  function exportCSV(){
+  async function exportCSV(){
+    const XLSX=await import('xlsx');
     const ws=XLSX.utils.json_to_sheet(transactions.map(t=>({'Date':t.transaction_date,'Type':t.type,'Category':t.category,'Description':t.description,[`Amount (${currency})`]:t.amount,'Need / Want':t.need_want,'Fixed / Variable':t.fixed_variable,'Account / Wallet':accounts.find(a=>a.id===t.account_id)?.name||'No account linked','Recurring?':t.recurring?'Yes':'No','Notes':t.notes})));
     const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Transactions');XLSX.writeFile(wb,'forma-transactions.xlsx');
   }
@@ -1254,7 +1256,9 @@ function App(){
 
   async function handleImport(e){
     const file=e.target.files?.[0];if(!file)return;
+    if(file.size>5*1024*1024){setToast('That file is too large. Import files up to 5 MB.');e.target.value='';return;}
     try{
+      const XLSX=await import('xlsx');
       const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true});
       const ws=wb.Sheets['Transactions']||wb.Sheets[wb.SheetNames[0]];
       const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
@@ -1393,7 +1397,7 @@ function App(){
       <div className="page-wrap">
         {profileLoadError&&<div className="workspace-error" role="alert"><div><b>Couldn’t verify your access</b><p>{profileLoadError}</p></div><button className="btn btn-secondary btn-sm" onClick={()=>{setProfileLoaded(false);setProfileLoadError('');setProfileRetry(v=>v+1)}}>Retry</button></div>}
         {dataLoadError&&<div className="workspace-error" role="alert"><div><b>Some workspace data didn’t load</b><p>{dataLoadError}</p></div><button className="btn btn-secondary btn-sm" onClick={()=>setDataLoadAttempt(v=>v+1)}>Retry loading</button></div>}
-        {cloudReady&&session&&!accountsLoaded?<WorkspaceSkeleton/>: <>
+        {cloudReady&&session&&!accountsLoaded?<WorkspaceSkeleton/>: <Suspense fallback={<WorkspaceSkeleton/>}>
         {plusPreview&&page==='Bank SMS'&&<LockedSmsTeaser plus={plus} settings={plusSettings} onStartTrial={startPlusTrial} onOpenPlus={()=>setPage('Pocket Plus')}/>}
         {plusPreview&&page==='Vehicle Management'&&<LockedVehiclesTeaser plus={plus} settings={plusSettings} onStartTrial={startPlusTrial} onOpenPlus={()=>setPage('Pocket Plus')}/>}
         {!canSeeCurrentPage&&!(isAdmin&&['Expense categories','Admin access','Access requests','Access management'].includes(page))&&!(!isAdmin&&PLUS_FEATURES.includes(getPageFeature(page)))&&<AccessRestricted profile={profile} onBack={()=>setPage(allowedFeatures[0]?FEATURE_OPTIONS.find(f=>f.key===allowedFeatures[0])?.label:'Overview')} onRequestAccess={requestAccess} requestBusy={accessRequestBusy} requestsOpen={accessRequestsOpen}/> }
@@ -1416,7 +1420,7 @@ function App(){
         {canSeeCurrentPage&&page==='Budgets'&&<BudgetsPage {...{budgets,transactions:reportTx,month,setMonth,setModal,setEditing,setToast,removeRecord,setBudgets,requestConfirm}}/>}
         {canSeeCurrentPage&&page==='Savings goals'&&<GoalsPage {...{onSpend:(g,saved)=>setSpendGoal({goal:g,saved}),onAddMoney:g=>setAddMoneyGoal(g),onCompleteGoal:(g,saved)=>setCompleteGoalTarget({goal:g,saved}),onReopenGoal:reopenGoal,goals,transactions,accounts,setModal,setEditing,setToast,removeRecord,setGoals,totalSaved,goalTarget,requestConfirm}}/>}
         {canSeeCurrentPage&&(page==='Recurring payments'||page==='Subscriptions & bills')&&<RecurringPage {...{accounts,recurring,toggleRecurringActive,setModal,setEditing,setToast,removeRecord,setRecurring,markRecurringPaid,paidBusy,deleteRecurringPayment}}/>}
-        </>}
+        </Suspense>}
       </div>
       <footer className="footer"><span>Pocket Finance <span className="footer-dot">•</span> Make room for what matters.</span><span>Currency: {currency}</span></footer>
     </main>
