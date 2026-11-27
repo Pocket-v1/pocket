@@ -47,8 +47,9 @@ import { clearLoginFailures, formatWait, loginLockSeconds, recordLoginFailure } 
 import { CardPayModal } from './features/credit/CardPayModal.jsx';
 import { CreditAccountModal } from './features/credit/CreditAccountModal.jsx';
 import { ProviderPayModal } from './features/credit/ProviderPayModal.jsx';
-import { CARD_TYPE, PROVIDER_TYPE, accountFlows, cardSummary, isCard, isLiability, isMoneyAccount, isProvider, providerSummary, reportView, limitLeft, planLimitUse } from './lib/credit.js';
+import { accountCurrency, CARD_TYPE, PROVIDER_TYPE, accountFlows, cardSummary, isCard, isLiability, isMoneyAccount, isProvider, providerSummary, reportView, limitLeft, planLimitUse } from './lib/credit.js';
 import { setMonitoringUser } from './lib/monitoring.js';
+import { setDisplayCurrency } from './lib/format.js';
 
 // Pages load on demand so the first screen downloads less code.
 const AccountsPage = lazy(() => import('./features/accounts/AccountsPage.jsx').then(m => ({ default: m.AccountsPage })));
@@ -233,6 +234,7 @@ function App(){
   const [year,setYear] = useState(String(new Date().getFullYear()));
   const [clock,setClock] = useState(Date.now());
   const [currency,setCurrency] = useState(()=>{try{return null||'EGP'}catch{return 'EGP'}});
+  setDisplayCurrency(currency);
   const [timezone,setTimezone] = useState(()=>{try{return null||Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC'}catch{return 'UTC'}});
   const [profileName,setProfileName] = useState(()=>{try{return null||''}catch{return ''}});
   const [profileSaving,setProfileSaving] = useState(false);
@@ -624,7 +626,7 @@ function App(){
       const goalBalance=selectedGoal?goalSaved(selectedGoal,transactions.filter(t=>String(t.id)!==String(editing?.id)),accounts):0;
       if(Number(form.amount)>goalBalance){setToast(`This goal only has ${new Intl.NumberFormat('en-EG',{style:'currency',currency,maximumFractionDigits:2}).format(Math.max(0,goalBalance))} available to withdraw.`);return;}
     }
-    const sourceIn=transactions.filter(t=>(t.type==='Income'&&String(t.account_id)===String(source?.id))||(t.type==='Transfer'&&String(t.to_account_id)===String(source?.id))).reduce((sum,t)=>sum+Number(t.amount||0),0);
+    const sourceIn=transactions.filter(t=>(t.type==='Income'&&String(t.account_id)===String(source?.id))||(t.type==='Transfer'&&String(t.to_account_id)===String(source?.id))).reduce((sum,t)=>sum+Number((t.type==='Transfer'&&t.to_amount!=null&&t.to_amount!=='')?t.to_amount:(t.amount||0)),0);
     const sourceOut=transactions.filter(t=>((t.type==='Expense'||t.type==='Transfer')&&String(t.account_id)===String(source?.id))).reduce((sum,t)=>sum+Number(t.amount||0),0);
     let available=Number(source?.opening_balance||0)+sourceIn-sourceOut+((isCard(source)||isProvider(source))?(Number(source.credit_limit)>0?Number(source.credit_limit):1e12):0);
     if(isProvider(source)&&Number(source.credit_limit)>0){const planOwed=providerSummary(source,debts,undefined,transactions).used;available=Number(source.credit_limit)-planOwed;}
@@ -633,6 +635,10 @@ function App(){
     if((form.type==='Expense'||form.type==='Transfer') && Number(form.amount)>available){const shown=new Intl.NumberFormat('en-EG',{style:'currency',currency,maximumFractionDigits:2}).format(Math.max(0,available));setToast((isCard(source)||isProvider(source))?`Could not add: this is over the limit on ${source.name}. Available credit: ${shown}.`:`Insufficient balance in ${source?.name||'this account'}. Available: ${shown}.`);return;}
     const payload={friend_id:form.friend_id||null,exclude_from_totals:form.type!=='Transfer'&&!!form.exclude_from_totals,transaction_date:form.transaction_date,type:form.type,category:form.type==='Transfer'?'Transfer':form.category,subcategory:form.type==='Transfer'?(form.goal_id?(goals.find(g=>String(g.id)===String(form.goal_id))?.name||'Transfer'):'Transfer'):(form.subcategory||null),description:form.description,amount:Number(form.amount),need_want:form.type==='Expense'?(form.need_want||defaultNeedWant(form.category,form.subcategory)):null,fixed_variable:form.fixed_variable,payment_method:accounts.find(a=>String(a.id)===String(form.account_id))?.name||'Unassigned',account_id:form.account_id||null,to_account_id:form.type==='Transfer'?form.to_account_id||null:null,goal_id:form.type==='Transfer'?(form.goal_id||null):null,debt_id:form.type==='Income'&&form.loan_mode==='new'?null:(form.debt_id||null),recurring:form.type==='Transfer'?false:form.recurring,notes:form.notes};
     if(form.receipt_path)payload.receipt_path=form.receipt_path;
+    // Transfers between accounts in different currencies store what arrived in the destination's currency.
+    const crossCurrency=form.type==='Transfer'&&destination&&accountCurrency(source)!==accountCurrency(destination);
+    if(crossCurrency&&!(Number(form.to_amount)>0)){setToast(`Enter how much arrived in ${destination.name} (${accountCurrency(destination)}).`);return;}
+    payload.to_amount=crossCurrency?Number(form.to_amount):null;
     const saved=await saveRecord('transactions',payload,editing?.id);if(!saved)return;
     setTransactions(old=>editing?old.map(x=>x.id===editing.id?saved:x):[saved,...old]);
     if(form.type==='Income'&&form.loan_mode==='new'){setEditing(null);setTxPresetAccount('');setConvertTx(saved);setDebtPresetProvider('');setModal('debt');setToast(editing?'Income saved · now add the debt details':'Income added · now add the debt details');return true;}
@@ -702,7 +708,7 @@ function App(){
     setAccounts(old=>editing?old.map(x=>x.id===editing.id?saved:x):[saved,...old]);setModal(null);setEditing(null);setToast('Account saved');
   }
   async function createSetupAccount(form){
-    const payload={name:form.name.trim(),type:form.type,opening_balance:Number(form.opening_balance||0),opening_balance_date:form.opening_balance_date||localISODate(),color:form.color||'#6c7cf5'};
+    const payload={name:form.name.trim(),type:form.type,opening_balance:Number(form.opening_balance||0),opening_balance_date:form.opening_balance_date||localISODate(),color:form.color||'#6c7cf5',currency:(form.currency||currency).toUpperCase(),fx_rate:form.currency&&form.currency.toUpperCase()!==String(currency).toUpperCase()?Number(form.fx_rate)||null:null};
     const saved=await saveRecord('financial_accounts',payload);if(!saved)return false;
     setAccounts(old=>[saved,...old]);setToast('Your account is ready. You can start using Pocket now.');return true;
   }
@@ -1452,7 +1458,7 @@ function App(){
     {tourOpen&&!wizardOpen&&<AppTour onClose={closeTour}/>}
     {wizardOpen&&<WelcomeWizard name={displayName.split(' ')[0]} currency={currency} canAccount={allowedFeatures.includes('accounts')} steps={wizardSteps} onClose={closeWizard} onCreateAccount={createSetupAccount}/>}
     {modal==='account'&&<AccountModal initial={editing} onClose={()=>{setModal(null);setEditing(null)}} onSave={saveAccount}/> }
-    {modal==='account-from-transaction'&&<AccountModal initial={null} onClose={()=>setModal('transaction')} onSave={async form=>{const payload={name:form.name.trim(),type:form.type,opening_balance:Number(form.opening_balance||0),opening_balance_date:form.opening_balance_date||localISODate(),color:form.color||'#6c7cf5'};const saved=await saveRecord('financial_accounts',payload);if(!saved)return;setAccounts(old=>[saved,...old]);setModal('transaction');setToast('Account added. Select it for your transaction.')}}/>}
+    {modal==='account-from-transaction'&&<AccountModal initial={null} onClose={()=>setModal('transaction')} onSave={async form=>{const payload={name:form.name.trim(),type:form.type,opening_balance:Number(form.opening_balance||0),opening_balance_date:form.opening_balance_date||localISODate(),color:form.color||'#6c7cf5',currency:(form.currency||currency).toUpperCase(),fx_rate:form.currency&&form.currency.toUpperCase()!==String(currency).toUpperCase()?Number(form.fx_rate)||null:null};const saved=await saveRecord('financial_accounts',payload);if(!saved)return;setAccounts(old=>[saved,...old]);setModal('transaction');setToast('Account added. Select it for your transaction.')}}/>}
     {freeLimitHit&&<div className="modal-backdrop" onMouseDown={e=>e.target===e.currentTarget&&setFreeLimitHit(null)}><section className="modal free-limit" role="dialog" aria-modal="true" aria-labelledby="free-limit-title"><span className="free-limit-ic"><Star size={22}/></span><h2 id="free-limit-title">You've used your {freeLimitHit.max} free {freeLimitHit.what}</h2><p>The free plan includes {freeLimitHit.max} accounts, budgets, goals and bills. Pocket Plus has no limits.</p><div className="free-limit-actions"><button className="btn btn-secondary" onClick={()=>setFreeLimitHit(null)}>Not now</button><button className="btn btn-primary" onClick={()=>{setFreeLimitHit(null);setModal(null);setPage('Pocket Plus')}}>See Pocket Plus</button></div></section></div>}
     {borrowOpen&&<LoanModal mode="borrow" loans={loansGiven} friends={fr.accepted} presetFriend={typeof borrowOpen==='object'?borrowOpen:null} accounts={accounts} transactions={transactions} currency={currency} onClose={()=>setBorrowOpen(false)} onSubmit={async v=>{if(await borrowFromFriend(v))setBorrowOpen(false);}}/>}
     {modal==='debt'&&<DebtModal onBorrowFromFriend={fr.accepted.length?()=>{setModal(null);setBorrowOpen(true)}:null} currency={currency} accounts={accounts} debts={debts} transactions={transactions} convertTx={convertTx} providerAccounts={convertTx&&convertTx.type!=='Income'?accounts.filter(a=>String(a.id)===String(convertTx.account_id)):accounts.filter(isProvider)} presetProviderId={debtPresetProvider} onChooseAccountKind={kind=>{setEditing(null);setDebtPresetProvider('');setCreditKind(kind);setModal('credit-account')}} initial={editing} onClose={()=>{setModal(null);setEditing(null);setDebtPresetProvider('');setConvertTx(null)}} onSave={saveDebt}/> }

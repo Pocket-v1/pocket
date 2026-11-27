@@ -1,5 +1,5 @@
 import { isGoalsAccount } from './features.js';
-import { localISODate } from './format.js';
+import { getDisplayCurrency, localISODate } from './format.js';
 
 export const CARD_TYPE = 'Credit card';
 export const PROVIDER_TYPE = 'Installment app';
@@ -35,6 +35,10 @@ export function reducingUse(d) {
   return Math.min(P, bal);
 }
 export const planUse = (d, provider) => { if (isReducingProvider(provider)) { const v = reducingUse(d); if (v != null) return v; } return planLimitUse(d); };
+// Multi-currency: an account may hold another currency. fx_rate = how much 1 unit is worth in the main currency.
+export const accountCurrency = a => String(a?.currency || getDisplayCurrency()).toUpperCase();
+export const fxRate = (a, base = getDisplayCurrency()) => accountCurrency(a) === String(base).toUpperCase() ? 1 : (num(a?.fx_rate) > 0 ? num(a.fx_rate) : 1);
+export const toBase = (amount, a, base) => num(amount) * fxRate(a, base);
 const iso = ms => new Date(ms).toISOString().slice(0, 10);
 const utc = s => { const [y, m, d] = String(s).slice(0, 10).split('-').map(Number); return Date.UTC(y, m - 1, d); };
 
@@ -43,7 +47,9 @@ export function accountFlows(account, transactions = []) {
   let inflow = 0, outflow = 0;
   for (const t of transactions) {
     const from = String(t.account_id) === id, to = String(t.to_account_id) === id;
-    if ((t.type === 'Income' && from) || (t.type === 'Transfer' && to)) inflow += num(t.amount);
+    if (t.type === 'Income' && from) inflow += num(t.amount);
+    // A transfer between currencies records what arrived in to_amount.
+    if (t.type === 'Transfer' && to) inflow += t.to_amount != null && t.to_amount !== '' ? num(t.to_amount) : num(t.amount);
     if (((t.type === 'Expense' || t.type === 'Transfer') && from)) outflow += num(t.amount);
   }
   return { inflow, outflow, balance: num(account.opening_balance) + inflow - outflow };
@@ -160,9 +166,12 @@ export function reportView(transactions = [], accounts = [], debts = []) {
   const loanDebts = new Set(transactions.filter(t => t.type === 'Income' && t.debt_id).map(t => String(t.debt_id)));
   const debtById = new Map(debts.map(d => [String(d.id), d]));
   const out = [];
-  for (const t of transactions) {
-    if (t.exclude_from_totals) continue; // money passing through: moves balances, not counted in reports
-    const from = byId.get(String(t.account_id)), to = byId.get(String(t.to_account_id));
+  for (const raw of transactions) {
+    if (raw.exclude_from_totals) continue; // money passing through: moves balances, not counted in reports
+    const from = byId.get(String(raw.account_id)), to = byId.get(String(raw.to_account_id));
+    // Reports add everything up in the main currency.
+    const rate = fxRate(from);
+    const t = rate === 1 ? raw : { ...raw, amount: num(raw.amount) * rate, original_amount: num(raw.amount), original_currency: accountCurrency(from) };
     if (t.type === 'Income' && t.debt_id) continue; // borrowed money
     if (t.type === 'Expense' && t.debt_id && loanDebts.has(String(t.debt_id))) {
       const d = debtById.get(String(t.debt_id));

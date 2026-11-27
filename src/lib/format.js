@@ -11,7 +11,14 @@ export const localISODate = (d=new Date()) => `${d.getFullYear()}-${String(d.get
 
 export const monthNow = localISODate().slice(0,7);
 
-export const fmt = n => { let currency='EGP'; try { currency=null||'EGP'; } catch {} return new Intl.NumberFormat('en-EG',{style:'currency',currency,maximumFractionDigits:currency==='EGP'?0:2}).format(Number(n)||0); };
+// The user's main (display) currency. App sets it from the profile; every fmt() call follows it.
+let displayCurrency='EGP';
+export const setDisplayCurrency = c => { if (c) displayCurrency = String(c).toUpperCase(); };
+export const getDisplayCurrency = () => displayCurrency;
+/** Format an amount in a specific currency (e.g. a USD account's balance). */
+export const fmtIn = (n, currency) => { const c = String(currency || displayCurrency).toUpperCase(); try { return new Intl.NumberFormat('en-EG',{style:'currency',currency:c,maximumFractionDigits:c==='EGP'?0:2}).format(Number(n)||0); } catch { return `${(Number(n)||0).toLocaleString('en-EG')} ${c}`; } };
+export const fmt = n => fmtIn(n, displayCurrency);
+export const CURRENCIES = ['EGP','USD','EUR','GBP','SAR','AED','KWD','QAR','JOD','MAD','TRY','JPY','CAD','AUD','CHF'];
 
 export const firstName = name => String(name||'').trim().split(/\s+/)[0] || '';
 
