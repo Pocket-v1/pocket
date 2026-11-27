@@ -18,3 +18,13 @@ createRoot(document.getElementById('root')).render(<ErrorBoundary><App /><Analyt
 import './styles/dark-contrast.css';
 import './styles/actions.css';
 import './styles/vehicles-motion.css';
+
+// Error monitoring (off unless VITE_SENTRY_DSN is set).
+import { initMonitoring, reportError } from './lib/monitoring.js';
+initMonitoring();
+window.addEventListener('unhandledrejection', (e) => { reportError(e.reason); });
+
+// Installable app + offline shell (production builds only, so dev hot reload is not cached).
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js').catch(() => {}); });
+}

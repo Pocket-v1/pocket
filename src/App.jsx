@@ -48,6 +48,7 @@ import { CardPayModal } from './features/credit/CardPayModal.jsx';
 import { CreditAccountModal } from './features/credit/CreditAccountModal.jsx';
 import { ProviderPayModal } from './features/credit/ProviderPayModal.jsx';
 import { CARD_TYPE, PROVIDER_TYPE, accountFlows, cardSummary, isCard, isLiability, isMoneyAccount, isProvider, providerSummary, reportView, limitLeft, planLimitUse } from './lib/credit.js';
+import { setMonitoringUser } from './lib/monitoring.js';
 
 // Pages load on demand so the first screen downloads less code.
 const AccountsPage = lazy(() => import('./features/accounts/AccountsPage.jsx').then(m => ({ default: m.AccountsPage })));
@@ -181,6 +182,7 @@ function App(){
   const [notificationToast,setNotificationToast] = useState(null);
   const seenNotificationIds = useRef(null);
   const [session,setSession] = useState(null);
+  useEffect(()=>{setMonitoringUser(session?.user?.id||null);},[session?.user?.id]);
   useEffect(()=>{if(!cloudReady||!session?.user?.id)return;let alive=true;(async()=>{const {data,error}=await supabase.from('expense_categories').select('name,is_enabled').eq('user_id',session.user.id).order('name');if(!alive)return;if(!error&&Array.isArray(data)&&data.length){setExpenseCategoriesOverride(data.filter(x=>x.is_enabled!==false).map(x=>x.name));}})();return()=>{alive=false}},[session?.user?.id]);
   const [profile,setProfile] = useState(()=>{try{return !cloudReady ? JSON.parse(null||'null') : null}catch{return null}});
   const [profileLoaded,setProfileLoaded] = useState(false);
