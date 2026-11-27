@@ -236,3 +236,27 @@ For an existing Supabase project, run `supabase/migrations/20261020_add_opening_
 - Changed Users cards into a compact responsive list.
 - Styled request filter dropdown and native options for light/dark themes.
 - Kept existing schema and migrations unchanged.
+
+
+## Update 2026-11-27: fixes and new features (on top of the deployed version)
+
+Built on the code deployed from `pocket-update-oct29` (commit 8e15e92). The existing design, CSS, pages and functions are unchanged: a pixel comparison of every main page against that deploy showed no differences besides the new items listed here.
+
+**Before deploying:** run these in the Supabase SQL Editor (they are also appended to `supabase/schema.sql`):
+`20261127_audit_log.sql`, `20261127_budget_rollover.sql`, `20261127_multi_currency.sql`, then redeploy the Edge Functions.
+
+**Fixes**
+- Username/email checks in `public-signup` and `admin-create-user` no longer treat `_` as a wildcard (`a_b` used to collide with `axb`).
+- Recurring due dates: a monthly item due on the 31st moves to Feb 28/29 instead of skipping to March 3.
+- Optional: set the Edge Function secret `ALLOWED_ORIGIN` to your app URL to limit CORS (unset = unchanged `*`).
+- Pages and the Excel library load on demand: first-load JavaScript ~857 KB → ~496 KB gzipped. Excel imports are capped at 5 MB.
+
+**New**
+- Installable app (PWA); the app shell opens offline, financial data is never cached.
+- Arabic with right-to-left layout: Settings → Preferences → Language (per device). Strings in `src/lib/i18n/ar.js`.
+- Multi-currency accounts with an exchange rate; reports convert to the main currency; cross-currency transfers record the amount received. Amounts now follow the user's chosen currency.
+- Budget rollover, month-over-month comparison, copy last month's budgets.
+- Device notifications: Settings → Notifications → "Notifications on this device" (the existing email reminders are unchanged).
+- Administration → Audit log (written by database triggers).
+- Optional Sentry error monitoring: set `VITE_SENTRY_DSN` in Vercel.
+- `npm run lint`, `npm test` and a GitHub Actions CI workflow.

@@ -128,4 +128,9 @@ export default {
   'Total transactions': 'إجمالي المعاملات', 'Total Transactions': 'إجمالي المعاملات', 'Income recorded': 'الدخل المسجل', 'Expenses recorded': 'المصروفات المسجلة',
   'Date: newest to oldest': 'التاريخ: الأحدث أولًا', 'Date: oldest to newest': 'التاريخ: الأقدم أولًا', 'Amount: high to low': 'المبلغ: من الأعلى', 'Amount: low to high': 'المبلغ: من الأقل',
   'TRANSACTION': 'المعاملة', 'CATEGORY': 'الفئة', 'DATE': 'التاريخ', 'AMOUNT': 'المبلغ', 'ACCOUNT': 'الحساب', 'Change profile picture': 'تغيير صورة الملف الشخصي',
+  'Bank SMS': 'رسائل البنك', 'Friends': 'الأصدقاء', 'Search': 'بحث', 'Help': 'المساعدة', 'Inbox': 'صندوق الوارد', 'Subscriptions': 'الاشتراكات',
+  'Pocket Plus': 'Pocket Plus', 'Verify your email': 'أكّد بريدك الإلكتروني', 'Send verification email': 'إرسال رسالة التأكيد', 'Get Pocket set up': 'جهّز Pocket',
+  'Email me my reminders': 'أرسل التذكيرات إلى بريدي', 'Send me a test email': 'أرسل رسالة تجريبية', 'Subscriptions & bills reminders': 'تذكيرات الاشتراكات والفواتير',
+  'Export report': 'تصدير التقرير', 'Review transactions': 'مراجعة المعاملات', 'Cash flow trend': 'اتجاه التدفق النقدي', 'Spending insights': 'ملاحظات الإنفاق',
+  'Net this month': 'الصافي هذا الشهر', 'Savings rate': 'معدل الادخار', 'Tap a card to open the day': 'اضغط على بطاقة لفتح اليوم',
 };
