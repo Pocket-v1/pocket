@@ -665,8 +665,19 @@ function App(){
     const saved=await saveRecord('recurring_payments',p,editing?.id);if(!saved)return;
     setRecurring(old=>editing?old.map(x=>x.id===editing.id?saved:x):[saved,...old]);setModal(null);setEditing(null);setToast('Payment saved');
   }
+  async function copyBudgets(fromMonth,toMonth){
+    if(!cloudReady||!session?.user){setToast('Connect to Supabase and sign in before saving data.');return;}
+    const existing=new Set(budgets.filter(b=>(b.month||'').slice(0,7)===toMonth).map(b=>b.category));
+    const rows=budgets.filter(b=>(b.month||'').slice(0,7)===fromMonth&&Number(b.amount)>0&&!existing.has(b.category)).map(b=>({user_id:session.user.id,category:b.category,month:monthStart(toMonth),amount:Number(b.amount),rollover:Boolean(b.rollover)}));
+    if(!rows.length){setToast('Nothing to copy.');return;}
+    const {error}=await supabase.from('budgets').insert(rows);
+    if(error){setToast(error.message);return;}
+    const {data}=await supabase.from('budgets').select('*').order('month',{ascending:false});
+    if(Array.isArray(data))setBudgets(data);
+    setToast(`Copied ${rows.length} budget${rows.length===1?'':'s'}`);
+  }
   async function addBudget(form){
-    const p={category:form.category,month:monthStart(form.month),amount:Number(form.amount)};
+    const p={category:form.category,month:monthStart(form.month),amount:Number(form.amount),rollover:Boolean(form.rollover)};
     const saved=await saveRecord('budgets',p,editing?.id);if(!saved)return;
     // Immediately replace by id OR category/month so the card always uses the latest saved amount.
     // This also handles older rows whose ID changed during a migration/import.
@@ -1421,7 +1432,7 @@ function App(){
         {canSeeCurrentPage&&page==='Friends'&&<FriendsPage friends={fr.friends} loans={loansGiven} owe={fr.owe} transactions={transactions} currency={currency} setToast={setToast} requestConfirm={requestConfirm} onAdd={async u=>{const r=await supabase.rpc('friend_request',{p_username:u});if(r.error){setToast(r.error.message);return null;}fr.refresh();return r.data;}} onRespond={async(id,a)=>{const r=await supabase.rpc('friend_respond',{p_id:id,p_action:a});if(r.error)setToast(r.error.message);fr.refresh();}} onInvite={()=>makeInvite(null)} onLendMoney={lendMoney} accounts={accounts} allFriends={fr.accepted} payments={fr.payments} onSplit={splitBill} onBorrow={f=>setBorrowOpen(f)} categories={getCategoriesForType('Expense',session?.user?.user_metadata?.gender||'')} focusFriend={friendFocus}/>}
         {canSeeCurrentPage&&page==='Debts & installments'&&<DebtsPage {...{debts,accounts,transactions,debtFocus,setDebtFocus,credit:creditActions,setAccounts,setModal,setEditing,removeRecord,setDebts,currency,requestConfirm,recordDebtInstallment,closeDebt,reopenDebt,setDebtPaymentTarget,setToast,lendRequest,clearLendRequest:()=>setLendRequest(0),debtTabRequest,lent:{loans:loansGiven,friends:fr.accepted,payments:fr.payments,owe:fr.owe,presetFriend:lendFriend,onPaymentRespond:paymentRespond,onOweRespond:oweRespond,onOwePay:owePay,onRequestRespond:requestRespond,onResend:resendLoan,onCloseLoan:closeSharedLoan,uid:session?.user?.id,onInvite:makeInvite,onLend:lendMoney,onBack:loanMoneyBack,onReopen:l=>setLoanClosed(l,false),onDelete:deleteLoan}}}/>}
         {canSeeCurrentPage&&(page==='Insights & reports'||page==='Insights & forecast'||page==='Reports')&&<InsightsReportsPage {...{transactions:reportTx,month,setMonth,budgets,recurring:activeRecurring,goals,debts,currency,setPage,accounts:rawAccounts,showVehicles:allowedFeatures.includes('vehicle_management')}}/>}
-        {canSeeCurrentPage&&page==='Budgets'&&<BudgetsPage {...{budgets,transactions:reportTx,month,setMonth,setModal,setEditing,setToast,removeRecord,setBudgets,requestConfirm}}/>}
+        {canSeeCurrentPage&&page==='Budgets'&&<BudgetsPage {...{budgets,transactions:reportTx,month,setMonth,setModal,setEditing,setToast,removeRecord,setBudgets,requestConfirm,copyBudgets}}/>}
         {canSeeCurrentPage&&page==='Savings goals'&&<GoalsPage {...{onSpend:(g,saved)=>setSpendGoal({goal:g,saved}),onAddMoney:g=>setAddMoneyGoal(g),onCompleteGoal:(g,saved)=>setCompleteGoalTarget({goal:g,saved}),onReopenGoal:reopenGoal,goals,transactions,accounts,setModal,setEditing,setToast,removeRecord,setGoals,totalSaved,goalTarget,requestConfirm}}/>}
         {canSeeCurrentPage&&(page==='Recurring payments'||page==='Subscriptions & bills')&&<RecurringPage {...{accounts,recurring,toggleRecurringActive,setModal,setEditing,setToast,removeRecord,setRecurring,markRecurringPaid,paidBusy,deleteRecurringPayment}}/>}
         </Suspense>}
