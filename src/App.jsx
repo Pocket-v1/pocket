@@ -1,35 +1,22 @@
 import { PanelLeftClose, PanelLeftOpen, ArrowLeftRight, ArrowUpRight, Bell, CalendarDays, CarFront, ChartNoAxesCombined, Check, ChevronDown, CircleDollarSign, CreditCard, Fuel, History, LayoutDashboard, LogOut, Mail, Menu, Moon, Repeat2, Settings, SlidersHorizontal, Sun, Target, UserRound, Users, Wallet, Wrench, X, XCircle } from 'lucide-react';
 import { useSheetManager } from './hooks/useSheetManager.js';
-import * as XLSX from 'xlsx';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
 import { ConfirmActionModal } from './components/modals/ConfirmActionModal.jsx';
 import { ProfileAvatar } from './components/ui/ProfileAvatar.jsx';
 import { WorkspaceSkeleton } from './components/ui/WorkspaceSkeleton.jsx';
 import { AccountModal } from './features/accounts/AccountModal.jsx';
-import { AccountsPage } from './features/accounts/AccountsPage.jsx';
-import { AccessManagementPage } from './features/admin/AccessManagementPage.jsx';
 import { AccessRestricted } from './features/admin/AccessRestricted.jsx';
-import { VehicleManagementPage } from './features/admin/VehicleManagementPage.jsx';
 import { AccountProfileModal } from './features/auth/AccountProfileModal.jsx';
 import { AuthScreen } from './features/auth/AuthScreen.jsx';
 import { AvatarPickerModal } from './features/auth/AvatarPickerModal.jsx';
 import { BudgetModal } from './features/budgets/BudgetModal.jsx';
-import { BudgetsPage } from './features/budgets/BudgetsPage.jsx';
 import { DebtModal } from './features/debts/DebtModal.jsx';
 import { DebtPaymentChoiceModal } from './features/debts/DebtPaymentChoiceModal.jsx';
-import { DebtsPage } from './features/debts/DebtsPage.jsx';
 import { GoalModal } from './features/goals/GoalModal.jsx';
-import { GoalsPage } from './features/goals/GoalsPage.jsx';
-import { InsightsReportsPage } from './features/insights/InsightsReportsPage.jsx';
-import { CashFlowCalendar } from './features/overview/CashFlowCalendar.jsx';
-import { Overview } from './features/overview/Overview.jsx';
 import { RecurringModal } from './features/recurring/RecurringModal.jsx';
-import { RecurringPage } from './features/recurring/RecurringPage.jsx';
-import { ExpenseCategoriesPage } from './features/settings/ExpenseCategoriesPage.jsx';
 import { SettingsModal } from './features/settings/SettingsModal.jsx';
 import { ImportModal } from './features/transactions/ImportModal.jsx';
 import { TransactionModal } from './features/transactions/TransactionModal.jsx';
-import { TransactionsPage } from './features/transactions/TransactionsPage.jsx';
 import { PROFILE_AVATARS, defaultAvatarForGender } from './lib/avatars.js';
 import { customSubcategoriesOverride, expenseCategories, expenseCategoriesOverride, getExpenseCategories, setCustomSubcategoriesOverride, setExpenseCategoriesOverride } from './lib/categories.js';
 import { FEATURE_OPTIONS, PAGE_FEATURE, isGoalsAccount } from './lib/features.js';
@@ -39,6 +26,20 @@ import { CardPayModal } from './features/credit/CardPayModal.jsx';
 import { CreditAccountModal } from './features/credit/CreditAccountModal.jsx';
 import { ProviderPayModal } from './features/credit/ProviderPayModal.jsx';
 import { CARD_TYPE, PROVIDER_TYPE, accountFlows, cardSummary, isCard, isLiability, isMoneyAccount, isProvider, providerSummary, reportView, limitLeft, planLimitUse } from './lib/credit.js';
+
+// Pages load on demand so the first screen downloads less code.
+const AccountsPage = lazy(() => import('./features/accounts/AccountsPage.jsx').then(m => ({ default: m.AccountsPage })));
+const AccessManagementPage = lazy(() => import('./features/admin/AccessManagementPage.jsx').then(m => ({ default: m.AccessManagementPage })));
+const VehicleManagementPage = lazy(() => import('./features/admin/VehicleManagementPage.jsx').then(m => ({ default: m.VehicleManagementPage })));
+const BudgetsPage = lazy(() => import('./features/budgets/BudgetsPage.jsx').then(m => ({ default: m.BudgetsPage })));
+const DebtsPage = lazy(() => import('./features/debts/DebtsPage.jsx').then(m => ({ default: m.DebtsPage })));
+const GoalsPage = lazy(() => import('./features/goals/GoalsPage.jsx').then(m => ({ default: m.GoalsPage })));
+const InsightsReportsPage = lazy(() => import('./features/insights/InsightsReportsPage.jsx').then(m => ({ default: m.InsightsReportsPage })));
+const CashFlowCalendar = lazy(() => import('./features/overview/CashFlowCalendar.jsx').then(m => ({ default: m.CashFlowCalendar })));
+const Overview = lazy(() => import('./features/overview/Overview.jsx').then(m => ({ default: m.Overview })));
+const RecurringPage = lazy(() => import('./features/recurring/RecurringPage.jsx').then(m => ({ default: m.RecurringPage })));
+const ExpenseCategoriesPage = lazy(() => import('./features/settings/ExpenseCategoriesPage.jsx').then(m => ({ default: m.ExpenseCategoriesPage })));
+const TransactionsPage = lazy(() => import('./features/transactions/TransactionsPage.jsx').then(m => ({ default: m.TransactionsPage })));
 
 function readPocketStartupPage(){ return 'Overview'; }
 
@@ -105,7 +106,7 @@ function App(){
   const [goals,setGoals] = useState([]);
   const [recurring,setRecurring] = useState([]);
   const [accounts,setAccounts] = useState([]);
-  const [defaultAccountId,setDefaultAccountId] = useState(()=>{try{return null||''}catch{return ''}});
+  const [defaultAccountId,setDefaultAccountId] = useState('');
   const [debts,setDebts] = useState([]);
   const [month,setMonth] = useState(monthNow);
   const [search,setSearch] = useState('');
@@ -130,7 +131,7 @@ function App(){
   const seenNotificationIds = useRef(null);
   const [session,setSession] = useState(null);
   useEffect(()=>{if(!cloudReady||!session?.user?.id)return;let alive=true;(async()=>{const {data,error}=await supabase.from('expense_categories').select('name,is_enabled').eq('user_id',session.user.id).order('name');if(!alive)return;if(!error&&Array.isArray(data)&&data.length){setExpenseCategoriesOverride(data.filter(x=>x.is_enabled!==false).map(x=>x.name));}})();return()=>{alive=false}},[session?.user?.id]);
-  const [profile,setProfile] = useState(()=>{try{return !cloudReady ? JSON.parse(null||'null') : null}catch{return null}});
+  const [profile,setProfile] = useState(()=>{try{return !cloudReady ? JSON.parse('null') : null}catch{return null}});
   const [profileLoaded,setProfileLoaded] = useState(false);
   const [profileLoadError,setProfileLoadError] = useState('');
   const [profileRetry,setProfileRetry] = useState(0);
@@ -176,16 +177,16 @@ function App(){
   const [importPreview,setImportPreview] = useState([]);
   const [year,setYear] = useState(String(new Date().getFullYear()));
   const [clock,setClock] = useState(Date.now());
-  const [currency,setCurrency] = useState(()=>{try{return null||'EGP'}catch{return 'EGP'}});
-  const [timezone,setTimezone] = useState(()=>{try{return null||Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC'}catch{return 'UTC'}});
-  const [profileName,setProfileName] = useState(()=>{try{return null||''}catch{return ''}});
+  const [currency,setCurrency] = useState('EGP');
+  const [timezone,setTimezone] = useState(()=>{try{return Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC'}catch{return 'UTC'}});
+  const [profileName,setProfileName] = useState('');
   const [profileSaving,setProfileSaving] = useState(false);
-  const [theme,setTheme] = useState(()=>null||'light');
-  const [design,setDesign] = useState(()=>null||'classic');
-  const [sidebarSize,setSidebarSize] = useState(()=>null||'comfortable');
-  const [workspaceSectionName,setWorkspaceSectionName] = useState(()=>{try{return null||'MY SPACE'}catch{return 'MY SPACE'}});
+  const [theme,setTheme] = useState(()=>'light');
+  const [design,setDesign] = useState(()=>'classic');
+  const [sidebarSize,setSidebarSize] = useState(()=>'comfortable');
+  const [workspaceSectionName,setWorkspaceSectionName] = useState('MY SPACE');
   const [workspaceSectionEditing,setWorkspaceSectionEditing] = useState(false);
-  const [workspaceSectionDraft,setWorkspaceSectionDraft] = useState(()=>{try{return null||'MY SPACE'}catch{return 'MY SPACE'}});
+  const [workspaceSectionDraft,setWorkspaceSectionDraft] = useState('MY SPACE');
   const [profileAvatar,setProfileAvatar] = useState(()=>{const saved=null;return PROFILE_AVATARS.some(a=>a.id===saved)?saved:'avatar-01'});
   const [avatarPickerGender,setAvatarPickerGender] = useState('prefer_not_to_say');
   const [backupForUsers,setBackupForUsers] = useState(false);
@@ -748,7 +749,8 @@ function App(){
     setToast('User access updated');
     await refreshAdminUsers();
   }
-  function exportCSV(){
+  async function exportCSV(){
+    const XLSX=await import('xlsx');
     const ws=XLSX.utils.json_to_sheet(transactions.map(t=>({'Date':t.transaction_date,'Type':t.type,'Category':t.category,'Description':t.description,[`Amount (${currency})`]:t.amount,'Need / Want':t.need_want,'Fixed / Variable':t.fixed_variable,'Account / Wallet':accounts.find(a=>a.id===t.account_id)?.name||'No account linked','Recurring?':t.recurring?'Yes':'No','Notes':t.notes})));
     const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Transactions');XLSX.writeFile(wb,'forma-transactions.xlsx');
   }
@@ -866,7 +868,9 @@ function App(){
 
   async function handleImport(e){
     const file=e.target.files?.[0];if(!file)return;
+    if(file.size>5*1024*1024){setToast('That file is too large. Import files up to 5 MB.');e.target.value='';return;}
     try{
+      const XLSX=await import('xlsx');
       const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true});
       const ws=wb.Sheets['Transactions']||wb.Sheets[wb.SheetNames[0]];
       const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
@@ -951,7 +955,7 @@ function App(){
       <div className="page-wrap">
         {profileLoadError&&<div className="workspace-error" role="alert"><div><b>Couldn’t verify your access</b><p>{profileLoadError}</p></div><button className="btn btn-secondary btn-sm" onClick={()=>{setProfileLoaded(false);setProfileLoadError('');setProfileRetry(v=>v+1)}}>Retry</button></div>}
         {dataLoadError&&<div className="workspace-error" role="alert"><div><b>Some workspace data didn’t load</b><p>{dataLoadError}</p></div><button className="btn btn-secondary btn-sm" onClick={()=>setDataLoadAttempt(v=>v+1)}>Retry loading</button></div>}
-        {cloudReady&&session&&!accountsLoaded?<WorkspaceSkeleton/>: <>
+        {cloudReady&&session&&!accountsLoaded?<WorkspaceSkeleton/>: <Suspense fallback={<WorkspaceSkeleton/>}>
         {!canSeeCurrentPage&&!(isAdmin&&['Expense categories','Admin access','Access requests','Access management'].includes(page))&&<AccessRestricted profile={profile} onBack={()=>setPage(allowedFeatures[0]?FEATURE_OPTIONS.find(f=>f.key===allowedFeatures[0])?.label:'Overview')} onRequestAccess={requestAccess} requestBusy={accessRequestBusy} requestsOpen={accessRequestsOpen}/> }
         {page==='Expense categories'&&(isAdmin||allowedFeatures.includes('expense_categories'))&&<ExpenseCategoriesPage session={session} supabase={supabase}/>}
         {canSeeCurrentPage&&page==='Vehicle Management'&&<VehicleManagementPage session={session} supabase={supabase} transactions={transactions} setTransactions={setTransactions} accounts={accounts} currency={currency} onToast={setToast} requestedTab={vehicleSidebarTab}/>}
@@ -965,7 +969,7 @@ function App(){
         {canSeeCurrentPage&&page==='Budgets'&&<BudgetsPage {...{budgets,transactions:reportTx,month,setMonth,setModal,setEditing,setToast,removeRecord,setBudgets,requestConfirm}}/>}
         {canSeeCurrentPage&&page==='Savings goals'&&<GoalsPage {...{goals,transactions,accounts,setModal,setEditing,setToast,removeRecord,setGoals,totalSaved,goalTarget,requestConfirm}}/>}
         {canSeeCurrentPage&&(page==='Recurring payments'||page==='Subscriptions & bills')&&<RecurringPage {...{recurring,setModal,setEditing,setToast,removeRecord,setRecurring,markRecurringPaid,paidBusy,deleteRecurringPayment}}/>}
-        </>}
+        </Suspense>}
       </div>
       <footer className="footer"><span>Pocket Finance <span className="footer-dot">•</span> Make room for what matters.</span><span>Currency: {currency}</span></footer>
     </main>

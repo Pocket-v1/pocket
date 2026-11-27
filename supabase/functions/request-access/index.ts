@@ -1,18 +1,13 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { withCors } from '../_shared/cors.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
   status,
-  headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  headers: { 'Content-Type': 'application/json' },
 });
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+Deno.serve(withCors(async (req) => {
   if (req.method !== 'POST') return json({ ok: false, error: 'Method not allowed' }, 405);
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -56,4 +51,4 @@ Deno.serve(async (req) => {
 
   console.log('request-access persisted request', { requestId: inserted.id, userId: user.id });
   return json({ ok: true, saved: true, requestId: inserted.id, status: inserted.status, message: 'Access request saved successfully.' }, 201);
-});
+}));

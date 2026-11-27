@@ -1,15 +1,11 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { withCors } from '../_shared/cors.ts';
 
 // Sign-up WITHOUT an email: the account signs in with a username. (Sign-up with an email uses normal Supabase auth.)
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
-const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+const MAX_ATTEMPTS = 5;
+const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+Deno.serve(withCors(async (req) => {
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
   const url = Deno.env.get('SUPABASE_URL');
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -26,7 +22,22 @@ Deno.serve(async (req) => {
   if (password.length < 8) return json({ error: 'Use a password with at least 8 characters.' }, 400);
 
   const service = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
-  const { data: taken, error: lookupError } = await service.from('profiles').select('id').ilike('username', username).limit(1);
+
+  // Admins can switch username sign-up off (app_settings.public_signup_enabled = false).
+  const { data: signupSetting } = await service.from('app_settings').select('value').eq('key', 'public_signup_enabled').maybeSingle();
+  if (signupSetting?.value === false) return json({ error: 'Sign-up is closed right now. Please contact the administrator.' }, 403);
+
+  // At most MAX_ATTEMPTS sign-up attempts per IP per hour.
+  const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() || req.headers.get('x-real-ip') || 'unknown';
+  const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const { count, error: rateError } = await service.from('signup_attempts').select('id', { count: 'exact', head: true }).eq('ip', ip).gte('created_at', since);
+  if (rateError) return json({ error: 'Sign-up is temporarily unavailable.' }, 503);
+  if ((count ?? 0) >= MAX_ATTEMPTS) return json({ error: 'Too many sign-up attempts. Try again in an hour.' }, 429);
+  await service.from('signup_attempts').insert({ ip });
+
+  // ilike treats _ and % as wildcards; escape them so "a_b" only matches "a_b" (case-insensitive).
+  const usernamePattern = username.replace(/[\\%_]/g, (c) => `\\${c}`);
+  const { data: taken, error: lookupError } = await service.from('profiles').select('id').ilike('username', usernamePattern).limit(1);
   if (lookupError) return json({ error: 'Could not check the username. Try again.' }, 500);
   if (taken?.length) return json({ error: 'That username is already taken.' }, 409);
 
@@ -39,4 +50,4 @@ Deno.serve(async (req) => {
   });
   if (createError) return json({ error: /already/i.test(createError.message) ? 'That username is already taken.' : createError.message }, 400);
   return json({ ok: true });
-});
+}));

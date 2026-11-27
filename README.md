@@ -236,3 +236,20 @@ For an existing Supabase project, run `supabase/migrations/20261020_add_opening_
 - Changed Users cards into a compact responsive list.
 - Styled request filter dropdown and native options for light/dark themes.
 - Kept existing schema and migrations unchanged.
+
+
+## Security and quality update (2026-11-27)
+
+**Before deploying:**
+1. Run `supabase/migrations/20261127_signup_rate_limit.sql` in the Supabase SQL Editor (it is also appended to `supabase/schema.sql`).
+2. Set the Edge Function secret `ALLOWED_ORIGINS` to your app origins, comma-separated, e.g. `https://your-pocket-domain.vercel.app,http://localhost:5173`. If unset, every origin is still allowed.
+3. Redeploy all three Edge Functions (`admin-create-user`, `public-signup`, `request-access`); they now share `supabase/functions/_shared/cors.ts`.
+
+**What changed:**
+- `public-signup`: max 5 attempts per IP per hour, can be switched off with `app_settings.public_signup_enabled = false`, and the username check no longer treats `_` as a wildcard.
+- Edge Function CORS is limited to `ALLOWED_ORIGINS`.
+- Pages, charts and the Excel library load on demand: first-load JavaScript dropped from ~474 KB to ~170 KB gzipped.
+- Excel import rejects files over 5 MB.
+- Fixed recurring payments: a monthly item due on the 31st now moves to Feb 28/29 instead of skipping to March 3.
+- Removed unused legacy modules (`FeatureComponents`, `FinancePages`, `FinanceModals`, `AccountAndSettings`, `AccessAndVehicles`).
+- Added `npm run lint` (ESLint), `npm test` (Vitest, tests for balances, card statements, installment limits and due dates) and a GitHub Actions CI workflow.
