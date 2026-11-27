@@ -9,7 +9,7 @@ const menExpenseCategories = ['Grooming & Personal Care','Fitness & Sports','Sty
 const defaultExpenseCategories = [...new Set([...coreExpenseCategories,...womenExpenseCategories,...menExpenseCategories])];
 let expenseCategoriesOverride = null;
 const setExpenseCategoriesOverride = list => { expenseCategoriesOverride = Array.isArray(list) ? [...new Set(list.map(x=>String(x).trim()).filter(Boolean))] : null; window.dispatchEvent(new Event('pocket-expense-categories-updated')); };
-const readExpenseCategories = () => { try { const saved=JSON.parse(null||'null'); return Array.isArray(saved)&&saved.length?saved.filter(x=>typeof x==='string'&&x.trim()).map(x=>x.trim()):null; } catch { return null; } };
+const readExpenseCategories = () => { try { const saved=JSON.parse('null'); return Array.isArray(saved)&&saved.length?saved.filter(x=>typeof x==='string'&&x.trim()).map(x=>x.trim()):null; } catch { return null; } };
 const getExpenseCategories = gender => { if(expenseCategoriesOverride) return expenseCategoriesOverride; const saved=readExpenseCategories(); return saved || [...new Set([...coreExpenseCategories,...(gender==='female'?womenExpenseCategories:gender==='male'?menExpenseCategories:[])])]; };
 const expenseCategories = getExpenseCategories('');
 const incomeCategories = ['Salary','Freelance','Business','Bonus','Investments','Other income'];
@@ -69,7 +69,7 @@ const starterRecurring = [
 const isGoalsAccount = account => Boolean(account && (account.is_system===true || (String(account.name||'').trim().toLowerCase()==='goals' && String(account.type||'').toLowerCase().includes('saving'))));
 const localISODate = (d=new Date()) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const monthNow = localISODate().slice(0,7);
-const fmt = n => { let currency='EGP'; try { currency=null||'EGP'; } catch {} return new Intl.NumberFormat('en-EG',{style:'currency',currency,maximumFractionDigits:currency==='EGP'?0:2}).format(Number(n)||0); };
+const fmt = n => { let currency='EGP'; try { currency='EGP'; } catch {} return new Intl.NumberFormat('en-EG',{style:'currency',currency,maximumFractionDigits:currency==='EGP'?0:2}).format(Number(n)||0); };
 const firstName = name => String(name||'').trim().split(/\s+/)[0] || '';
 const getGreeting = (timezone) => { let hour=new Date().getHours(); try { if(timezone) hour=Number(new Intl.DateTimeFormat('en-US',{hour:'2-digit',hourCycle:'h23',timeZone:timezone}).format(new Date())); } catch {} return hour<12?'Good morning':hour<17?'Good afternoon':'Good evening'; };
 const PROFILE_AVATARS = Array.from({length:10},(_,i)=>({id:`avatar-${String(i+1).padStart(2,'0')}`,gender:[0,2,5,6,8].includes(i)?'male':'female',src:`/avatars/avatar-${String(i+1).padStart(2,'0')}.webp`}));

@@ -12,7 +12,7 @@ export let expenseCategoriesOverride = null;
 
 export const setExpenseCategoriesOverride = list => { expenseCategoriesOverride = Array.isArray(list) ? [...new Set(list.map(x=>String(x).trim()).filter(Boolean))] : null; window.dispatchEvent(new Event('pocket-expense-categories-updated')); };
 
-export const readExpenseCategories = () => { try { const saved=JSON.parse(null||'null'); return Array.isArray(saved)&&saved.length?saved.filter(x=>typeof x==='string'&&x.trim()).map(x=>x.trim()):null; } catch { return null; } };
+export const readExpenseCategories = () => { try { const saved=JSON.parse('null'); return Array.isArray(saved)&&saved.length?saved.filter(x=>typeof x==='string'&&x.trim()).map(x=>x.trim()):null; } catch { return null; } };
 
 export const getExpenseCategories = gender => { if(expenseCategoriesOverride) return expenseCategoriesOverride; const saved=readExpenseCategories(); return saved || [...new Set([...coreExpenseCategories,...(gender==='female'?womenExpenseCategories:gender==='male'?menExpenseCategories:[])])]; };
 
