@@ -445,7 +445,7 @@ function App(){
       expenseCategories:Array.isArray(savedCategories)?savedCategories:[],subcategories};
     const {error}=await supabase.from('user_settings').upsert({user_id:uid,settings,updated_at:new Date().toISOString()},{onConflict:'user_id'});if(error)console.error('Could not sync settings to Supabase:',error.message);})();
   },[session?.user?.id,cloudReady,settingsCloudUserId,currency,timezone,profileName,theme,design,sidebarSize,profileAvatar,defaultAccountId,accountsView,workspaceSectionName,expenseCategoryRevision]);
-    const reportTx=useMemo(()=>reportView(transactions,accounts),[transactions,accounts]);
+    const reportTx=useMemo(()=>reportView(transactions,accounts,debts),[transactions,accounts,debts]);
     const monthTx=useMemo(()=>reportTx.filter(t=>(t.transaction_date||'').slice(0,7)===month),[reportTx,month]);
   const income=monthTx.filter(t=>t.type==='Income').reduce((s,t)=>s+Number(t.amount||0),0);
   const expenses=monthTx.filter(t=>t.type==='Expense').reduce((s,t)=>s+Number(t.amount||0),0);
@@ -632,12 +632,20 @@ function App(){
     const saved=await saveRecord('transactions',payload,editing?.id);if(!saved)return;
     setTransactions(old=>editing?old.map(x=>x.id===editing.id?saved:x):[saved,...old]);
     if(form.type==='Income'&&form.loan_mode==='new'){setEditing(null);setTxPresetAccount('');setConvertTx(saved);setDebtPresetProvider('');setModal('debt');setToast(editing?'Income saved · now add the debt details':'Income added · now add the debt details');return true;}
-    if(form.type==='Income'&&form.loan_mode==='link'&&form.debt_id&&!editing){
-      const d=(debts||[]).find(x=>String(x.id)===String(form.debt_id));const add=Number(form.amount)||0;
-      if(d&&add>0){const r2=n=>Number(Number(n).toFixed(2));
+    const wasLink=editing&&editing.type==='Income'&&editing.debt_id;
+    const nowLink=form.type==='Income'&&form.loan_mode==='link'&&form.debt_id;
+    if(wasLink&&(!nowLink||String(editing.debt_id)!==String(form.debt_id))){
+      const od=(debts||[]).find(x=>String(x.id)===String(editing.debt_id));const sub=Number(editing.amount)||0;
+      if(od&&sub>0){const r2=n=>Number(Math.max(0,n).toFixed(2));const ds=await saveRecord('debts',{original_amount:r2(Number(od.original_amount||0)-sub),remaining_amount:r2(Number(od.remaining_amount||0)-sub),total_repayment:r2(Number(od.total_repayment||od.original_amount||0)-sub)},od.id);if(ds)setDebts(old=>old.map(x=>x.id===od.id?ds:x));}
+    }
+    if(nowLink){
+      const same=wasLink&&String(editing.debt_id)===String(form.debt_id);
+      const d=(debts||[]).find(x=>String(x.id)===String(form.debt_id));const add=same?(Number(form.amount)||0)-(Number(editing.amount)||0):(Number(form.amount)||0);
+      if(same&&Math.abs(add)<0.005){setModal(null);setEditing(null);setTxPresetAccount('');setToast('Transaction updated');return true;}
+      if(d&&add!==0){const r2=n=>Number(Math.max(0,Number(n)).toFixed(2));
         const dp={name:d.name,debt_type:d.debt_type||'Other',lender:d.lender||'',account_id:d.account_id||null,original_amount:r2(Number(d.original_amount||0)+add),remaining_amount:r2(Number(d.remaining_amount||0)+add),monthly_payment:d.monthly_payment,due_date:d.due_date||null,frequency:d.frequency||'Monthly',notes:d.notes||'',start_date:d.start_date||null,term_months:d.term_months||null,total_repayment:r2(Number(d.total_repayment||d.original_amount||0)+add),interest_rate:Number(d.interest_rate||0),paid_installments:d.paid_installments||0,amount_paid:Number(d.amount_paid||0)};
         const ds=await saveRecord('debts',dp,d.id);
-        if(ds){setDebts(old=>old.map(x=>x.id===d.id?ds:x));setModal(null);setEditing(null);setTxPresetAccount('');setToast(`Income added · ${d.name} increased by ${fmt(add)}`);return true;}
+        if(ds){setDebts(old=>old.map(x=>x.id===d.id?ds:x));setModal(null);setEditing(null);setTxPresetAccount('');setToast(add>0?`${editing?'Saved':'Income added'} · ${d.name} went up by ${fmt(add)}`:`Saved · ${d.name} went down by ${fmt(-add)}`);return true;}
         setToast('Income added, but the debt could not be updated');return true;
       }
     }

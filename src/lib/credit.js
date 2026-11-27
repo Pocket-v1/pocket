@@ -148,21 +148,35 @@ export const providerOwner = (debt, accounts = []) => accounts.find(a => String(
 
 /**
  * Transactions as REPORTS should see them (totals, budgets, charts).
- * - A purchase on a credit card or installment app is only recorded: it is not an expense yet.
- * - Paying the card / the app (a transfer into it) IS the expense, so it is counted then.
- * - Refunds into a card are not income.
- * - Transactions marked "Leave out of totals" are skipped.
+ * - A purchase on a credit card IS the expense (the money is spent then). Paying the card later is
+ *   only moving money to the card, so it is not counted again.
+ * - A purchase on an installment app is only recorded; paying the app is the expense.
+ * - Borrowed money (income linked to a debt) is not income. Paying that debt back is not an expense,
+ *   except the interest part, which is.
+ * - Refunds into a card are not income. Transactions marked "Leave out of totals" are skipped.
  */
-export function reportView(transactions = [], accounts = []) {
+export function reportView(transactions = [], accounts = [], debts = []) {
   const byId = new Map(accounts.map(a => [String(a.id), a]));
+  const loanDebts = new Set(transactions.filter(t => t.type === 'Income' && t.debt_id).map(t => String(t.debt_id)));
+  const debtById = new Map(debts.map(d => [String(d.id), d]));
   const out = [];
   for (const t of transactions) {
     if (t.exclude_from_totals) continue; // money passing through: moves balances, not counted in reports
     const from = byId.get(String(t.account_id)), to = byId.get(String(t.to_account_id));
+    if (t.type === 'Income' && t.debt_id) continue; // borrowed money
+    if (t.type === 'Expense' && t.debt_id && loanDebts.has(String(t.debt_id))) {
+      const d = debtById.get(String(t.debt_id));
+      const orig = num(d?.original_amount), total = num(d?.total_repayment);
+      const interestShare = d && total > orig && orig > 0 ? (total - orig) / total : 0;
+      if (interestShare > 0) out.push({ ...t, amount: Math.round(num(t.amount) * interestShare * 100) / 100, category: 'Savings & Debt', subcategory: 'Interest', counted_interest_only: true });
+      continue;
+    }
+    if (t.type === 'Expense' && isCard(from)) { out.push(t); continue; }
     if (t.type === 'Expense' && isLiability(from)) continue;
     if (t.type === 'Income' && isLiability(from)) continue;
+    if (t.type === 'Transfer' && isCard(to) && !isLiability(from)) continue; // paying the card: already counted at purchase
     if (t.type === 'Transfer' && isLiability(to) && !isLiability(from) && !isGoalsAccount(from)) {
-      out.push({ ...t, type: 'Expense', category: 'Savings & Debt', subcategory: isCard(to) ? 'Credit card payment' : 'Installment app payment', need_want: 'Need', counted_from_transfer: true });
+      out.push({ ...t, type: 'Expense', category: 'Savings & Debt', subcategory: 'Installment app payment', need_want: 'Need', counted_from_transfer: true });
       continue;
     }
     out.push(t);
