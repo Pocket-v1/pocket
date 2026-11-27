@@ -1,0 +1,33 @@
+/* Right-to-left layout for Arabic (html[dir="rtl"]). The sidebar moves to the right and the main area mirrors. */
+html[dir="rtl"] body { font-family: 'Cairo', 'Manrope', Arial, sans-serif; }
+html[dir="rtl"] .page-heading h1, html[dir="rtl"] .metric-value, html[dir="rtl"] .brand { font-family: 'Cairo', 'Sora', Arial, sans-serif; letter-spacing: 0; }
+html[dir="rtl"] .eyebrow, html[dir="rtl"] .nav-label, html[dir="rtl"] .sidebar-section-heading { letter-spacing: 0; }
+
+html[dir="rtl"] .sidebar { inset: 0 0 0 auto !important; border-right: 0; border-left: 1px solid #eef0f4; }
+:root[data-theme="dark"][dir="rtl"] .sidebar { border-left-color: #252b38; }
+html[dir="rtl"] .main-area { margin-left: 0 !important; margin-right: 254px; }
+html[dir="rtl"] .app-shell.sidebar-compact .main-area { margin-right: 88px; }
+html[dir="rtl"] .app-shell.sidebar-wide .main-area { margin-right: 292px; }
+html[dir="rtl"] .sidebar,html[dir="rtl"] .main-area { transition: width .18s ease, margin-right .18s ease; }
+@media (max-width: 950px) {
+  html[dir="rtl"] .main-area { margin-right: 225px; }
+  html[dir="rtl"] .app-shell.sidebar-compact .main-area { margin-right: 88px; }
+  html[dir="rtl"] .app-shell.sidebar-wide .main-area { margin-right: 245px; }
+}
+@media (max-width: 680px) {
+  html[dir="rtl"] .main-area, html[dir="rtl"] .app-shell.sidebar-compact .main-area, html[dir="rtl"] .app-shell.sidebar-wide .main-area { margin-right: 0 !important; }
+  html[dir="rtl"] .sidebar { transform: translateX(105%); }
+  html[dir="rtl"] .sidebar.sidebar-open { transform: translateX(0); box-shadow: -20px 0 50px #10172b24; }
+}
+
+/* Text and small pieces that were aligned for left-to-right */
+html[dir="rtl"] .nav-item, html[dir="rtl"] .data-table th, html[dir="rtl"] .notification-toast { text-align: right; }
+html[dir="rtl"] .data-table th:first-child, html[dir="rtl"] .data-table td:first-child { padding-left: 10px; padding-right: 0; }
+html[dir="rtl"] .nav-count, html[dir="rtl"] .sidebar .nav-count, html[dir="rtl"] .sidebar .brand .mobile-close, html[dir="rtl"] .sidebar-dropdown > summary > svg:last-child { margin-left: 0; margin-right: auto; }
+html[dir="rtl"] .report-category-row > b { text-align: left; }
+html[dir="rtl"] .toast, html[dir="rtl"] .notification-toast { right: auto; left: 24px; }
+/* Arrows and chevrons point the other way */
+html[dir="rtl"] .lucide-chevron-left, html[dir="rtl"] .lucide-chevron-right, html[dir="rtl"] .lucide-arrow-up-right, html[dir="rtl"] .lucide-arrow-right { transform: scaleX(-1); }
+/* Numbers, amounts, emails and dates stay left-to-right inside Arabic text */
+html[dir="rtl"] input[type="number"], html[dir="rtl"] input[type="email"] { direction: ltr; text-align: right; }
+html[dir="rtl"] input[type="date"], html[dir="rtl"] input[type="month"] { direction: ltr; }

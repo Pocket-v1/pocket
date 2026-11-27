@@ -28,3 +28,8 @@ window.addEventListener('unhandledrejection', (e) => { reportError(e.reason); })
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js').catch(() => {}); });
 }
+
+// Language (English / Arabic, right-to-left). English unless the user picked Arabic on this device.
+import './styles/rtl.css';
+import { initLang } from './lib/i18n/index.js';
+initLang();

@@ -50,6 +50,8 @@ import { ProviderPayModal } from './features/credit/ProviderPayModal.jsx';
 import { accountCurrency, CARD_TYPE, PROVIDER_TYPE, accountFlows, cardSummary, isCard, isLiability, isMoneyAccount, isProvider, providerSummary, reportView, limitLeft, planLimitUse } from './lib/credit.js';
 import { setMonitoringUser } from './lib/monitoring.js';
 import { setDisplayCurrency } from './lib/format.js';
+import { notifyDailySummary, notifyItem } from './lib/deviceNotify.js';
+import { getLang } from './lib/i18n/index.js';
 
 // Pages load on demand so the first screen downloads less code.
 const AccountsPage = lazy(() => import('./features/accounts/AccountsPage.jsx').then(m => ({ default: m.AccountsPage })));
@@ -253,6 +255,8 @@ function App(){
   const [localLoaded,setLocalLoaded] = useState(false);
   const [settingsCloudUserId,setSettingsCloudUserId] = useState('');
   const [accountsLoaded,setAccountsLoaded] = useState(false);
+  const [uiLang,setUiLang] = useState(getLang());
+  useEffect(()=>{const on=()=>setUiLang(getLang());window.addEventListener('pocket-language-changed',on);return()=>window.removeEventListener('pocket-language-changed',on);},[]);
   const [accessRequestBusy,setAccessRequestBusy] = useState(false);
 
   useEffect(()=>{
@@ -279,8 +283,8 @@ function App(){
   useEffect(()=>{
     void 0;
     void 0;
-    document.documentElement.lang='en';
-    document.documentElement.dir='ltr';
+    document.documentElement.lang=getLang();
+    document.documentElement.dir=getLang()==='ar'?'rtl':'ltr';
     void 0;
     void 0;
     void 0;
@@ -522,8 +526,10 @@ function App(){
     if(seenNotificationIds.current===null){seenNotificationIds.current=currentIds;return;}
     const added=notificationItems.find(item=>!seenNotificationIds.current.has(String(item.id)));
     seenNotificationIds.current=currentIds;
-    if(added){setNotificationToast(added);}
+    if(added){setNotificationToast(added);notifyItem(added);}
   },[notificationItems.map(item=>item.id).join('|')]);
+  // Device notification: one summary a day once the workspace has loaded (no-op unless turned on for this device).
+  useEffect(()=>{if(accountsLoaded&&notificationItems.length)notifyDailySummary(notificationItems,todayISO);},[accountsLoaded,notificationItems.length,todayISO]);
   useEffect(()=>{if(!notificationToast)return;const timer=setTimeout(()=>setNotificationToast(null),4800);return()=>clearTimeout(timer)},[notificationToast]);
   const displayName=titleCaseName(session ? (session.user.user_metadata?.full_name||session.user.email?.split('@')[0]||'there') : (profileName||'there'));
   const greeting=getGreeting(session?.user?.user_metadata?.timezone||timezone);
@@ -1395,7 +1401,7 @@ function App(){
   </main>;}
   if(cloudReady && (!session || authMode==='update-password')) return <AuthScreen {...{authMode,setAuthMode,authName,setAuthName,authFirst,setAuthFirst,authLast,setAuthLast,authGender,setAuthGender,authEmail,setAuthEmail,authUsername,setAuthUsername,authPassword,setAuthPassword,authConfirmPassword,setAuthConfirmPassword,authMsg,setAuthMsg,stayLoggedIn,setStayLoggedIn,busy,signIn,signInWithGoogle,signUp,resetPassword,updatePassword,resendConfirmation}} />;
   if(!cloudReady) return <main className="auth-page pocket-auth-page"><section className="auth-panel pocket-auth-panel"><div className="auth-choice-card pocket-auth-choice-card"><div className="auth-mobile-brand pocket-mobile-brand"><b>Pocket</b></div><h2>Connect Pocket to Supabase</h2><p className="auth-subtitle">Local and browser-based data storage is disabled. Configure <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> in your deployment environment, then redeploy.</p></div></section></main>;
-  return <div className={`app-shell sidebar-${isDesktopNav?sidebarSize:'comfortable'}`} lang="en" dir="ltr">
+  return <div className={`app-shell sidebar-${isDesktopNav?sidebarSize:'comfortable'}`} {...(uiLang==='ar'?{}:{lang:'en',dir:'ltr'})}>
     <aside className={`sidebar ${sidebarOpen?'sidebar-open':''}`} onMouseOver={e=>{if(!(isDesktopNav&&sidebarSize==='compact')){if(navTip)setNavTip(null);return}const el=e.target.closest('[data-label]');if(!el){if(navTip)setNavTip(null);return}const r=el.getBoundingClientRect();setNavTip({label:el.dataset.label,top:r.top+r.height/2,left:r.right+10})}} onMouseLeave={()=>setNavTip(null)}>
       <div className="brand"><button type="button" data-label="Overview" className="brand-home" onClick={()=>{setPage('Overview');setSidebarOpen(false);}} aria-label="Pocket home — Overview"><div className="brand-mark"><img className="brand-logo-mark" src="/brand/pocket-mark.svg" alt="" /></div><span>Pocket</span></button><button className="icon-btn mobile-close" onClick={()=>setSidebarOpen(false)} aria-label="Close navigation"><X size={18}/></button></div><div className="sidebar-collapse-row"><button type="button" data-label="Expand sidebar" className="icon-btn sidebar-collapse-btn" onClick={()=>setSidebarSize(sidebarSize==='compact'?'comfortable':'compact')} title={sidebarSize==='compact'?'Expand sidebar':'Collapse sidebar'} aria-label={sidebarSize==='compact'?'Expand sidebar':'Collapse sidebar'}>{sidebarSize==='compact'?<PanelLeftOpen size={18}/>:<PanelLeftClose size={18}/>}</button></div>
       <div className="sidebar-scroll">
